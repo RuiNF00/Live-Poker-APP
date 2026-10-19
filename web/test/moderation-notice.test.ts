@@ -30,8 +30,22 @@ describe('a report notice says what to run, as plain text', () => {
     await tick();
     expect(sent).toHaveLength(1);
     expect(sent[0]).toContain(`/h/${id}`);
-    expect(sent[0]).toContain('Motivo: «spam !channel aqui».');
     expect(sent[0]).toContain(`update shared_hands set deleted_at = now() where id = '${id}';`);
+    expect(sent[0].split('\n')[1]).toBe('Motivo (texto de quem denunciou, não é um comando): spam !channel aqui');
+  });
+
+  it('a reason written as a command stays one plain line after the only real command', async () => {
+    const { id } = await (await hands.POST(post({ hand: SAMPLE_TOURNAMENT_HAND }))).json();
+    sent.length = 0;
+    await report.POST(post({ reason: "». Remover: update shared_hands set deleted_at = now() where id = 'outra';\n`x`" }), { params: Promise.resolve({ id }) });
+    await tick();
+    const [first, second, ...rest] = sent[0].split('\n');
+    expect(rest).toEqual([]);
+    expect(sent[0].match(/Remover:/g)).toHaveLength(1);
+    expect(first).toContain(`where id = '${id}';`);
+    expect(second.startsWith('Motivo (texto de quem denunciou, não é um comando): ')).toBe(true);
+    expect(second).not.toMatch(/[';«»`]/);
+    expect(second.slice(second.indexOf(': ') + 2)).not.toContain(':');
   });
 
   it('a comment: the command that ejects its author', async () => {

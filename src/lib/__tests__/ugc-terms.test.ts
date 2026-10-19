@@ -1,7 +1,7 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
 
-import { UGC_TERMS_KEY, ugcTerms } from "../ugc-terms";
+import { UGC_TERMS_KEY, ugcTerms } from '../ugc-terms';
 
 function memory() {
   const m = new Map<string, string>();
@@ -14,7 +14,7 @@ function memory() {
   };
 }
 
-test("asks once, remembers the «Aceito» and never asks again", async () => {
+test('asks once, remembers the «Aceito» and never asks again', async () => {
   const { m, kv } = memory();
   const g = ugcTerms(kv);
   let asked = 0;
@@ -28,7 +28,7 @@ test("asks once, remembers the «Aceito» and never asks again", async () => {
   assert.equal(asked, 1);
 });
 
-test("a «no» publishes nothing and asks again next time", async () => {
+test('a «no» publishes nothing and asks again next time', async () => {
   const { m, kv } = memory();
   const g = ugcTerms(kv);
   const answers = [false, true];
@@ -38,7 +38,7 @@ test("a «no» publishes nothing and asks again next time", async () => {
   assert.equal(await g.accept(ask), true);
 });
 
-test("two taps at once show one sheet", async () => {
+test('two taps at once show one sheet', async () => {
   const { kv } = memory();
   const g = ugcTerms(kv);
   let asked = 0;
@@ -52,7 +52,7 @@ test("two taps at once show one sheet", async () => {
   assert.equal(asked, 1);
 });
 
-test("after erasing all data it asks again", async () => {
+test('after erasing all data it asks again', async () => {
   const { m, kv } = memory();
   const g = ugcTerms(kv);
   let asked = 0;

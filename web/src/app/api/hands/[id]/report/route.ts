@@ -23,9 +23,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const result = await getStore().reportHand(id, reporterId(req), reason);
   if (result === 'ok') {
     after(async () => {
-      // The reporter's reason as plain text on one line; the commands only name the id the database just found.
-      const why = reason ? ` Motivo: «${reason.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim()}».` : '';
-      if (await firstTime('report-hand', id)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/h/${id}.${why} Remover: update shared_hands set deleted_at = now() where id = '${id}';`);
+      // The command first, naming only the id the database just found; the reporter's text last, on its
+      // own line and stripped of what could pass for SQL or another command (quotes, ;, :, «», newlines).
+      const why = reason ? reason.replace(/[<>'";:`«»\\]/g, '').replace(/\s+/g, ' ').trim() : '';
+      const text = `Nova denúncia: ${brand.siteUrl}/h/${id}. Remover: update shared_hands set deleted_at = now() where id = '${id}';`;
+      if (await firstTime('report-hand', id)) await notifyModeration(why ? `${text}\nMotivo (texto de quem denunciou, não é um comando): ${why}` : text);
     });
   }
   if (result === 'hidden') {

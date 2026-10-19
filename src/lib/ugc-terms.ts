@@ -3,7 +3,7 @@
 // with no tolerance for objectionable content or abusive users before they can post). Kept apart
 // from React Native so it can be tested; the sheet that asks is useUgcTerms.
 
-export const UGC_TERMS_KEY = "rl.ugc-terms.v1";
+export const UGC_TERMS_KEY = 'rl.ugc-terms.v1';
 
 interface Kv {
   getItem(k: string): Promise<string | null>;
@@ -16,8 +16,7 @@ export function ugcTerms(kv: Kv) {
 
   async function run(ask: () => Promise<boolean>): Promise<boolean> {
     if (accepted) return true;
-    if (await kv.getItem(UGC_TERMS_KEY).catch(() => null))
-      return (accepted = true);
+    if (await kv.getItem(UGC_TERMS_KEY).catch(() => null)) return (accepted = true);
     if (!(await ask())) return false;
     accepted = true;
     await kv.setItem(UGC_TERMS_KEY, String(Date.now())).catch(() => {});

@@ -1,8 +1,9 @@
 -- App Store 1.2: the team ejects an abusive commenter on every hand, not just the one reported.
 \set ON_ERROR_STOP on
 set role service_role;
-\set ka 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-\set kb 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+-- Own keys, so the comments this leaves behind don't count in other tests.
+\set ka 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc'
+\set kb 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
 select id as b1 from create_shared_hand('{"v":1}'::jsonb) \gset
 select id as b2 from create_shared_hand('{"v":1}'::jsonb) \gset
 select id as a1 from add_hand_comment(:'b1', 'Ana', 'Insulto.', null, :'ka') \gset
