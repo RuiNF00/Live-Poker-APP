@@ -4,7 +4,7 @@
 
 import { requireOptionalNativeModule } from 'expo';
 import * as Linking from 'expo-linking';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { cancelFestivalReminders, syncFestivalReminders } from '@/lib/festival-reminders';
@@ -56,27 +56,12 @@ async function end() {
   }
 }
 
-const refreshers = new Set<() => void>();
-/** Notifications were just allowed: post the session notification now, not at the next minute's refresh. */
-export function refreshLockScreen() {
-  for (const r of refreshers) r();
-}
-
 export function SessionLockScreen() {
   const { activeSession, settings } = useStore();
   // Money stays off the lock screen unless the player turned on "Mostrar valores nas notificações" (notificacoes.md rule 5).
   const hide = !!settings.hideAmounts || !settings.notifyAmounts;
   const levelsOn = kindOn(settings, 'levels');
   const festivalOn = kindOn(settings, 'festival');
-
-  const [allowedAt, setAllowedAt] = useState(0);
-  useEffect(() => {
-    const r = () => setAllowedAt(Date.now());
-    refreshers.add(r);
-    return () => {
-      refreshers.delete(r);
-    };
-  }, []);
 
   useEffect(() => {
     const s = activeSession;
@@ -91,7 +76,7 @@ export function SessionLockScreen() {
       await show(s, hide);
       await syncLevelReminder(levelsOn ? s : null);
     })();
-  }, [activeSession, hide, levelsOn, allowedAt]);
+  }, [activeSession, hide, levelsOn]);
 
   // "Torneios planeados" switched off in Settings: what was planned goes too. On (at launch, after a
   // restore brought plans in, back on in Settings), every plan still ahead gets its reminders, in the

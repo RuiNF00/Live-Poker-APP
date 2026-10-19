@@ -30,7 +30,6 @@ import { AfterFestivalSession, Day2Remind } from '@/components/AfterFestivalSess
 import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useStartEvent';
 import { Banner, Button, Card, Chip, ChipRow, Field, IconButton, ListGroup, ListItem, NumField, Pill, Row, Screen, Section, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
-import { refreshLockScreen } from '@/lib/lock-screen';
 import { askForLockScreen, LEVEL_LENGTHS, levelAfter, levelsDue, levelUpMessage, lockAction, nextLevelAt, sessionNoticePreview } from '@/lib/lock-screen/live-state';
 import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/format';
 import { STAGES } from '@/poker/types';
@@ -409,7 +408,7 @@ function Live({ s }: { s: Session }) {
   // Android: the session on the lock screen needs notifications; ask as the session starts (the soft ask holds a «Agora não» for 30 days).
   useEffect(() => {
     if (!askForLockScreen(Platform.OS, s, lockScreenAsked)) return;
-    void askNotify({ where: 'session', title: t('Vê a sessão no ecrã bloqueado'), preview: sessionNoticePreview(s, Date.now(), !!settings.hideAmounts || !settings.notifyAmounts) }).then((ok) => ok && refreshLockScreen());
+    void askNotify({ where: 'session', title: t('Vê a sessão no ecrã bloqueado'), preview: sessionNoticePreview(s, Date.now(), !!settings.hideAmounts || !settings.notifyAmounts) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.id]);
   const paused = isPaused(s);
@@ -431,7 +430,7 @@ function Live({ s }: { s: Session }) {
     const i = LEVEL_LENGTHS.indexOf((s.levelMinutes ?? 0) as (typeof LEVEL_LENGTHS)[number]);
     const levelMinutes = i + 1 < LEVEL_LENGTHS.length ? LEVEL_LENGTHS[i + 1] : undefined;
     if (levelMinutes && !s.levelMinutes) {
-      void askNotify({ where: 'session', title: t('Avisamos-te quando o nível sobe'), preview: levelUpMessage(s) }).then((ok) => ok && refreshLockScreen());
+      void askNotify({ where: 'session', title: t('Avisamos-te quando o nível sobe'), preview: levelUpMessage(s) });
     }
     save({ levelMinutes, levelStartedAt: undefined });
   };
