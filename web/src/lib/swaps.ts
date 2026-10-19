@@ -22,6 +22,9 @@ type NewEntry = Omit<SwapEntry, 'id' | 'side' | 'at'>;
  * until the create lands, so someone who sees the link early can't take it (swap_own_id, 20261019110000). */
 export const idForToken = (token: string) => createHash('sha256').update('swap-id:' + token).digest('hex').slice(0, 16);
 
+/** A link made without signal (16 hex, from idForToken): its swap may still be on its way. Server ids have 10 letters and digits. */
+export const madeOffline = (id: string) => /^[a-f0-9]{16}$/.test(id);
+
 /** The app's id for a create, only when it is the one its token gives. */
 export const ownId = (x: unknown, token: string | undefined): string | undefined => (token && typeof x === 'string' && x === idForToken(token) ? x : undefined);
 

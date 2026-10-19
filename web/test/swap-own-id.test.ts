@@ -10,7 +10,7 @@ delete process.env.SUPABASE_URL;
 delete process.env.NEXT_PUBLIC_SUPABASE_URL;
 delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const { idForToken, IdTaken, ownId, swapStore } = await import('../src/lib/swaps');
+const { idForToken, IdTaken, madeOffline, ownId, swapStore } = await import('../src/lib/swaps');
 const { groupStore } = await import('../src/lib/swap-groups');
 const { POST } = await import('../src/app/api/swaps/route');
 const { POST: POSTGROUP } = await import('../src/app/api/swap-groups/route');
@@ -38,6 +38,11 @@ describe('a swap made without signal: the id comes from the app’s token, so th
     await expect(s.create(terms as never, k('b'), id)).rejects.toBeInstanceOf(IdTaken);
     expect(await s.side(id, k('a'))).toBe('a');
     expect(await s.side(id, k('b'))).toBeNull();
+  });
+
+  it('the page tells a link made without signal (16 hex) from a server id (10 letters and digits)', () => {
+    expect(madeOffline(idForToken(k('a')))).toBe(true);
+    for (const id of ['AbCdE12345', 'abcdef1234', 'B5B29B12C34491AC', '../b5b29b12c344']) expect(madeOffline(id)).toBe(false);
   });
 
   it('only takes the id its own token gives', () => {
