@@ -7,7 +7,7 @@ import { missedRefund, pendingCost, useOffers } from '@/store/action-offer';
 import { getPlan, planFestival, useFestivalPlans } from '@/store/festival-plan';
 import { useFestivals } from '@/store/my-festivals';
 import { rate } from '@/store/fx-math';
-import { addOfferDue, backerLedger, packageStates, stakingTotals, type BackerLedger, type StakingTotals } from '@/store/staking';
+import { addOfferDue, backerLedger, packageStates, stakingRatesSince, stakingTotals, type BackerLedger, type StakingTotals } from '@/store/staking';
 import { useStore } from '@/store/store';
 import { C } from '@/theme';
 
@@ -18,15 +18,18 @@ import { C } from '@/theme';
 export function useStaking() {
   const { sessions, packages, payments, backers, settings } = useStore();
   const home = settings.currency;
-  // Rates back to the oldest backed session in another currency, only when there is one.
-  const since = useMemo(() => {
-    const other = sessions.filter((s) => s.stakes?.length && s.currency !== home);
-    return other.length ? Math.min(...other.map((s) => s.startedAt)) : null;
-  }, [sessions, home]);
-  const table = useRates(since);
   const offers = useOffers();
   const festivals = useFestivals();
   const plans = useFestivalPlans();
+  // Rates back to the oldest backed session or festival package in another currency, only when there is one.
+  const since = useMemo(() => {
+    const pkgs = offers.flatMap((o) => {
+      const f = o.lines.length ? festivals.find((x) => x.id === o.festivalId) : undefined;
+      return f ? [{ currency: f.currency, at: o.createdAt }] : [];
+    });
+    return stakingRatesSince(home, sessions, pkgs);
+  }, [sessions, offers, festivals, home]);
+  const table = useRates(since);
   return useMemo(() => {
     const manual = settings.fxManual ?? {};
     const pk = packageStates(sessions, packages, { table, manual });

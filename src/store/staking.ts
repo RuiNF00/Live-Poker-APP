@@ -171,6 +171,16 @@ export interface BackerLedgerRow {
 }
 
 /**
+ * How far back the staking screens need rates: the oldest backed session or festival package (with
+ * backers) in a currency other than home. A package's due is converted at its createdAt, so without
+ * it a 165$ + 33€ backer never got rates and stayed «Sem câmbio» even online (Pronto P2, 19 Oct).
+ */
+export function stakingRatesSince(home: string, sessions: { stakes?: unknown[]; currency: string; startedAt: number }[], offers: { currency: string; at: number }[]): number | null {
+  const at = [...sessions.filter((s) => s.stakes?.length && s.currency !== home).map((s) => s.startedAt), ...offers.filter((o) => o.currency !== home).map((o) => o.at)];
+  return at.length ? Math.min(...at) : null;
+}
+
+/**
  * Festival action not yet in a session, onto a backer's ledger: what they owe for it (`due`) and what
  * comes back for events that went by unplayed (`back`), both in the festival's currency. Without a
  * rate it counts 1:1, as the sessions do, and the currency goes to `missing` so the screen says so.

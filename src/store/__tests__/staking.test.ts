@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingTotals, withCuts } from '../staking';
+import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 
@@ -488,4 +488,20 @@ test('no sessions: a second festival in another currency converts into the first
   addOfferDue(o, '$', 1000, 0, r);
   assert.equal(o.currency, '€');
   assert.equal(o.unpaid, 900);
+});
+
+test('festival packages in another currency ask for rates too (Pronto P2: 165$ + 33€ stayed «Sem câmbio»)', () => {
+  const s = (currency: string, startedAt: number, stakes?: unknown[]) => ({ currency, startedAt, stakes });
+  // No backed session in another currency: before, nothing was fetched.
+  assert.equal(stakingRatesSince('€', [s('€', 100, [{}]), s('$', 50)], [{ currency: '€', at: 300 }]), null);
+  assert.equal(stakingRatesSince('€', [s('€', 100, [{}])], [{ currency: '$', at: 300 }, { currency: '€', at: 200 }]), 300);
+  assert.equal(stakingRatesSince('€', [s('$', 100, [{}])], [{ currency: '$', at: 300 }]), 100);
+  assert.equal(stakingRatesSince('€', [], []), null);
+  // Once the rates are there, the € package lands in the $ deal converted, and nothing is missing.
+  const l = backerLedger('b', [], [], [], undefined, { table: {}, fallback: '€' });
+  addOfferDue(l, '$', 165, 0, (from, to) => (from === to ? 1 : null));
+  addOfferDue(l, '€', 33, 0, (from, to) => (from === to ? 1 : from === '€' && to === '$' ? 1.1 : null));
+  assert.equal(l.currency, '$');
+  assert.deepEqual(l.missing, []);
+  assert.equal(Math.round(l.unpaid * 100) / 100, 201.3);
 });
