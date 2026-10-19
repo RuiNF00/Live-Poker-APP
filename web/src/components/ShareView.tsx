@@ -306,6 +306,7 @@ export function ShareView(props: Props) {
               goTo(Number(e.target.value));
             }}
             aria-label={d.stepLabel}
+            aria-valuetext={`${index + 1}/${steps.length}: ${spokenStep(step, bb, mode, locale)}`}
           />
           <div className="scrub-marks">
             {[...commentSteps].map((i) => (
@@ -350,6 +351,7 @@ export function ShareView(props: Props) {
             <button
               key={i}
               className={`street-jump${step.street === s.street ? ' active' : ''}`}
+              aria-current={step.street === s.street ? 'step' : undefined}
               onClick={() => {
                 setPlaying(false);
                 goTo(i);
@@ -622,6 +624,8 @@ function ActionLog({
                 <button
                   className={`log-item${i === index ? ' active' : ''}${i > index ? ' future' : ''} log-${kindClass(step)}`}
                   onClick={() => onPick(i)}
+                  aria-current={i === index ? 'step' : undefined}
+                  aria-label={spokenStep(step, bb, mode, locale)}
                 >
                   {describeStep(step, bb, mode, locale)}
                 </button>

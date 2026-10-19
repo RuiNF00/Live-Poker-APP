@@ -3161,7 +3161,7 @@ const es: Record<string, string> = {
   '{name} · Dia {n}: {chips} em fichas': '{name} · Día {n}: {chips} en fichas',
   // Replayer read aloud (VoiceOver/TalkBack).
   'Street anterior': 'Street anterior',
-  '{name} no {pos}': '{name} en {pos}',
+  '{name} no {pos}': '{name} en el {pos}',
   '{who} faz fold': '{who} hace fold',
   '{who} faz check': '{who} hace check',
   '{who} paga {amt}': '{who} paga {amt}',
@@ -3389,6 +3389,12 @@ const es: Record<string, string> = {
   'Pôr na mesa': 'Ponerla en la mesa',
   'Depois corriges o que faltar com toques, como numa mão normal.': 'Después corriges lo que falte con toques, como en una mano normal.',
   'Contar a mão por voz': 'Contar la mano por voz',
+  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
+  'Muitos vídeos seguidos': 'Demasiados videos seguidos',
+  'Espera um pouco e tenta outra vez.': 'Espera un poco e inténtalo de nuevo.',
+  'O vídeo não ficou pronto': 'El video no está listo',
+  'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': 'No pudimos montar el video. Inténtalo de nuevo en un rato.',
+  '{a} e {b}': '{a} y {b}',
 };
 
 export default es;

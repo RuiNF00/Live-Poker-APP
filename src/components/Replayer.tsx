@@ -13,7 +13,7 @@ import { topClasses } from '@/poker/ranges';
 import type { Hand, Street } from '@/poker/types';
 import { C, F, R, ff } from '@/theme';
 
-import { spokenCard, STREET_LABEL, timeline, viewAt, type TimelineItem } from './replayer/model';
+import { timeline, viewAt, type TimelineItem } from './replayer/model';
 import { useReduceMotion } from './replayer/motion';
 import { RangeSheet } from './replayer/RangeSheet';
 import { ReplayerTable } from './replayer/ReplayerTable';
@@ -169,15 +169,6 @@ export function Replayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [street]);
   const note = streetNotes?.[street]?.trim();
-  // Screen readers hear each street as it's dealt: "Flop: Ás de copas, 7 de paus, 2 de ouros".
-  const dealt = steps[k]?.kind === 'board' ? k : -1;
-  useEffect(() => {
-    if (dealt < 0) return;
-    const board = hand.board.slice(0, steps[dealt].state.boardCount);
-    const fresh = street === 'flop' ? board.slice(0, 3) : board.slice(-1);
-    AccessibilityInfo.announceForAccessibility(`${STREET_LABEL[street]}: ${fresh.map(spokenCard).join(', ')}`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dealt]);
 
   // Names off for a screenshot or a screen share: every player shows as their position, hero as "Hero".
   const named = hand.players.some((p) => p.name);
@@ -204,6 +195,15 @@ export function Replayer({
   const rangeLocked = useLocked('villainRange');
   const { paywall } = usePro();
   const view = useMemo(() => viewAt(shown, r, k, { inBB, reveal: reveal && !locked, atEnd, range }), [shown, r, k, inBB, reveal, locked, atEnd, range]);
+  // Screen readers hear every step as it happens, not only the cards: "Vilão no BTN faz raise para 3 BB",
+  // "Flop: Ás de copas, 7 de paus, 2 de ouros", then who wins. The focus stays on the button pressed.
+  const said = useRef(k);
+  useEffect(() => {
+    if (said.current === k) return;
+    said.current = k;
+    if (view.spoken) AccessibilityInfo.announceForAccessibility(view.spoken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [k]);
   const editRange = () => {
     if (!view.rangeEq) return;
     tap('select');

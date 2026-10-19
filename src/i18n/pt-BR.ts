@@ -1723,6 +1723,12 @@ const ptBR: Record<string, string> = {
   'Escolhe a carta certa': 'Escolha a carta certa',
   'Depois corriges o que faltar com toques, como numa mão normal.': 'Depois você corrige o que faltar com toques, como numa mão normal.',
   'Pôr na mesa': 'Colocar na mesa',
+  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
+  'Muitos vídeos seguidos': 'Muitos vídeos seguidos',
+  'Espera um pouco e tenta outra vez.': 'Espere um pouco e tente de novo.',
+  'O vídeo não ficou pronto': 'O vídeo não ficou pronto',
+  'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': 'Não conseguimos montar o vídeo. Tente de novo daqui a pouco.',
+  '{a} e {b}': '{a} e {b}',
 };
 
 export default ptBR;

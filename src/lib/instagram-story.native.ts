@@ -208,6 +208,9 @@ export async function renderReplayVideo(
   }
   const res = await fetch(`${API}/api/replay-video`, { method: 'POST', body: form });
   if (res.status === 413) throw new Error('too_large');
+  if (res.status === 429) throw new Error('rate_limited');
+  // The server ran out of time or failed while rendering (500 from ffmpeg, 504 from the host).
+  if (res.status >= 500) throw new Error('render_failed');
   if (!res.ok) throw new Error('replay-video ' + res.status);
   const out = new File(Paths.cache, `sweatbook-mao-${Date.now()}.mp4`);
   await out.write(new Uint8Array(await res.arrayBuffer()));

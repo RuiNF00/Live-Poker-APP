@@ -178,3 +178,13 @@ test('screen reader: actions and streets read as sentences, never "aposta"', () 
   const v = viewAt(hand, r, k, opts);
   assert.match(spokenTable(v), / faz | paga /);
 });
+
+test('screen reader: each step announces the same sentence as its timeline entry', () => {
+  const hand = sampleHand('sample');
+  const r = replay(hand);
+  for (const it of timeline(hand, r, true)) {
+    if (it.kind !== 'action' && it.kind !== 'street') continue;
+    if (it.k === 0) continue;
+    assert.equal(viewAt(hand, r, it.k, { ...opts, inBB: true, atEnd: false }).spoken, it.spoken);
+  }
+});

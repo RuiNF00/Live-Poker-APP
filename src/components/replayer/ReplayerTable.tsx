@@ -360,6 +360,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
                 <RpCard
                   card={c}
                   faceDown={!c}
+                  corner
                   w={cw}
                   h={ch}
                   style={{ marginLeft: ci ? -cw * (s.cards && s.cards.length > 2 ? 0.55 : 0.18) : 0, transform: [{ rotate: ci % 2 ? '4deg' : '-4deg' }] }}

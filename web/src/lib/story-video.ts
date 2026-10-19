@@ -20,6 +20,11 @@ export interface Slot {
 
 const even = (n: number) => Math.max(2, Math.round(n / 2) * 2);
 
+// Frames are RGB; converted and tagged as BT.709 (limited range) so iPhone, Android, Instagram and
+// WhatsApp all show the same colours. Untagged, players guess: the brand orange came out lighter.
+const TO_YUV = `scale=${STORY_W}:${STORY_H}:out_color_matrix=bt709:out_range=tv`;
+const COLOR_TAGS = ['-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv'];
+
 /** Clamp the waveform slot to the frame; null if it makes no sense. */
 export function parseSlot(raw: unknown): Slot | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -66,11 +71,11 @@ export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot
   // The waveform branch is normalised so a quiet voice still moves the bars;
   // the audio itself goes out untouched.
   const filter = slot
-    ? `[0:v]scale=${STORY_W}:${STORY_H},setsar=1[bg];` +
+    ? `[0:v]${TO_YUV},setsar=1,format=yuv420p[bg];` +
       `[1:a]asplit[a][b];` +
       `[b]aformat=channel_layouts=mono,dynaudnorm=f=75:p=0.95,volume=3,showwaves=s=${slot.w}x${slot.h}:mode=cline:rate=24:colors=0xFF6A3D:scale=sqrt[w];` +
       `[bg][w]overlay=${slot.x}:${slot.y}:shortest=1,format=yuv420p[v]`
-    : `[0:v]scale=${STORY_W}:${STORY_H},setsar=1,format=yuv420p[v];[1:a]anull[a]`;
+    : `[0:v]${TO_YUV},setsar=1,format=yuv420p[v];[1:a]anull[a]`;
   return [
     '-hide_banner',
     '-loglevel', 'error',
@@ -94,6 +99,7 @@ export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot
     '-preset', 'veryfast',
     '-crf', '26',
     '-profile:v', 'high',
+    ...COLOR_TAGS,
     '-c:a', 'aac',
     '-b:a', '96k',
     '-ar', '44100',
@@ -105,6 +111,7 @@ export function ffmpegArgs(frame: string, voice: string, out: string, slot: Slot
 /** Most frames a replay video takes, and the crossfade between them. */
 export const MAX_FRAMES = 24;
 const FADE = 0.25;
+const FPS = 24;
 
 /** Seconds per frame from the app; null unless there is one sane value per frame. */
 export function parseDurations(raw: unknown, frames: number): number[] | null {
@@ -131,21 +138,37 @@ export function replayArgs(
   const n = frames.length;
   const total = Math.min(MAX_SECONDS, durations.reduce((a, d) => a + d, 0));
   const inputs: string[] = [];
-  frames.forEach((f, i) => {
-    // Every frame but the last runs a fade longer, so the fades don't eat into the total.
-    const len = durations[i] + (i < n - 1 ? FADE : 0);
-    // Read at 4 fps (the picture doesn't change) and doubled up to 24 below: each JPEG is decoded
-    // a few times instead of 24 times a second, the slowest part of the render.
-    inputs.push('-protocol_whitelist', 'file', '-f', 'image2', '-pattern_type', 'none', '-c:v', 'mjpeg', '-loop', '1', '-framerate', '4', '-t', len.toFixed(2), '-i', f);
+  // Each JPEG is read, decoded and converted to the video's colours once, then repeated.
+  for (const f of frames) inputs.push('-protocol_whitelist', 'file', '-f', 'image2', '-pattern_type', 'none', '-c:v', 'mjpeg', '-i', f);
+  // The pictures are still: each one is held for its frames and each fade blends two 0.25 s clips,
+  // joined end to end. Repeating a decoded picture costs nothing; a chain of xfades that every later
+  // frame runs through made the render miss the function's time limit on long hands. Boundaries
+  // are counted in whole frames from the cumulative times, so the total stays exact.
+  const fadeFrames = Math.round(FADE * FPS);
+  const hold = (k: number) => `loop=loop=${k - 1}:size=1,settb=1/${FPS},setpts=N,fps=${FPS}`;
+  const ends: number[] = [];
+  let sum = 0;
+  for (const d of durations) ends.push(Math.round((sum += d) * FPS));
+  const parts: string[] = [];
+  const pieces: string[] = [];
+  frames.forEach((_, i) => {
+    const from = i === 0 ? 0 : ends[i - 1] + fadeFrames;
+    const still = Math.max(0, (i === n - 1 ? Math.round(total * FPS) : ends[i]) - from);
+    const outs = [still > 0 ? `h${i}` : '', i > 0 ? `in${i}` : '', i < n - 1 ? `out${i}` : ''].filter(Boolean);
+    const src = `[${i}:v]${TO_YUV},setsar=1,format=yuv420p`;
+    parts.push(outs.length === 1 ? `${src}[${outs[0]}]` : `${src},split=${outs.length}${outs.map((o) => `[${o}]`).join('')}`);
+    if (i > 0) {
+      parts.push(`[in${i}]${hold(fadeFrames)}[b${i}]`, `[a${i - 1}][b${i}]xfade=transition=fade:duration=${FADE}:offset=0[x${i}]`);
+      pieces.push(`[x${i}]`);
+    }
+    if (still > 0) {
+      parts.push(`[h${i}]${hold(still)}[s${i}]`);
+      pieces.push(`[s${i}]`);
+    }
+    if (i < n - 1) parts.push(`[out${i}]${hold(fadeFrames)}[a${i}]`);
   });
-  const parts = frames.map((_, i) => `[${i}:v]scale=${STORY_W}:${STORY_H},setsar=1,fps=24,format=yuv420p,settb=AVTB[f${i}]`);
-  let cur = 'f0';
-  let at = 0;
-  for (let i = 1; i < n; i++) {
-    at += durations[i - 1];
-    parts.push(`[${cur}][f${i}]xfade=transition=fade:duration=${FADE}:offset=${at.toFixed(2)}[x${i}]`);
-    cur = `x${i}`;
-  }
+  parts.push(pieces.length === 1 ? `${pieces[0]}null[f]` : `${pieces.join('')}concat=n=${pieces.length}:v=1:a=0[f]`);
+  const cur = 'f';
   const T = total.toFixed(2);
   if (face) {
     const { x, y, d } = face.slot;
@@ -187,6 +210,7 @@ export function replayArgs(
     '-crf', '24',
     '-profile:v', 'high',
     '-pix_fmt', 'yuv420p',
+    ...COLOR_TAGS,
     '-c:a', 'aac',
     '-b:a', '96k',
     '-ar', '44100',

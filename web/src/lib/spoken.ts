@@ -42,7 +42,19 @@ const PT: Words = {
 
 const WORDS: Record<Locale, Words> = {
   pt: PT,
-  'pt-BR': { ...PT, act: { ...PT.act, post_ante: '{who} paga o ante de {amt}' }, board: 'Mesa' },
+  'pt-BR': {
+    ...PT,
+    act: {
+      ...PT.act,
+      post_sb: '{who} coloca o small blind de {amt}',
+      post_bb: '{who} coloca o big blind de {amt}',
+      post_ante: '{who} paga o ante de {amt}',
+      check: '{who} dá check',
+      bet: '{who} dá bet de {amt}',
+      raise: '{who} dá raise para {amt}',
+    },
+    board: 'Mesa',
+  },
   en: {
     who: '{name} on the {pos}',
     act: {
@@ -66,7 +78,7 @@ const WORDS: Record<Locale, Words> = {
     board: 'Board',
   },
   es: {
-    who: '{name} en {pos}',
+    who: '{name} en el {pos}',
     act: {
       post_sb: '{who} pone la ciega pequeña de {amt}',
       post_bb: '{who} pone la ciega grande de {amt}',

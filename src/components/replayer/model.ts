@@ -194,7 +194,10 @@ export function spokenTable(v: RpView): string {
     const did = s.badge?.label.toLowerCase() ?? s.betLabel;
     if (did) bits.push(did);
     if (s.allIn) bits.push('all-in');
-    if (s.cards) bits.push(s.cards.map(spokenCard).join(' e '));
+    if (s.cards) {
+      const said = s.cards.map(spokenCard);
+      bits.push(said.length > 1 ? t('{a} e {b}', { a: said.slice(0, -1).join(', '), b: said[said.length - 1] }) : said.join(''));
+    }
     else if (s.cards === null) bits.push(t('cartas tapadas'));
     if (s.handName && s.handName2) bits.push(`${t('Mesa')} 1 ${s.handName}`, `${t('Mesa')} 2 ${s.handName2}`);
     else if (s.handName) bits.push(s.handName);

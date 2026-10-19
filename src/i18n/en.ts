@@ -3395,6 +3395,12 @@ const en: Record<string, string> = {
   'Pôr na mesa': 'Put it on the table',
   'Depois corriges o que faltar com toques, como numa mão normal.': 'Then fix anything missing with taps, like any other hand.',
   'Contar a mão por voz': 'Tell the hand by voice',
+  'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
+  'Muitos vídeos seguidos': 'Too many videos in a row',
+  'Espera um pouco e tenta outra vez.': 'Wait a little and try again.',
+  'O vídeo não ficou pronto': "The video isn't ready",
+  'Não conseguimos montar o vídeo. Tenta outra vez daqui a pouco.': "We couldn't put the video together. Try again in a moment.",
+  '{a} e {b}': '{a} and {b}',
 };
 
 export default en;

@@ -18,12 +18,15 @@ export function RpCard({
   w,
   h,
   faceDown,
+  corner,
   style,
 }: {
   card?: CardCode | null;
   w: number;
   h: number;
   faceDown?: boolean;
+  /** Hole cards: rank over suit in the top-left corner, like a real card, so the part tucked under the plate or a fanned card hides nothing. */
+  corner?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const r = Math.round(w * 0.14);
@@ -65,8 +68,10 @@ export function RpCard({
           backgroundColor: '#F6F0E1',
           borderWidth: 1,
           borderColor: 'rgba(0,0,0,0.25)',
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: corner ? 'flex-start' : 'center',
+          justifyContent: corner ? 'flex-start' : 'center',
+          paddingTop: corner ? w * 0.04 : 0,
+          paddingLeft: corner ? w * 0.12 : 0,
           shadowColor: '#000',
           shadowOpacity: 0.45,
           shadowRadius: 5,
@@ -77,10 +82,10 @@ export function RpCard({
       ]}>
       <Text
         allowFontScaling={false}
-        style={{ color: ink, fontFamily: ff(800), fontSize: w * (rank.length > 1 ? 0.5 : 0.62), lineHeight: w * 0.7, letterSpacing: rank.length > 1 ? -1.5 : 0 }}>
+        style={{ color: ink, fontFamily: ff(800), fontSize: w * (corner ? (rank.length > 1 ? 0.42 : 0.5) : rank.length > 1 ? 0.5 : 0.62), lineHeight: w * (corner ? 0.56 : 0.7), letterSpacing: rank.length > 1 ? -1.5 : 0 }}>
         {rank}
       </Text>
-      <Text allowFontScaling={false} style={{ color: ink, fontSize: w * 0.4, lineHeight: w * 0.46, marginTop: -w * 0.04 }}>
+      <Text allowFontScaling={false} style={{ color: ink, fontSize: w * (corner ? 0.32 : 0.4), lineHeight: w * (corner ? 0.36 : 0.46), marginTop: -w * 0.04 }}>
         {SUIT_SYMBOL[suit]}
       </Text>
     </View>
