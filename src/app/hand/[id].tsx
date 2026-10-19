@@ -82,6 +82,8 @@ export default function HandScreen() {
   // Whether VoiceOver or TalkBack is on, for the comment undo's time.
   const reader = useRef(false);
   useEffect(() => {
+    // react-native-web always answers true here: the web keeps the normal time.
+    if (Platform.OS === 'web') return;
     AccessibilityInfo.isScreenReaderEnabled()
       .then((on) => (reader.current = on))
       .catch(() => {});

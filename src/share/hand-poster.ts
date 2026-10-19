@@ -32,3 +32,18 @@ export function posterStats(hand: Hand): PosterStat[] {
   if (net) out.push({ key: 'net', label: t('Resultado'), value: (net > 0 ? '+' : '') + bbs(net, bb), tone: net > 0 ? 'good' : 'bad' });
   return out;
 }
+
+const CUR = '(?:[€$£]|R\\$|EUR|USD|GBP|BRL)';
+const AMT = `(?:${CUR}\\s*)?\\d[\\d.,]*\\s*[kK]?(?:\\s*${CUR}(?![A-Za-z]))?`;
+// One amount or a stakes pair («€1/€2», «2/5 €»); it only counts as money with a currency in it.
+const AMOUNTS = new RegExp(`${AMT}(?:\\s*\\/\\s*${AMT})*`, 'g');
+const HAS_CUR = new RegExp(CUR);
+
+/** A game name without amounts of money in it: «Domingo €550» → «Domingo», «1/2 €» goes too. */
+export function posterTitle(name: string | undefined): string {
+  return (name ?? '')
+    .replace(AMOUNTS, (m) => (HAS_CUR.test(m) ? ' ' : m))
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s·|,–-]+|[\s·|,–-]+$/g, '')
+    .trim();
+}

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, TextInput, View } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, TextInput, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
@@ -21,6 +21,9 @@ const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Fl
  * replayer is on marked "you are here". There the player also keeps a private note per street.
  */
 const NAME_KEY = 'rl.commentName.v1';
+
+/** Off screen but read: for live regions that have nothing to show. */
+const HIDDEN = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 } as const;
 
 export function CommentsList({
   shareId,
@@ -118,8 +121,18 @@ export function CommentsList({
       ].filter((g) => g.items.length > 0 || (g.street && (g.street === street || notes?.[g.street]?.trim())))
     : [{ street: null, items: comments }];
 
+  // The web has no announceForAccessibility: a live region that is always there says the removal.
+  const goneId = Object.keys(pending ?? {}).at(-1);
+  const goneC = goneId ? comments.find((c) => c.id === goneId) : undefined;
+  const goneSaid = goneC ? `${pending![goneC.id] === 'block' ? t('{name} bloqueado nesta mão', { name: goneC.name }) : t('Comentário apagado')}. ${t('Desfazer disponível.')}` : '';
+
   return (
     <View style={{ gap: S.sm }}>
+      {Platform.OS === 'web' ? (
+        <T v="small" accessibilityLiveRegion="polite" style={HIDDEN}>
+          {goneSaid}
+        </T>
+      ) : null}
       {comments.length === 0 && !grouped ? (
         <Card tone="inset" style={{ alignItems: 'center', paddingVertical: S.lg }}>
           <T v="small">{t('Ainda sem comentários. Sê o primeiro a dar a tua opinião.')}</T>
@@ -251,11 +264,10 @@ export function CommentsList({
             </T>
           </Pressable>
         ) : null}
-        {err ? (
-          <T v="small" color={C.danger} accessibilityLiveRegion="assertive">
-            {err}
-          </T>
-        ) : null}
+        {/* Always mounted, so a screen reader hears the error when the text arrives. */}
+        <T v="small" color={C.danger} accessibilityLiveRegion="assertive" style={err ? undefined : HIDDEN}>
+          {err}
+        </T>
         <Button size="md" icon="send" title={busy ? t('A enviar…') : t('Comentar')} disabled={busy || !text.trim()} onPress={send} />
         <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>
           {t('Ao comentar aceitas os')}{' '}

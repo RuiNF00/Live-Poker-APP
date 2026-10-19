@@ -1,5 +1,5 @@
 // "Fechar" for screens shown as an iOS sheet: without it the only way out is a
-// swipe down, which is hard with VoiceOver. Android has its own back button.
+// swipe down, which is hard with VoiceOver. Android has its own back button; the web gets it too.
 
 import { router } from 'expo-router';
 import React from 'react';
@@ -18,5 +18,5 @@ export function ModalClose() {
   );
 }
 
-/** Screen options for a sheet: the close button on iOS. */
-export const sheetClose = Platform.OS === 'ios' ? { headerLeft: () => <ModalClose /> } : {};
+/** Screen options for a sheet: the close button on iOS, and on the web, where a direct link has nowhere to go back to. */
+export const sheetClose = Platform.OS === 'ios' || Platform.OS === 'web' ? { headerLeft: () => <ModalClose /> } : {};

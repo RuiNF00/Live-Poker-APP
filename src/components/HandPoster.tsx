@@ -15,7 +15,7 @@ import { comboLabel, displayRank, SUIT_SYMBOL } from '@/poker/cards';
 import { positions } from '@/poker/engine';
 import { blindsLabel, shortDate } from '@/poker/format';
 import { STAGES, type CardCode, type Hand, type Suit } from '@/poker/types';
-import { posterStats } from '@/share/hand-poster';
+import { posterStats, posterTitle } from '@/share/hand-poster';
 import { storyMoment, type StoryMoment } from '@/story/moment';
 import { posterLine } from '@/story/poster';
 import { C, F, R, ff, posColor } from '@/theme';
@@ -77,7 +77,8 @@ export function HandPoster({ hand, moment, comment, brand = true, format = 'stor
   const isQ = moment.mode === 'question';
   const cards = (hand.players[hand.hero]?.cards ?? []).filter(Boolean) as CardCode[];
   const pos = positions(hand.players.length, hand.button)[hand.hero];
-  const title = g.name || (g.kind === 'mtt' ? t('Torneio') : 'Cash');
+  // A typed name can carry the buy-in («Domingo €550»): the poster keeps the words, not the money.
+  const title = posterTitle(g.name) || (g.kind === 'mtt' ? t('Torneio') : 'Cash');
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const sub = [blindsLabel(hand), g.level ? t('Nível {n}', { n: g.level }) : null, stage ?? null].filter(Boolean).join(' · ');
   // A question shows the board as it was at hero's decision, with the cards still to come as empty places.
@@ -166,9 +167,10 @@ export function HandPoster({ hand, moment, comment, brand = true, format = 'stor
             <Text allowFontScaling={false} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75} style={{ textAlign: 'center', fontFamily: ff(800), fontWeight: '800', fontSize: post ? 16 : 19, lineHeight: post ? 20 : 23, letterSpacing: -0.3, color: C.text }}>
               {line}
             </Text>
-            {isQ && moment.options.length ? (
+            {qm?.options.length ? (
               <FitText width={inner} style={{ textAlign: 'center', fontFamily: ff(700), fontSize: 12, color: C.accent }}>
-                {moment.options.map((o) => o.label).join('  ·  ')}
+                {/* qm, not the story's moment: the poster's options are in bb too, never money or chips. */}
+                {qm.options.map((o) => o.label).join('  ·  ')}
               </FitText>
             ) : null}
           </View>
