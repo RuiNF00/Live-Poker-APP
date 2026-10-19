@@ -26,7 +26,7 @@ const FACTS: [string, string][] = [
     ? `${LAUNCH}, on the App Store in 175 countries. Android coming soon on Google Play`
     : `${LAUNCH}, on the App Store and Google Play in 175 countries`],
   ['Languages', 'English, European Portuguese, Brazilian Portuguese and Spanish'],
-  ['Price', 'Free with 3 new hands a day. Pro: $29.99 a month or $199.99 a year, with a 3-day free trial on the annual plan. Pro adds unlimited hands, staking, swap settlement, a tax report, multi-currency totals and brand-free sharing'],
+  ['Price', 'Free with 3 new hands a day. Pro: $29.99 a month or $199.99 a year, with a 3-day free trial on the annual plan. Pro adds unlimited hands, staking, swap balances, a tax report, multi-currency totals and brand-free sharing'],
   ['Founder', 'Rui, a live tournament player'],
   ['Based in', 'Portugal'],
   ['Age rating', '18+'],
