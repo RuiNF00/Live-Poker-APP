@@ -2334,7 +2334,7 @@ const es: Record<string, string> = {
   'Ex.: Baha Mar, Nassau': 'Ej.: Baha Mar, Nassau',
   'Dias de jogo': 'Días de juego',
   'A sessão continua': 'La sesión sigue',
-  'Guarda esta mão e as próximas sem limite.': 'Guarda esta mano y las siguientes sin límite.',
+  'Esta mão fica guardada como rascunho. Com Pro, guardas todas sem limite.': 'Esta mano queda guardada como borrador. Con Pro, guardas todas sin límite.',
   'A tua mão está a ser vista': 'Están viendo tu mano',
   'Com Pro, guardas e partilhas todas as mãos da sessão.': 'Con Pro, guardas y compartes todas las manos de la sesión.',
   'Vê de onde vem o teu lucro': 'Mira de dónde viene tu ganancia',

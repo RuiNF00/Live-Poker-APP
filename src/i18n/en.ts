@@ -2567,7 +2567,7 @@ const en: Record<string, string> = {
   'Não deu para ligar à {store}': "Couldn't reach the {store}",
   'Não deu para ligar à {store}. Tenta outra vez.': "Couldn't reach the {store}. Please try again.",
   'A sessão continua': 'The session goes on',
-  'Guarda esta mão e as próximas sem limite.': 'Save this hand and the next ones, no limit.',
+  'Esta mão fica guardada como rascunho. Com Pro, guardas todas sem limite.': 'This hand is saved as a draft. With Pro, save every hand, no limit.',
   'A tua mão está a ser vista': 'Your hand is being watched',
   'Com Pro, guardas e partilhas todas as mãos da sessão.': 'With Pro, save and share every hand of the session.',
   'Vê de onde vem o teu lucro': 'See where your profit comes from',

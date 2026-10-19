@@ -1093,7 +1093,7 @@ const ptBR: Record<string, string> = {
   'O organizador não publicou o fecho do late reg (no World Championship as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': 'O organizador não publicou o fechamento do late reg (no World Championship as inscrições ficam abertas até o Dia 2): confirme no balcão do torneio.',
   'O World Championship não tem garantia publicada (o prémio adicionado não se aplica no Nevada).': 'O World Championship não tem garantia publicada (o prêmio adicionado não se aplica em Nevada).',
   'A parte dele sai das sessões deste pacote e o link deixa de funcionar.': 'A parte dele sai das sessões deste pacote e o link para de funcionar.',
-  'Guarda esta mão e as próximas sem limite.': 'Salve esta mão e as próximas sem limite.',
+  'Esta mão fica guardada como rascunho. Com Pro, guardas todas sem limite.': 'Esta mão fica salva como rascunho. Com o Pro, você salva todas sem limite.',
   'A tua mão está a ser vista': 'Sua mão está sendo vista',
   'Com Pro, guardas e partilhas todas as mãos da sessão.': 'Com o Pro, você salva e compartilha todas as mãos da sessão.',
   '1 mão desta sessão, rua a rua, enquanto está fresca.': '1 mão desta sessão, street a street, enquanto está fresca.',

@@ -95,3 +95,10 @@ test('Settings reads the plan again after a restore, also when already Pro', () 
   assert.match(st, /\}, \[pro\.isPro, restored\]\);/);
   assert.match(st, /if \(res === 'ok' \|\| res === 'lifetime'\) setRestored\(\(n\) => n \+ 1\);/);
 });
+
+test('the paywall at the hand limit says the hand is kept as a draft, at the table too', () => {
+  const plans = readFileSync(path.join(root, 'billing', 'plans.ts'), 'utf8');
+  const body = (r: string) => new RegExp(`\\n  ${r}: \\{\\n    title: [^\\n]+\\n    body: ([^\\n]+)`).exec(plans)?.[1] ?? '';
+  assert.match(plans, /hands: \{\n    title: t\('Mão guardada como rascunho'\)/);
+  assert.match(body('handsLive'), /rascunho/);
+});

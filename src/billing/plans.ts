@@ -148,7 +148,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   handsLive: {
     title: t('A sessão continua'),
-    body: t('Guarda esta mão e as próximas sem limite.'),
+    body: t('Esta mão fica guardada como rascunho. Com Pro, guardas todas sem limite.'),
   },
   views: {
     title: t('A tua mão está a ser vista'),
