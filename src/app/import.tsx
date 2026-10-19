@@ -303,7 +303,7 @@ function Done({ step, bottom, onAgain }: { step: Extract<Step, { at: 'done' }>; 
             <Ionicons name="checkmark" size={30} color={C.good} />
           </View>
           <T v="label">{t('Já mudaste de app')}</T>
-          <T v="title">{r.sessions === 1 ? t('Importámos 1 sessão') : t('Importámos {n} sessões', { n: r.sessions })}</T>
+          <T v="title">{r.sessions === 1 ? t('Importámos 1 sessão') : r.sessions ? t('Importámos {n} sessões', { n: r.sessions }) : t('Importação feita')}</T>
           {span || sub ? <T v="callout">{[span, sub].filter(Boolean).join('. ')}</T> : null}
         </View>
 

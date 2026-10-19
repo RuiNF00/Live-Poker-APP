@@ -76,3 +76,9 @@ test('with large text the plan price goes under the name, so the per-month line 
   assert.match(p, /const bigText = useWindowDimensions\(\)\.fontScale > 1\.3;/);
   assert.doesNotMatch(p, /numberOfLines=\{bigText \? undefined : 2\}/);
 });
+
+test('restoring a one-time Pro inside the cancel flow reads lifetime again', () => {
+  const c = src.find(([f]) => f === path.join('app', 'cancel.tsx'))![1];
+  const body = /const onRestore = async \(\) => \{([\s\S]*?)\n {2}\};/.exec(c)?.[1] ?? '';
+  assert.match(body, /if \(res === 'ok' \|\| res === 'lifetime'\) hasLifetime\(\)\.then\(setForGood\);/);
+});

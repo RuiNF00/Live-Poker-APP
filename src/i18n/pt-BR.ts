@@ -331,6 +331,7 @@ const ptBR: Record<string, string> = {
   '1 registo apagado no outro telemóvel saiu também deste.': '1 registro apagado no outro celular saiu deste também.',
   '{n} registos apagados no outro telemóvel saíram também deste.': '{n} registros apagados no outro celular saíram deste também.',
   'Novos: {list}. O que já tinhas ficou.': 'Novos: {list}. O que você já tinha continua lá.',
+  'Importação feita': 'Importação concluída',
   'Nada de novo: já tinhas tudo.': 'Nada de novo: você já tinha tudo.',
   'HERO A DECIDIR': 'VEZ DO HERO',
   'O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.': 'O link fica pronto quando tiver sinal. Depois é só tocar de novo em Compartilhar.',
@@ -1703,6 +1704,8 @@ const ptBR: Record<string, string> = {
   'Criar o meu link para backers': 'Criar meu link para backers',
   'O meu currículo': 'Meu currículo',
   'Incluir as minhas notas da mão': 'Incluir minhas notas da mão',
+  'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.': 'Pro para sempre. A assinatura ainda renova em {date}: cancele na loja.',
+  'A tua subscrição continua a renovar até a cancelares na {store}.': 'Sua assinatura continua renovando até você cancelar na {store}.',
   'Toca para atualizar': 'Toque para atualizar',
   '{what}. Podes anular.': '{what}. Você pode desfazer.',
 };

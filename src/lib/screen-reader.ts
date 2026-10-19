@@ -2,11 +2,13 @@
 // wait for a tap instead while it is.
 
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Platform } from 'react-native';
 
 export function useScreenReader(): boolean {
   const [on, setOn] = useState(false);
   useEffect(() => {
+    // react-native-web always answers true, which would keep every «Anular» on screen for everyone.
+    if (Platform.OS === 'web') return;
     let live = true;
     AccessibilityInfo.isScreenReaderEnabled()
       .then((v) => live && setOn(v))
