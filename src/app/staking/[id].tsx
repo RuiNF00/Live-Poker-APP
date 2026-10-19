@@ -26,7 +26,7 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { inFestivalPackage, linesSettledWith, offerPackageIds, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
+import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
@@ -137,6 +137,14 @@ function BackerScreen() {
       (fid) => planFestival(allFestivals(), fid),
       (fid) => getPlan(fid).sessions,
       (o, c) => (c === cur ? 1 : (rate(fx.table, c, cur, o.createdAt, fx.manual) ?? savedOfferRate(payments, backer.id, o.id, cur))),
+      // Its unpaid stakes on sessions already started, at each session's rate, as the ledger counted them.
+      (line) =>
+        l.rows
+          .filter((r) => r.stake.unpaid && r.stake.packageId === line.packageId)
+          .reduce((a, r) => {
+            const c = r.session.currency;
+            return a + Math.round(r.cost * (!c || c === cur ? 1 : (rate(fx.table, c, cur, r.session.startedAt, fx.manual) ?? 1)) * 100) / 100;
+          }, 0),
     );
   // Settle the whole balance in one payment, the way Splitwise's "settle up" does.
   const markPaid = () =>
@@ -150,8 +158,10 @@ function BackerScreen() {
         const pieces = piecesPaid();
         const rest = Math.round((l.balance + pieces.reduce((a, x) => a + x.due, 0)) * 100) / 100;
         if (Math.abs(rest) >= 0.01) savePayment({ id: uid('y_'), backerId: backer.id, amount: rest, at: now, note: '', createdAt: now, fx: ratesNow(), currency: cur });
-        // No event of these packages started (linesSettledWith): every skipped one is not played.
-        for (const x of pieces) setLinePaid(x.offerId, x.lineId, true, {});
+        // Skipped events with no session stay unpaid for (never refunded); the started ones' stakes become paid.
+        const before = offerPackageIds(getOffers());
+        for (const x of pieces) setLinePaid(x.offerId, x.lineId, true, getPlan(x.festivalId).sessions);
+        for (const fid of new Set(pieces.map((x) => x.festivalId))) for (const s of offerStakeChanges(sessions, getOffers(), fid, getPlan(fid).sessions, before)) saveSession(s);
         tap('medium');
         // Store-review moment C (design/pedido-avaliacao.md): the balance is now "Acertado".
         if (!apart.length) void maybeAskForReview('settled');

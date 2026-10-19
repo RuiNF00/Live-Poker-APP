@@ -378,9 +378,10 @@ export function unpaidLinesIn(
 
 /**
  * Festival pieces a «Marcar como pago» of the whole balance pays too: the ones in it (with a rate, so
- * their due is in the balance) with no event started. Marked paid, the package screen says what the
- * backer screen says, and the payment keeps only the rest (QA P2, 19 Oct). `due` is in the deal's
- * currency, converted as the balance did (`rateOf`).
+ * their due is in the balance). Marked paid, the package screen says what the backer screen says,
+ * and the payment keeps only the rest (QA P2, 19 Oct). `due` is in the deal's currency, converted as
+ * the balance did: the events no session carries yet (`rateOf`) and, once the festival is under way,
+ * the unpaid stakes the piece already has on sessions (`stakesDue`, Bankroll P2).
  */
 export function linesSettledWith(
   offers: ActionOffer[],
@@ -388,20 +389,34 @@ export function linesSettledWith(
   festival: (id: string) => Festival | undefined,
   started: (festivalId: string) => Record<string, string>,
   rateOf: (o: ActionOffer, currency: string) => number | null,
-): { offerId: string; lineId: string; due: number }[] {
-  const out: { offerId: string; lineId: string; due: number }[] = [];
+  stakesDue: (line: PackageLine) => number = () => 0,
+): { offerId: string; festivalId: string; lineId: string; due: number }[] {
+  const out: { offerId: string; festivalId: string; lineId: string; due: number }[] = [];
   for (const o of offers) {
     const f = festival(o.festivalId);
     if (!f || !o.lines.some((l) => l.backerId === backerId)) continue;
-    // A session already carries part of the piece: its stake changes too, so that is the package screen's job.
-    const st = started(f.id);
-    if (offerEvents(f, o).some((e) => st[e.id])) continue;
     const x = rateOf(o, f.currency);
     if (x === null) continue;
+    const st = started(f.id);
     for (const l of o.lines) {
-      const due = l.backerId === backerId ? pendingCost(f, o, l, st) : 0;
-      if (due > 0) out.push({ offerId: o.id, lineId: l.id, due: due * x });
+      if (l.backerId !== backerId) continue;
+      const due = pendingCost(f, o, l, st) * x + stakesDue(l);
+      if (due > 0.005) out.push({ offerId: o.id, festivalId: f.id, lineId: l.id, due });
     }
+  }
+  return out;
+}
+
+/** Sessions of a festival's started events whose stakes change with its packages: the ones to save. */
+export function offerStakeChanges(sessions: Session[], offers: ActionOffer[], festivalId: string, started: Record<string, string>, before: Set<string>): Session[] {
+  const mine = offers.filter((x) => x.festivalId === festivalId);
+  const pkgs = new Set([...before, ...offerPackageIds(mine)]);
+  const out: Session[] = [];
+  for (const [eventId, sessionId] of Object.entries(started)) {
+    const s = sessions.find((x) => x.id === sessionId);
+    if (!s) continue;
+    const stakes = withOfferStakes(s.stakes, stakesFor(mine, festivalId, eventId), pkgs);
+    if (JSON.stringify(stakes) !== JSON.stringify(s.stakes ?? [])) out.push({ ...s, stakes });
   }
   return out;
 }

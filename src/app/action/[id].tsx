@@ -33,6 +33,7 @@ import {
   lineSettlement,
   offerEvents,
   offerPackageIds,
+  offerStakeChanges,
   offerTotals,
   stakesFor,
   unanswered,
@@ -41,7 +42,6 @@ import {
   updateOffer,
   useOffers,
   usualTerms,
-  withOfferStakes,
   type ActionOffer,
   type AgreementPayload,
   type LineSettlement,
@@ -177,14 +177,7 @@ export default function ActionPackageScreen() {
 
   // The package's stakes on every session already started from its events.
   const applyToSessions = (before: Set<string>) => {
-    const mine = getOffers().filter((x) => x.festivalId === f.id);
-    const pkgs = new Set([...before, ...offerPackageIds(mine)]);
-    for (const [eventId, sessionId] of Object.entries(plan.sessions)) {
-      const s = sessions.find((x) => x.id === sessionId);
-      if (!s) continue;
-      const stakes = withOfferStakes(s.stakes, stakesFor(mine, f.id, eventId), pkgs);
-      if (JSON.stringify(stakes) !== JSON.stringify(s.stakes ?? [])) saveSession({ ...s, stakes });
-    }
+    for (const s of offerStakeChanges(sessions, getOffers(), f.id, plan.sessions, before)) saveSession(s);
   };
 
   /** New terms (events or markup): staking packages follow, and every sent link asks to confirm again. */
