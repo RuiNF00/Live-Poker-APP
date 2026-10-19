@@ -119,4 +119,6 @@ test('the invite discount alert never opens by itself at the table or over the l
   assert.ok(calls.length >= 3);
   for (const l of calls) assert.match(l, /canAnnounce\(quietRef\.current\)/, l.trim());
   assert.match(p, /else await inviteNews\.hold\(\{ offer, side: 'friend' \}\);/);
+  // Kept news read just as a session opens goes back in the box, not lost.
+  assert.match(p, /announceInviteOffer\(kept\.offer, kept\.side, plansRef\.current\);\n\s+else await inviteNews\.hold\(kept\);/);
 });
