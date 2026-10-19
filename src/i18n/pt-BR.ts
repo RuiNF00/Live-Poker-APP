@@ -1701,7 +1701,7 @@ const ptBR: Record<string, string> = {
   'Incluir as minhas notas da mão': 'Incluir minhas notas da mão',
   'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.': 'Pro para sempre. A assinatura começa a cobrar em {date}: cancele na loja.',
   'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.': 'Pro para sempre. A assinatura ainda renova em {date}: cancele na loja.',
-  'A tua subscrição continua a renovar até a cancelares na {store}.': 'Sua assinatura continua renovando até você cancelar na {store}.',
+  'A tua subscrição continua a renovar até a cancelares na {store}.': 'Sua assinatura continua renovando até você cancelar na loja ({store}).',
   'Pro para sempre': 'Pro para sempre',
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Você pagou uma vez: não há assinatura para cancelar nem renovações.',
   'Toca para atualizar': 'Toque para atualizar',

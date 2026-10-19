@@ -1879,7 +1879,7 @@ const es: Record<string, string> = {
   'Stories com voz, sem marca de água': 'Historias con voz, sin marca de agua',
   'Regista um torneio': 'Registra un torneo',
   'Escolhe os torneios do próximo festival': 'Elige los torneos del próximo festival',
-  'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.': 'Pro para siempre. La suscripción empieza a cobrar el {date}: cancélala en la tienda.',
+  'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.': 'Pro para siempre. La suscripción se empieza a cobrar el {date}: cancélala en la tienda.',
   'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.': 'Pro para siempre. La suscripción aún se renueva el {date}: cancélala en la tienda.',
   'A tua subscrição continua a renovar até a cancelares na {store}.': 'Tu suscripción sigue renovándose hasta que la canceles en {store}.',
   'Pro para sempre': 'Pro para siempre',
