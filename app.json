@@ -48,7 +48,8 @@
             "NSPrivacyCollectedDataTypeLinked": false,
             "NSPrivacyCollectedDataTypeTracking": false,
             "NSPrivacyCollectedDataTypePurposes": [
-              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality",
+              "NSPrivacyCollectedDataTypePurposeAnalytics"
             ]
           },
           {
