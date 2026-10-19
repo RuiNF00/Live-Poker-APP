@@ -1,0 +1,72 @@
+// "Delete all my data": what stays on the phone afterwards. Pure, so it can be tested.
+
+/**
+ * Kept on purpose:
+ * - the outbox and the share queue: they still hold the deletes of public links and
+ *   the cloud copy, which go out when the signal is back;
+ * - the free-plan usage log, the cached Pro flag, the trial date and the free coaching
+ *   link flag: purchases are tied to the store account, and erasing must not hand out
+ *   new free hands or links;
+ * - the install id and the referral state: otherwise erasing would claim invite
+ *   rewards again.
+ * None of these holds hands, sessions, notes or amounts.
+ */
+export const KEEP_KEYS = [
+  'rl.outbox.v1',
+  'sweatbook.share-queue.v1',
+  'rl.usage.v1',
+  'rl.pro.v1',
+  // The player's "no crash reports" choice: erasing data must not switch reports back on.
+  'rl.crash.v1',
+  'rl.trial.v1',
+  'rl.install.v1',
+  'rl.ref.v1',
+  'rl.ref.reg.v1',
+  'rl.claim.v1',
+  'rl.first.v1',
+  'rl.firsthand.v1',
+  'rl.coach.free.v1',
+];
+
+/** Prefixes of every key the app writes. A new feature's key must start with one of them. */
+export const APP_PREFIXES = ['rl.', 'sweatbook.', 'pp.'];
+
+/** Every app key except the ones above. Keys of other libraries are left alone. */
+export function keysToErase(all: readonly string[]): string[] {
+  return all.filter((k) => APP_PREFIXES.some((p) => k.startsWith(p)) && !KEEP_KEYS.includes(k));
+}
+
+/**
+ * Deletes the player was promised ("Apagar todos os meus dados", a link removed): they stay queued
+ * until the server answers (outbox `keep`), however long the phone is offline or the server is down, and later
+ * analytics never push them out of the queue.
+ */
+export const DELETE_KINDS = [
+  'cloud-delete',
+  'share-delete',
+  'comment-erase',
+  'live-delete',
+  'backer-page-delete',
+  'offer-delete',
+  'profile-delete',
+  'pack-delete',
+  'coach-erase',
+  'coach-revoke',
+  'swap-delete',
+  'swap-leave',
+  'swap-group-leave',
+  'invite-erase',
+];
+
+/**
+ * The order of "delete all my data" on the server side. The cloud copy's delete
+ * is queued first, before anything that can't be undone (share links forgotten,
+ * action packages cleared): if it fails (the cipher's chunk didn't load), the
+ * error goes up with nothing touched, so "Nada foi apagado" stays true and the
+ * code stays to try again. The code is forgotten only after everything else.
+ */
+export async function eraseInOrder<C>(cloud: C | null, queueCloudDelete: (c: C) => Promise<void>, rest: () => Promise<void>, forgetCloud: () => Promise<void>): Promise<void> {
+  if (cloud) await queueCloudDelete(cloud);
+  await rest();
+  await forgetCloud();
+}

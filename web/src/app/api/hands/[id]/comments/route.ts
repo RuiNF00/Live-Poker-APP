@@ -1,0 +1,78 @@
+import { after, NextResponse } from 'next/server';
+import { AUTHOR_ID_RE, commentAuthorKey } from '@/lib/comment-author';
+import { notifyOwner } from '@/lib/comment-push';
+import { getStore } from '@/lib/store';
+import { limited } from '@/lib/abuse';
+import { cors } from '@/lib/cors';
+import { isOffensive } from '@/lib/moderation';
+import { stepsOf, streetOfStep, streetStep } from '@/lib/hand';
+import type { Street } from '@livepoker/hand-format';
+
+const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];
+
+type Ctx = { params: Promise<{ id: string }> };
+
+export function OPTIONS() {
+  return new NextResponse(null, { headers: cors });
+}
+
+export async function GET(_req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const store = getStore();
+  const [comments, share] = await Promise.all([store.listComments(id), store.getShare(id)]);
+  const steps = share ? stepsOf(share.payload) : null;
+  return NextResponse.json({ comments: comments.map((c) => ({ ...c, street: steps ? streetOfStep(steps, c.stepIndex) : null })) }, { headers: cors });
+}
+
+/**
+ * POST { name, text, stepIndex? | street?, authorId? } -> 201 { comment }. The app sends a street: its
+ * replay steps aren't the page's. `authorId` is the random id of the app install or browser; only its
+ * hash is kept, so the hand's owner can block that author (403 blocked afterwards).
+ */
+export async function POST(req: Request, { params }: Ctx) {
+  const { id } = await params;
+  if (await limited(req, 'comment', 30, 3600)) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
+  }
+  const body = (await req.json().catch(() => null)) as { name?: unknown; text?: unknown; stepIndex?: unknown; street?: unknown; authorId?: unknown } | null;
+  const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  const text = typeof body?.text === 'string' ? body.text.trim() : '';
+  const step = body?.stepIndex;
+  let stepIndex = Number.isInteger(step) && (step as number) >= 0 && (step as number) <= 500 ? (step as number) : null;
+  const street = STREETS.includes(body?.street as Street) ? (body!.street as Street) : null;
+  const authorId = typeof body?.authorId === 'string' && AUTHOR_ID_RE.test(body.authorId) ? body.authorId : null;
+  const authorKey = authorId ? commentAuthorKey(authorId) : null;
+  // No author, no block check: a comment without one could dodge the owner's block.
+  if (!authorKey || !name || name.length > 40 || !text || text.length > 1000) {
+    return NextResponse.json({ error: 'invalid_comment' }, { status: 422, headers: cors });
+  }
+  if (isOffensive(name) || isOffensive(text)) {
+    return NextResponse.json({ error: 'offensive' }, { status: 422, headers: cors });
+  }
+  let steps: ReturnType<typeof stepsOf> = null;
+  if (street || stepIndex !== null) {
+    const share = await getStore().getShare(id);
+    steps = share ? stepsOf(share.payload) : null;
+    if (street && stepIndex === null) stepIndex = steps ? streetStep(steps, street) : null;
+  }
+  try {
+    const comment = await getStore().addComment(id, { name, text, stepIndex, authorKey });
+    if (!comment) return NextResponse.json({ error: 'comments_closed' }, { status: 404, headers: cors });
+    const at = steps ? streetOfStep(steps, comment.stepIndex) : null;
+    // The owner hears about it (the database holds it in the quiet hours or until the last one is
+    // opened), unless the owner wrote it: the app sends the hand's edit token with the owner's replies.
+    const owner = req.headers.get('x-edit-token');
+    after(async () => {
+      if (!owner || !(await getStore().ownsShare(id, owner))) await notifyOwner(id, at);
+    });
+    return NextResponse.json({ comment: { ...comment, street: at } }, { status: 201, headers: cors });
+  } catch (e) {
+    if (String((e as Error)?.message).includes('blocked')) {
+      return NextResponse.json({ error: 'blocked' }, { status: 403, headers: cors });
+    }
+    if (String((e as Error)?.message).includes('rate_limited')) {
+      return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
+    }
+    throw e;
+  }
+}

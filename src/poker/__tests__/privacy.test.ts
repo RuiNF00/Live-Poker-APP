@@ -1,0 +1,62 @@
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { fromAppHand, validateHand } from '../../../packages/hand-format/src';
+import { MAX_NAME_LENGTH, MAX_NOTES_LENGTH, publicHand } from '../privacy';
+import type { Hand } from '../types';
+
+const hand = {
+  v: 1, id: 'h', createdAt: 0, updatedAt: 0, sessionId: 's', shareToken: 'secret', shareId: 'x', voiceNote: 'file:///voice/h.m4a',
+  game: { kind: 'cash', name: '1/2', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€' },
+  players: [{ name: 'Rui', stack: 200 }, { name: 'Zé do boné', stack: 300, playerId: 'p_1' }],
+  button: 0, hero: 0, actions: [], board: [], tags: [], notes: 'Fold?',
+} as unknown as Hand;
+
+test('opponents are anonymous by default, ids, tokens and notes never leave', () => {
+  const p = publicHand(hand) as unknown as Record<string, unknown> & Hand;
+  assert.equal(p.players[0].name, 'Rui');
+  assert.equal(p.players[1].name, '');
+  assert.equal('playerId' in p.players[1], false);
+  for (const k of ['sessionId', 'shareToken', 'shareId', 'voiceNote']) assert.equal(k in p, false);
+  assert.equal(p.notes, '');
+});
+
+test('the buy-in and the venue stay on the phone, the rest of the game goes', () => {
+  const mtt = { ...hand, game: { kind: 'mtt', name: 'Main Event', venue: 'Estoril', buyIn: 100, level: 3, sb: 100, bb: 200, ante: 200, anteType: 'bb', currency: '€' } } as unknown as Hand;
+  const p = publicHand(mtt);
+  assert.equal('buyIn' in p.game, false);
+  assert.equal('venue' in p.game, false);
+  assert.equal(p.game.name, 'Main Event');
+  assert.equal(p.game.level, 3);
+  assert.equal(mtt.game.buyIn, 100, 'the hand on the phone keeps them');
+});
+
+test('opt-in names, opt-out notes', () => {
+  const p = publicHand(hand, { names: true, notes: false });
+  assert.equal(p.players[1].name, 'Zé do boné');
+  assert.equal(p.notes, '');
+});
+
+test('study folders never leave the phone', () => {
+  const p = publicHand({ ...hand, folders: ['Rever com coach'] });
+  assert.equal('folders' in p, false);
+});
+
+test('private street notes never leave the phone, even with notes shared', () => {
+  const p = publicHand({ ...hand, streetNotes: { turn: 'Devia ter apostado mais pequeno.' } }, { names: false, notes: true }) as unknown as Record<string, unknown>;
+  assert.equal('streetNotes' in p, false);
+});
+
+test('names and notes longer than the share page accepts are cut, so old hands still share', () => {
+  const long = {
+    ...hand,
+    players: [{ name: 'R'.repeat(39) + '😀', stack: 200 }, { name: 'Z'.repeat(80), stack: 300 }],
+    notes: 'n'.repeat(5000),
+  } as Hand;
+  const p = publicHand(long, { names: true, notes: true });
+  assert.equal(p.players[0].name, 'R'.repeat(39), 'no half emoji left at the end');
+  assert.equal(p.players[1].name.length, MAX_NAME_LENGTH);
+  assert.equal(p.notes.length, MAX_NOTES_LENGTH);
+  assert.deepEqual(validateHand(fromAppHand(p).hand), []);
+});

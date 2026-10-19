@@ -1,0 +1,202 @@
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { addDays, atClock, breakdown, lastPlayed, lastTimeAt, ownBuyIns, owedToBackers, parseDay, profit, totals } from '../session-math';
+import type { Session } from '../types';
+import { mttStats } from '../results-math';
+import { summarize } from '../tourney-stats';
+import { homeTotals } from '../fx-math';
+import { yearOf, yearReview } from '../../share/year-review';
+
+function mk(over: Partial<Session> = {}): Session {
+  return {
+    id: 's', kind: 'mtt', name: 'Main', venue: 'Estoril', currency: '€', startedAt: 0, endedAt: 4 * 3600000, breaks: [],
+    buyIn: 100, entries: 1, addOn: 0, cashOut: 0, sb: 100, bb: 200, ante: 200, anteType: 'bb', tableSize: 9, stack: 30000,
+    stackLog: [], roster: [], notes: '',
+    ...over,
+  };
+}
+
+test('no staking: profit is prize minus buy-ins minus expenses', () => {
+  assert.equal(profit(mk({ cashOut: 500, entries: 2 })), 300);
+  assert.equal(profit(mk({ cashOut: 500, expenses: 50 })), 350);
+});
+
+test('50% sold at 1.2 markup', () => {
+  const s = mk({ buyIn: 1000, cashOut: 10000, staking: { sold: 50, markup: 1.2 } });
+  // Backers paid 600, get 5000. You: 10000 - 5000 - (1000 - 600) = 4600.
+  assert.equal(owedToBackers(s), 5000);
+  assert.equal(profit(s), 4600);
+  // Bust: you only lose your own 400.
+  assert.equal(profit({ ...s, cashOut: 0 }), -400);
+});
+
+test('totals ROI uses your own money', () => {
+  const s = mk({ buyIn: 1000, cashOut: 0, staking: { sold: 50, markup: 1 } });
+  const t = totals([s]);
+  assert.equal(t.invested, 500);
+  assert.equal(t.roi, -100);
+});
+
+test('breakdown groups by venue, case-insensitive, skips blanks and live sessions', () => {
+  const list = [
+    mk({ id: 'a', venue: 'Estoril', cashOut: 300 }),
+    mk({ id: 'b', venue: 'estoril', cashOut: 0 }),
+    mk({ id: 'c', venue: 'Lisboa', cashOut: 0 }),
+    mk({ id: 'd', venue: '', cashOut: 900 }),
+    mk({ id: 'e', venue: 'Lisboa', endedAt: undefined }),
+  ];
+  const b = breakdown(list, 'venue');
+  assert.deepEqual(b.map((x) => [x.key, x.sessions, x.profit]), [['Estoril', 2, 100], ['Lisboa', 1, -100]]);
+  assert.equal(b[0].hours, 8);
+});
+
+test('parseDay reads dd/mm[/yyyy] and refuses the future', () => {
+  const now = new Date(2026, 9, 17, 12).getTime();
+  assert.equal(parseDay('3/10', now), new Date(2026, 9, 3).getTime());
+  assert.equal(parseDay('03-10-25', now), new Date(2025, 9, 3).getTime());
+  assert.equal(parseDay('20/12', now), new Date(2025, 11, 20).getTime());
+  assert.equal(parseDay('31/02/2026', now), null);
+  assert.equal(parseDay('1/1/2030', now), null);
+  assert.equal(parseDay('ontem', now), null);
+});
+
+test('parseDay with future: a past day without a year is next year', () => {
+  const now = new Date(2026, 9, 17, 12).getTime();
+  assert.equal(parseDay('3/1', now, true), new Date(2027, 0, 3).getTime());
+  assert.equal(parseDay('20/12', now, true), new Date(2026, 11, 20).getTime());
+  assert.equal(parseDay('17/10', now, true), new Date(2026, 9, 17).getTime());
+  assert.equal(parseDay('3/1/2026', now, true), new Date(2026, 0, 3).getTime());
+});
+
+test('money shows cents with two digits in pt-PT', async () => {
+  const { money } = await import('../../poker/format');
+  assert.equal(money(370.5, '€'), '370,50€');
+  assert.equal(money(-12.25, '€'), '−12,25€');
+  assert.equal(money(370, '€'), '370€');
+});
+
+test('start time and duration as players type them', async () => {
+  const { parseClock, parseDuration } = await import('../session-math');
+  assert.equal(parseClock('20:30'), 20 * 60 + 30);
+  assert.equal(parseClock('20h30'), 20 * 60 + 30);
+  assert.equal(parseClock('2030'), 20 * 60 + 30);
+  assert.equal(parseClock('9'), 9 * 60);
+  assert.equal(parseClock('25:00'), null);
+  assert.equal(parseClock('abc'), null);
+  assert.equal(parseDuration('4h30'), 270);
+  assert.equal(parseDuration('4:30'), 270);
+  assert.equal(parseDuration('4,5'), 270);
+  assert.equal(parseDuration('4'), 240);
+  assert.equal(parseDuration('0'), null);
+  assert.equal(parseDuration('60'), null);
+});
+
+test('lastTimeAt: a name played before brings its buy-in, blinds and starting stack', () => {
+  const old = mk({ name: 'Deepstack', buyIn: 250, sb: 200, bb: 400, ante: 400, stack: 1, stackLog: [{ t: 0, stack: 40000 }] });
+  const form = mk({ id: 'n', name: '', venue: '', buyIn: 100, endedAt: undefined });
+  assert.deepEqual(lastTimeAt('Deepstack', form, [old]), { name: 'Deepstack', venue: 'Estoril', sb: 200, bb: 400, ante: 400, anteType: 'bb', buyIn: 250, stack: 40000 });
+  // Another currency: blinds only; a venue already typed stays.
+  const usd = lastTimeAt('Deepstack', { ...form, currency: '$', venue: 'Vegas' }, [old]);
+  assert.equal(usd.buyIn, undefined);
+  assert.equal(usd.venue, 'Vegas');
+  // Cash: the stack is the buy-in; another kind or a new name only sets the name.
+  const cash = mk({ kind: 'cash', name: 'NLH 1/2', buyIn: 300, sb: 1, bb: 2 });
+  assert.equal(lastTimeAt('NLH 1/2', { ...form, kind: 'cash' }, [cash]).stack, 300);
+  assert.deepEqual(lastTimeAt('NLH 1/2', form, [cash]), { name: 'NLH 1/2' });
+});
+
+test('lastTimeAt: the level clock and the blind structure come along, the field and payouts do not', () => {
+  const structure = [{ sb: 100, bb: 200, ante: 200, minutes: 40 }];
+  const old = mk({ name: 'Deepstack', levelMinutes: 40, tourney: { structure, structureName: 'Deep 40', startStack: 40000, entries: 180, left: 12, payouts: [5000] } });
+  const form = mk({ id: 'n', name: '', endedAt: undefined });
+  const got = lastTimeAt('Deepstack', form, [old]);
+  assert.equal(got.levelMinutes, 40);
+  assert.deepEqual(got.tourney, { structure, structureName: 'Deep 40', startStack: 40000 });
+  // Cash keeps the level clock (if any) but never a tournament structure.
+  const cash = mk({ kind: 'cash', name: 'NLH 1/2', levelMinutes: 30, tourney: { structure } });
+  const c = lastTimeAt('NLH 1/2', { ...form, kind: 'cash' }, [cash]);
+  assert.equal(c.levelMinutes, 30);
+  assert.equal(c.tourney, undefined);
+});
+
+test('lastPlayed: a new past session starts as the last one played in that currency', () => {
+  const older = mk({ id: 'a', kind: 'cash', name: 'NLH 1/2', venue: 'Póvoa', buyIn: 200, sb: 1, bb: 2, startedAt: 1000 });
+  const last = mk({ id: 'b', kind: 'cash', name: 'NLH 2/5', venue: 'Estoril', buyIn: 500, sb: 2, bb: 5, startedAt: 2000 });
+  const mtt = mk({ id: 'c', name: 'Deepstack', buyIn: 250, stack: 1, stackLog: [{ t: 0, stack: 40000 }], startedAt: 1500 });
+  const live = mk({ id: 'd', kind: 'cash', name: 'NLH 5/10', startedAt: 3000, endedAt: undefined });
+  const usd = mk({ id: 'e', kind: 'cash', name: 'NLH 5/10', currency: '$', startedAt: 4000 });
+  const all = [older, mtt, last, live, usd];
+  // The newest finished one in that currency, whatever the order of the list.
+  assert.deepEqual(lastPlayed('€', all), { kind: 'cash', name: 'NLH 2/5', venue: 'Estoril', format: undefined, sb: 2, bb: 5, ante: last.ante, anteType: last.anteType, buyIn: 500, stack: 500 });
+  // Switching to tournaments: the last tournament, with its starting stack.
+  assert.equal(lastPlayed('€', all, 'mtt').stack, 40000);
+  assert.equal(lastPlayed('€', all, 'mtt').name, 'Deepstack');
+  assert.deepEqual(lastPlayed('£', all), {});
+});
+
+test("parseDay 'near': a trip day without a year is the closest one, before or after today", () => {
+  const now = new Date(2026, 9, 18).getTime();
+  assert.equal(parseDay('15/9', now, 'near'), new Date(2026, 8, 15).getTime(), 'last month, logged after the trip');
+  assert.equal(parseDay('20/11', now, 'near'), new Date(2026, 10, 20).getTime(), 'next month, planned');
+  assert.equal(parseDay('10/1', now, 'near'), new Date(2027, 0, 10).getTime(), 'January is closer next year');
+  assert.equal(parseDay('15/9', now, true), new Date(2027, 8, 15).getTime(), 'a festival plan stays in the future');
+});
+
+// Meaningful in any time zone; around DST it bites in Europe/Lisbon or America/Los_Angeles
+// (checked by hand with TZ=Europe/Lisbon npm test, and TZ=America/Los_Angeles).
+test('atClock keeps the typed time on the days the clocks change', () => {
+  for (const [y, m, d] of [[2026, 9, 25], [2026, 10, 1], [2026, 2, 29], [2026, 2, 8], [2026, 5, 15]]) {
+    const at = new Date(atClock(new Date(y, m, d).getTime(), 20 * 60 + 30));
+    assert.deepEqual([at.getFullYear(), at.getMonth(), at.getDate(), at.getHours(), at.getMinutes()], [y, m, d, 20, 30]);
+  }
+  const late = new Date(atClock(new Date(2026, 9, 25).getTime(), 23 * 60));
+  assert.deepEqual([late.getDate(), late.getHours()], [25, 23]);
+});
+
+test('addDays steps calendar days, not 24-hour blocks', () => {
+  // Clock at 26 Oct: the chip two days back is Saturday the 24th, its midnight.
+  const sat = new Date(addDays(new Date(2026, 9, 26).getTime(), -2));
+  assert.deepEqual([sat.getDate(), sat.getHours()], [24, 0]);
+  // A week back from 31 Mar shows every day, Sunday the 29th too.
+  const days = [0, 1, 2, 3, 4, 5, 6].map((k) => new Date(addDays(new Date(2026, 2, 31).getTime(), -k)).getDate());
+  assert.deepEqual(days, [31, 30, 29, 28, 27, 26, 25]);
+  const evening = new Date(addDays(new Date(2026, 2, 28, 21).getTime(), 1));
+  assert.deepEqual([evening.getDate(), evening.getHours()], [29, 21]);
+});
+
+test('ROI is the result over your share of the buy-ins, the same on every screen', () => {
+  // Half sold at 1.2 with a tip and a taxi: tips and expenses are already out of the result, not buy-ins.
+  const staked = mk({ id: 'a', buyIn: 1000, entries: 2, cashOut: 5000, staking: { sold: 50, markup: 1.2 }, tips: 50, expenses: 100 });
+  const plain = [1, 2, 3, 4].map((i) => mk({ id: 'p' + i, buyIn: 100, cashOut: i === 1 ? 300 : 0 }));
+  const list = [staked, ...plain];
+  assert.equal(ownBuyIns(staked), 1000);
+  const own = 1000 + 4 * 100;
+  const net = list.reduce((a, s) => a + profit(s), 0);
+  const roi = (net / own) * 100;
+  const tot = totals(list);
+  assert.equal(tot.invested, own);
+  assert.equal(tot.roi, roi);
+  assert.equal(breakdown(list, () => 'x')[0].roi, roi);
+  assert.equal(summarize(list, 'mine').roi, roi);
+  assert.equal(mttStats(list)!.roi, roi);
+  // The home-currency card and the year in review divide by the same thing.
+  assert.equal(homeTotals({ sessions: list, transfers: [], bankrolls: [] }, '€', {}, {}).roi, roi);
+  const row = yearReview(yearOf(0), list, []).stakes.find((x) => x.key === 'mtt|100')!;
+  assert.equal(row.roi, plain.reduce((a, s) => a + profit(s), 0) / 400);
+  assert.equal(yearReview(yearOf(0), [staked, { ...staked, id: 'b' }], []).stakes[0].roi, (2 * profit(staked)) / 2000);
+});
+
+test('ROI with a tournament sold 100%: its markup counts as result, nothing as buy-ins', () => {
+  // The staking convention: markup is profit, and a fully sold session adds no buy-ins of yours.
+  const sold = mk({ id: 's', buyIn: 1000, cashOut: 0, staking: { sold: 100, markup: 1.1 } });
+  assert.equal(ownBuyIns(sold), 0);
+  assert.equal(profit(sold), 100);
+  const plain = mk({ id: 'p', buyIn: 100, cashOut: 0 });
+  assert.equal(totals([sold, plain]).roi, 0);
+  // Only fully sold tournaments: no ROI to show, never 0% or a division by zero.
+  assert.equal(totals([sold]).roi, null);
+  assert.equal(summarize([sold], 'mine').roi, null);
+  assert.equal(mttStats([1, 2, 3, 4, 5].map((i) => ({ ...sold, id: 's' + i })))!.roi, null);
+});

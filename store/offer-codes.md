@@ -1,0 +1,39 @@
+# Free Pro codes for trusted players (Bahamas, Dec 2026)
+
+Free Pro only, never tied to cash or results. 5–10 players and stable managers. Codes go out by hand (DM / in person); never post them publicly.
+
+## App Store: subscription offer codes (store thread does this with the step 15 API key)
+- Subscription `sweatbook_pro_annual` → Offer codes → one-time-use codes.
+- Offer: **Free, 3 months**, new and existing (lapsed) subscribers, max 1 redemption per customer.
+- Batch: 10 codes, expiry 31 Jan 2027. Name `bahamas-2026`.
+- API: `POST /v1/subscriptionOfferCodes` (offer, free, 3 months, eligibilities) then `POST /v1/subscriptionOfferCodeOneTimeUseCodes` (numberOfCodes 10, expirationDate). The codes CSV is downloaded from the response endpoint and saved to `/mnt/project-files/launch/codigos-pro/` (private, not in git).
+- Manual fallback in App Store Connect: Apps → Sweatbook → Subscriptions → Sweatbook Pro → Pro anual → Subscription Prices → Offer Codes → + → Free, 3 months → Create → Generate one-time use codes → 10 → Download.
+- Redeem: App Store → account → Redeem gift card or code, or the link `https://apps.apple.com/redeem?ctx=offercodes&id=<APP_ID>&code=<CODE>`. RevenueCat picks it up as a normal subscription with a free offer period.
+- Limit: Apple allows up to 1,000,000 codes per quarter; one-time codes need the app to be live (approved) to redeem.
+
+## Google Play: promo codes (Play Console only, no API: Rui, checklist step 34)
+- Play Console → Sweatbook → Monetize with Play → Products → Promo codes (or "Promotions") → Create promotion → Type **Subscription**, product `sweatbook_pro_annual`, free trial period **3 months** (custom free-trial promo), quantity 10, end date 31 Jan 2027 → Create → Download CSV → save to `Projetos-Claude/sweatbook-chaves/codigos-pro-android.csv`.
+- Redeem: Play Store → profile → Payments & subscriptions → Redeem code, or `https://play.google.com/redeem?code=<CODE>`.
+- Promo codes only work once the app is published on a track the user can install from (for a closed test, the person must also be a tester).
+
+## Rules
+- Never in exchange for money, rakeback, action or results; never mention it in public posts.
+- Keep a list of who got which code (name, store, date) in the private CSV, so a leaked code can be traced.
+
+## Beta testers' codes (programa-beta.md)
+Por decidir pelo Rui: whether testers get Pro codes at all, and for how long. Nothing is created or promised until he decides. For reference only: Apple subscription offer codes allow free durations up to 1 year; on Google Play, check the longest free period the promo-code form allows on the day. The 3-day trial on the annual plan (Rui, 17 Oct) doesn't affect codes.
+
+## Batches (17 Oct)
+| Batch | For | Apple (created by the store thread via the ASC API) | Google Play (Rui, step 34) |
+|---|---|---|---|
+| Bahamas | 5 to 10 trusted players | 10 codes, 3 months free on `sweatbook_pro_annual` | 10 codes, 3 months |
+| Creators | about 20 creators (marketing/criadores.md, strategy §6.2 item 5) | 20 codes, 3 months free | 20 codes, 3 months |
+| Beta testers | por decidir pelo Rui | none until Rui decides | none until Rui decides |
+
+All batches are free Pro only, never tied to money or a contest, and nobody is contacted until Rui decides. One code per person; keep the CSVs in `Projetos-Claude/sweatbook-chaves/`, never in the repo or the chat.
+
+## Invite discount (Rui, 17 Oct; #314)
+The invite reward is now 50% off the first month of Pro for both players, usable for 72 hours (max 10 friends a year), instead of 7 Pro days. Not free Pro, so it is separate from the batches above.
+- **App Store** (store thread, step 15 API key): `sweatbook_pro_monthly` → Offer codes → one-time-use codes, **pay as you go, 50% off for 1 month**, eligibility **New subscribers only** (Security P2: the codes are transferable, so never existing or lapsed subscribers). Generate a large pool (e.g. 1,000; refill when it runs low) and save the CSV to `Projetos-Claude/sweatbook-chaves/codigos-convite.csv`. Rui imports it into Supabase table `invite_offer_codes` (column `code`; checklist step 48). The server hands one code to each reward.
+- **Google Play** (store thread, step 22 service account, Android Publisher API `monetization.subscriptions.basePlans.offers`): on the monthly base plan, a **developer-determined** offer with tag `sweatbook-invite-50`, one phase of 50% off for 1 month. The app applies it only when the server says the player has an open reward.
+- `EXPO_PUBLIC_APPLE_APP_ID` (the numeric App Store app ID, after step 14) in EAS production lets the redeem page pre-fill the code.

@@ -1,0 +1,179 @@
+// Things to send when there's signal. Card rooms often have none: an event, a
+// pending invite or any other small request is kept on the phone and sent on
+// its own when the connection is back, with growing pauses between tries.
+//
+// Pure core (storage, clock and senders are passed in) so it can be tested.
+
+export interface Job {
+  id: string;
+  kind: string;
+  /** Jobs with the same kind and key replace each other (only the latest matters). */
+  key?: string;
+  payload: unknown;
+  tries: number;
+  nextAt: number;
+  createdAt: number;
+}
+
+/** done: sent. retry: try again later. drop: will never work, forget it. */
+export type Outcome = 'done' | 'retry' | 'drop';
+export type Sender = (payload: unknown) => Promise<Outcome>;
+
+export interface OutboxStorage {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+}
+
+export const MAX_JOBS = 300;
+export const MAX_TRIES = 25;
+export const MAX_AGE_MS = 14 * 86400000;
+
+export function backoff(tries: number): number {
+  return Math.min(10 * 60000, 5000 * 2 ** Math.max(0, tries - 1));
+}
+
+/** A kept delete past MAX_TRIES: the server has been failing for hours, so every 6 h instead of every 10 min (a forced drain still tries at once). */
+export function keptBackoff(tries: number): number {
+  return tries > MAX_TRIES ? 6 * 3600_000 : backoff(tries);
+}
+
+/**
+ * `quiet`: kinds that go out like the rest but are not the player's work (analytics), so size() and listeners leave them out.
+ * `keep`: deletes the player was promised ("Delete all my data", a removed link): never given up on after
+ * MAX_TRIES or MAX_AGE_MS, never pushed out by MAX_JOBS, and kept while their sender isn't registered yet.
+ * Only the server's own answer (done or drop) ends them.
+ */
+export function createOutbox(kv: OutboxStorage, senders: Record<string, Sender>, opts: { key?: string; now?: () => number; quiet?: string[]; keep?: string[] } = {}) {
+  const KEY = opts.key ?? 'rl.outbox.v1';
+  const now = opts.now ?? Date.now;
+  let jobs: Job[] | null = null;
+  let loading: Promise<Job[]> | null = null;
+  let draining: Promise<void> | null = null;
+  const listeners = new Set<(n: number) => void>();
+  const quiet = new Set(opts.quiet ?? []);
+  const keep = new Set(opts.keep ?? []);
+  const count = (list: Job[] | null) => (list ?? []).filter((j) => !quiet.has(j.kind)).length;
+  let seq = 0;
+
+  const load = (): Promise<Job[]> => {
+    if (jobs) return Promise.resolve(jobs);
+    loading ??= kv
+      .getItem(KEY)
+      .then((raw) => {
+        const v = raw ? (JSON.parse(raw) as unknown) : [];
+        return Array.isArray(v) ? (v as Job[]) : [];
+      })
+      .catch(() => [] as Job[])
+      .then((list) => {
+        // Anything enqueued while we were reading goes after what was on disk.
+        jobs = [...list, ...(jobs ?? [])];
+        return jobs;
+      });
+    return loading;
+  };
+
+  // Strict: the caller needs to know the job is on disk (a promised delete), so a failed write throws.
+  const save = async (strict = false) => {
+    for (const l of listeners) l(count(jobs));
+    const w = kv.setItem(KEY, JSON.stringify(jobs ?? []));
+    await (strict ? w : w.catch(() => {}));
+  };
+
+  const api = {
+    async enqueue(kind: string, payload: unknown, key?: string) {
+      const list = await load();
+      // Put back as it was if the write fails: a job the caller was told isn't queued must not go out from memory.
+      const before = [...list];
+      const t = now();
+      const job: Job = { id: `${t.toString(36)}${(seq++).toString(36)}`, kind, key, payload, tries: 0, nextAt: t, createdAt: t };
+      const i = key === undefined ? -1 : list.findIndex((j) => j.kind === kind && j.key === key);
+      if (i >= 0) list[i] = job;
+      else list.push(job);
+      // Oldest go first, but never a promised delete.
+      for (let j = 0; list.length > MAX_JOBS && j < list.length; ) {
+        if (keep.has(list[j].kind)) j++;
+        else list.splice(j, 1);
+      }
+      // A write that failed throws: queue() ignores it, queueOrThrow() passes it on.
+      try {
+        await save(true);
+      } catch (e) {
+        list.splice(0, list.length, ...before);
+        for (const l of listeners) l(count(jobs));
+        throw e;
+      }
+    },
+
+    /** Forgets a job that hasn't gone out yet. True when there was one. */
+    async cancel(kind: string, key: string): Promise<boolean> {
+      const list = await load();
+      const i = list.findIndex((j) => j.kind === kind && j.key === key);
+      if (i < 0) return false;
+      list.splice(i, 1);
+      await save();
+      return true;
+    },
+
+    /** Sends every job that is due, one at a time. Stops at the first network failure. */
+    drain(force = false): Promise<void> {
+      draining ??= (async () => {
+        const list = await load();
+        let changed = false;
+        for (const job of [...list]) {
+          const t = now();
+          if (keep.has(job.kind) && !senders[job.kind]) continue;
+          if (!keep.has(job.kind) && (t - job.createdAt > MAX_AGE_MS || job.tries >= MAX_TRIES || !senders[job.kind])) {
+            list.splice(list.indexOf(job), 1);
+            changed = true;
+            continue;
+          }
+          if (!force && job.nextAt > t) continue;
+          let out: Outcome;
+          try {
+            out = await senders[job.kind](job.payload);
+          } catch {
+            out = 'retry';
+          }
+          const at = list.indexOf(job);
+          if (out === 'retry') {
+            if (at >= 0) list[at] = { ...job, tries: job.tries + 1, nextAt: now() + (keep.has(job.kind) ? keptBackoff : backoff)(job.tries + 1) };
+            changed = true;
+            break; // the network is probably down; don't hammer it with the rest
+          }
+          if (at >= 0) list.splice(at, 1);
+          changed = true;
+        }
+        if (changed) await save();
+      })().finally(() => {
+        draining = null;
+      });
+      return draining;
+    },
+
+    /** Still waiting to go out (not sent, not given up on). */
+    async has(kind: string, key: string): Promise<boolean> {
+      return (await load()).some((j) => j.kind === kind && j.key === key);
+    },
+
+    async size(): Promise<number> {
+      return count(await load());
+    },
+
+    /** Earliest time a job is due, or null when empty. */
+    async nextDue(): Promise<number | null> {
+      // A kept job whose sender isn't registered yet waits for the next forced drain, not a timer.
+      const list = (await load()).filter((j) => senders[j.kind]);
+      return list.length ? Math.min(...list.map((j) => j.nextAt)) : null;
+    },
+
+    subscribe(l: (n: number) => void): () => void {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+  };
+  return api;
+}
+
+export type Outbox = ReturnType<typeof createOutbox>;

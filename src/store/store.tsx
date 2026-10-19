@@ -1,0 +1,765 @@
+// Local-first store: everything lives on the device (AsyncStorage) so the app
+// works with no account and no signal in a card room. Sharing is the only
+// thing that touches the network.
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+
+import { useLockScreenUp } from '@/components/AppLock';
+import { t } from '@/i18n';
+import type { Statement } from '@/lib/backing-link';
+import { useRates } from '@/lib/fx';
+import { queueBackerPageDelete } from '@/lib/backer-page';
+import { queueLiveDelete } from '@/lib/live-cleanup';
+import { withLevelClock } from '@/lib/lock-screen/live-state';
+import { notice } from '@/lib/notice';
+import { unshared } from '@/lib/gone-shares';
+import { forgetHandShare, restoredGoneShares } from '@/lib/share-queue';
+import type { Festival } from '@/poker/festivals';
+import { setMoneyMasked } from '@/poker/format';
+import type { Hand } from '@/poker/types';
+
+import { mergeById, restoredSettings, type BackupData } from './backup';
+import { bankrollOf, bankrollsBack, dropUnusedAuto, emptyDuplicates, ensureBankrolls, foldSeparated, refold, rehome, rehomeDeleted, separateBankrolls, sortBankrolls } from './bankroll-math';
+import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } from './festival-plan';
+import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
+import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
+import { KEYS, SPECS, loadAll as readAll } from './boot';
+import { alive, bankrollMark, joinDeleted, revive, type Deleted, type DeletedList } from './deleted-math';
+import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
+import { createWriter, type KV } from './persist';
+import { keepCuts, withCuts } from './staking';
+import { mergeSwaps, withSwaps, type Swap } from './swaps';
+import { currentSwaps, getAllSwaps, importSwaps, useSwaps } from './swaps-store';
+import type { SwapGroup } from './swap-groups';
+import { currentGroups, getAllGroups, importGroups, useGroups } from './swap-groups-store';
+import { DEFAULT_SETTINGS, type BackedPlayer, type Backer, type BackerPayment, type Bankroll, type PlayerNote, type Session, type Settings, type StakePackage, type Transfer, type Trip } from './types';
+
+export function uid(prefix = ''): string {
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+interface StoreValue {
+  ready: boolean;
+  hands: Hand[];
+  sessions: Session[];
+  players: PlayerNote[];
+  /** Oldest first. Never empty once ready. */
+  bankrolls: Bankroll[];
+  transfers: Transfer[];
+  backers: Backer[];
+  packages: StakePackage[];
+  payments: BackerPayment[];
+  /** Newest first. */
+  trips: Trip[];
+  /** Players you back, each with the last statement they sent you. */
+  backing: BackedPlayer[];
+  /** Values set aside at launch because they couldn't be read: [key, raw]. In the backup, and in Settings › Enviar ao suporte. */
+  quarantine: [string, string][];
+  settings: Settings;
+  activeSession: Session | null;
+  /** Where a new session goes: the last one picked, else the first in the player's currency. */
+  defaultBankroll: Bankroll;
+  saveHand: (h: Hand) => void;
+  deleteHand: (id: string) => void;
+  saveSession: (s: Session) => void;
+  deleteSession: (id: string) => void;
+  savePlayer: (p: PlayerNote) => void;
+  deletePlayer: (id: string) => void;
+  saveBankroll: (b: Bankroll) => void;
+  /** The onboarding's currency pick: the first-launch bankroll, still empty, is made again in that currency (a bankroll's currency never changes). */
+  firstBankrollIn: (currency: string) => void;
+  /**
+   * Deletes a bankroll; its sessions and transfers move to another bankroll
+   * in the same currency. False (nothing changed) when there is none to take
+   * them, or it is the last bankroll.
+   */
+  deleteBankroll: (id: string) => boolean;
+  saveTransfer: (x: Transfer) => void;
+  deleteTransfer: (id: string) => void;
+  saveBacker: (b: Backer) => void;
+  /** Removes the backer, their packages and payments; their stakes in sessions stay, unnamed. */
+  deleteBacker: (id: string) => void;
+  savePackage: (p: StakePackage) => void;
+  deletePackage: (id: string) => void;
+  savePayment: (p: BackerPayment) => void;
+  deletePayment: (id: string) => void;
+  saveTrip: (x: Trip) => void;
+  deleteTrip: (id: string) => void;
+  /** Saves a statement a player sent you; an older one never replaces a newer one. */
+  saveBacked: (st: Statement) => 'new' | 'updated' | 'older';
+  deleteBacked: (id: string) => void;
+  setSettings: (patch: Partial<Settings>) => void;
+  draft: Hand | null;
+  setDraft: (h: Hand | null) => void;
+  /** Swaps live in their own store (swaps-store.ts); read here so every backup includes them. */
+  readonly swaps: Swap[];
+  readonly swapGroups: SwapGroup[];
+  /** Festival plans and the player's own festivals: their own stores, read here for the backup. */
+  readonly festivalPlans: Record<string, FestivalPlan>;
+  readonly ownFestivals: Festival[];
+  readonly weekly: WeeklyTournament[];
+  /** What was deleted (deleted.ts), so a second phone's copy doesn't bring it back. */
+  readonly deleted: Deleted;
+  /** Merge a backup in: newer copy of each item wins; what the backup deleted goes here too unless edited here since. */
+  /** sync: another phone's copy joined in before an upload (its deletes apply here); otherwise a restore. */
+  importData: (b: BackupData, opts?: { sync?: boolean }) => { hands: number; sessions: number; players: number; backers: number; bankrolls: number; transfers: number; trips: number; packages: number; payments: number; backing: number; swaps: number; removed: number };
+  /** Settings › Delete all my data: public copies are queued for deletion, then the phone is emptied. */
+  eraseAll: () => Promise<void>;
+}
+
+const Ctx = createContext<StoreValue | null>(null);
+
+let warned = false;
+/** Tell the player once per launch: a save that silently fails is lost work. */
+function storageFailed(e: unknown) {
+  console.warn('[store] write failed', e);
+  if (warned) return;
+  warned = true;
+  notice(
+    t('Não foi possível guardar'),
+    t('O telemóvel recusou gravar os dados (pouco espaço livre?). Tenta libertar espaço; a app volta a tentar sozinha.'),
+  );
+}
+
+function persist(key: string, value: unknown) {
+  AsyncStorage.setItem(key, JSON.stringify(value)).catch(storageFailed);
+}
+
+const kv = AsyncStorage as unknown as KV;
+
+const loadAll = () => readAll(kv);
+
+/** Damaged values were set aside at launch: say so once, so nothing vanishes silently. */
+function quarantined(n: number) {
+  notice(
+    t('Alguns dados estavam danificados'),
+    (n === 1 ? t('1 registo não pôde ser lido. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.') : t('{n} registos não puderam ser lidos. Guardámos uma cópia à parte neste telemóvel e o resto da app funciona normalmente. Se faltar alguma coisa, usa «Recuperar» na cópia na nuvem, em Definições.', { n: n })),
+  );
+}
+
+// Start reading as soon as the bundle runs, in parallel with fonts and the
+// first render, instead of after them.
+let boot: ReturnType<typeof loadAll> | null = loadAll();
+// The stores kept outside this one (festival plans, own festivals, weekly tournaments, swaps)
+// load lazily; launch waits for them too, so a backup or a restore merge never sees them empty.
+const loadSideStores = () => Promise.all([loadPlans(), loadOwnFestivals(), loadWeekly(), loadDeleted(), getAllSwaps(), getAllGroups()]).catch(() => {});
+let sideBoot: Promise<unknown> | null = loadSideStores();
+
+/** 0 none, 1 empty draft, 2 a draft with something in it (what the hands list shows). */
+function draftKeyOf(h: Hand | null): number {
+  if (!h) return 0;
+  return h.actions.length || h.players[h.hero]?.cards?.length ? 2 : 1;
+}
+
+/** A session as stored: without the derived makeup cut. */
+function bare(s: Session): Session {
+  if (s.makeupCut === undefined && s.swapNet === undefined) return s;
+  const { makeupCut: _, swapNet: __, ...rest } = s;
+  return rest;
+}
+
+function upsert<T extends { id: string }>(list: T[], item: T): T[] {
+  const i = list.findIndex((x) => x.id === item.id);
+  if (i < 0) return [item, ...list];
+  const copy = [...list];
+  copy[i] = item;
+  return copy;
+}
+
+export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [bootError, setBootError] = useState<Error | null>(null);
+  const [hands, setHands] = useState<Hand[]>([]);
+  const [rawSessions, setSessions] = useState<Session[]>([]);
+  const [players, setPlayers] = useState<PlayerNote[]>([]);
+  const [bankrolls, setBankrolls] = useState<Bankroll[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [backers, setBackers] = useState<Backer[]>([]);
+  const [packages, setPackages] = useState<StakePackage[]>([]);
+  const [payments, setPayments] = useState<BackerPayment[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [backing, setBacking] = useState<BackedPlayer[]>([]);
+  const [quarantine, setQuarantine] = useState<[string, string][]>([]);
+  const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
+  // What the launch found set aside or brought back, said once the app lock is down: a native alert would sit on top of it.
+  const bootNews = useRef<{ quarantined: number; recovered: number } | null>(null);
+  const [newsAt, setNewsAt] = useState(0);
+  const lockUp = useLockScreenUp();
+  useEffect(() => {
+    const n = bootNews.current;
+    if (lockUp || !n) return;
+    bootNews.current = null;
+    if (n.quarantined) quarantined(n.quarantined);
+    else if (n.recovered) notice(t('Dados recuperados'), (n.recovered === 1 ? t('1 registo que estava guardado à parte voltou a abrir e está de volta na app.') : t('{n} registos que estavam guardados à parte voltaram a abrir e estão de volta na app.', { n: n.recovered })));
+  }, [lockUp, newsAt]);
+  // What screens see: each session with its makeup package cut and what swaps add or take
+  // (derived, never stored; swaps can be turned off).
+  const { swaps } = useSwaps();
+  const { groups } = useGroups();
+  const includeSwaps = settings.includeSwaps !== false;
+  // Rates for makeup packages with sessions in more than one currency (cut worked out in the package's).
+  const fxSince = useMemo(() => {
+    const other = packages.length ? rawSessions.filter((s) => s.stakes?.some((x) => x.packageId) && s.currency && s.currency !== settings.currency) : [];
+    return other.length ? Math.min(...other.map((s) => s.startedAt)) : null;
+  }, [rawSessions, packages.length, settings.currency]);
+  const rates = useRates(fxSince);
+  const sessions = useMemo(
+    () => withSwaps(withCuts(rawSessions, packages, { table: rates, manual: settings.fxManual }), includeSwaps ? swaps : [], includeSwaps ? groups : []),
+    [rawSessions, packages, swaps, groups, includeSwaps, rates, settings.fxManual],
+  );
+  // Privacy mode applies to every amount on screen, set before anything renders with it.
+  setMoneyMasked(!!settings.hideAmounts);
+  // The draft changes on every tap of hand entry. Keeping it in a ref (and
+  // re-rendering only when 'is there a draft worth resuming' flips) stops
+  // every screen behind the entry modal from re-rendering on each tap.
+  const draftRef = useRef<Hand | null>(null);
+  const [draftKey, setDraftKey] = useState(0);
+  // Hand entry calls this on every tap; write the draft at most every 400 ms
+  // (and at once when the app leaves the screen) instead of on each tap.
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushDraft = useCallback(() => {
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = null;
+    const h = draftRef.current;
+    if (h) persist(KEYS.draft, h);
+    else AsyncStorage.removeItem(KEYS.draft).catch(() => {});
+  }, []);
+  const writers = useRef<{
+    hands: ReturnType<typeof createWriter<Hand>>;
+    sessions: ReturnType<typeof createWriter<Session>>;
+    players: ReturnType<typeof createWriter<PlayerNote>>;
+    bankrolls: ReturnType<typeof createWriter<Bankroll>>;
+    transfers: ReturnType<typeof createWriter<Transfer>>;
+    backers: ReturnType<typeof createWriter<Backer>>;
+    packages: ReturnType<typeof createWriter<StakePackage>>;
+    payments: ReturnType<typeof createWriter<BackerPayment>>;
+    trips: ReturnType<typeof createWriter<Trip>>;
+    backing: ReturnType<typeof createWriter<BackedPlayer>>;
+  } | null>(null);
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([boot ?? loadAll(), sideBoot ?? loadSideStores()]).then(([d]) => {
+      boot = null;
+      sideBoot = null;
+      if (!alive) return;
+      if (d.quarantined) console.warn('[store] values moved to quarantine', d.quarantined);
+      if (d.quarantined || d.recovered) {
+        bootNews.current = { quarantined: d.quarantined, recovered: d.recovered };
+        setNewsAt(Date.now());
+      }
+      if (d.unreadable) console.warn('[store] unreadable values left in place', d.unreadable);
+      if (__DEV__) console.log(`[store] loaded ${d.hands.items.length} hands in ${d.ms} ms`);
+      const w = {
+        hands: createWriter(kv, SPECS.hands, d.hands.persisted, storageFailed),
+        sessions: createWriter(kv, SPECS.sessions, d.sessions.persisted, storageFailed),
+        players: createWriter(kv, SPECS.players, d.players.persisted, storageFailed),
+        bankrolls: createWriter(kv, SPECS.bankrolls, d.bankrolls.persisted, storageFailed),
+        transfers: createWriter(kv, SPECS.transfers, d.transfers.persisted, storageFailed),
+        backers: createWriter(kv, SPECS.backers, d.backers.persisted, storageFailed),
+        packages: createWriter(kv, SPECS.packages, d.packages.persisted, storageFailed),
+        payments: createWriter(kv, SPECS.payments, d.payments.persisted, storageFailed),
+        trips: createWriter(kv, SPECS.trips, d.trips.persisted, storageFailed),
+        backing: createWriter(kv, SPECS.backing, d.backing.persisted, storageFailed),
+      };
+      writers.current = w;
+      // Anything not yet on disk in the current layout (a rebuilt index, a
+      // migration that couldn't finish) gets written on the first flush.
+      if (d.hands.persisted !== d.hands.items) w.hands.schedule(d.hands.items);
+      if (d.sessions.persisted !== d.sessions.items) w.sessions.schedule(d.sessions.items);
+      if (d.players.persisted !== d.players.items) w.players.schedule(d.players.items);
+      if (d.backers.persisted !== d.backers.items) w.backers.schedule(d.backers.items);
+      if (d.packages.persisted !== d.packages.items) w.packages.schedule(d.packages.items);
+      if (d.payments.persisted !== d.payments.items) w.payments.schedule(d.payments.items);
+      if (d.backing.persisted !== d.backing.items) w.backing.schedule(d.backing.items);
+      if (d.transfers.persisted !== d.transfers.items) w.transfers.schedule(d.transfers.items);
+      if (d.trips.persisted !== d.trips.items) w.trips.schedule(d.trips.items);
+      // A separated copy back next to its bankroll in the same currency is that bankroll (bankroll-math.ts).
+      const fold = foldSeparated(d.bankrolls.items);
+      const ss = refold(d.sessions.items, fold.to);
+      const ts = refold(d.transfers.items, fold.to);
+      if (ss !== d.sessions.items) w.sessions.schedule(ss);
+      if (ts !== d.transfers.items) w.transfers.schedule(ts);
+      const st = d.settings.bankrollId && fold.to.has(d.settings.bankrollId) ? { ...d.settings, bankrollId: fold.to.get(d.settings.bankrollId) } : d.settings;
+      // Older data has no bankrolls: one per currency is made on first launch.
+      const made = ensureBankrolls(fold.bankrolls, ss, st.currency);
+      // Empty copies that older syncs between two phones multiplied go. No delete mark: the other phone
+      // may have used one since, and it drops its own empty ones the same way.
+      const extra = emptyDuplicates(made, ss, ts, st.bankrollId);
+      const br = extra.length ? made.filter((b) => !extra.includes(b.id)) : made;
+      if (d.bankrolls.persisted !== br) w.bankrolls.schedule(br);
+      setHands(d.hands.items);
+      setSessions(ss);
+      setPlayers(d.players.items);
+      setBankrolls(br);
+      setTransfers(ts);
+      setBackers(d.backers.items);
+      setPackages(d.packages.items);
+      setPayments(d.payments.items);
+      setTrips(d.trips.items);
+      setBacking(d.backing.items);
+      setQuarantine(d.quarantine);
+      setSettingsState(st);
+      draftRef.current = d.draft;
+      setDraftKey(draftKeyOf(d.draft));
+      loaded.current = true;
+      setReady(true);
+    }).catch((e: unknown) => {
+      // Launch couldn't finish reading: without this the splash would stay up forever. The root
+      // crash screen shows instead (retry, or save a copy of the data); retry reads again.
+      boot = null;
+      if (alive) setBootError(e instanceof Error ? e : new Error(String(e)));
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Writes are coalesced (one per burst of edits); going to the background
+  // writes immediately so a killed app doesn't lose the last hand.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st === 'active') return;
+      if (draftTimer.current) flushDraft(); // only an unsaved change
+      if (!writers.current) return;
+      const w = writers.current;
+      w.hands.flush();
+      w.sessions.flush();
+      w.players.flush();
+      w.bankrolls.flush();
+      w.transfers.flush();
+      w.backers.flush();
+      w.packages.flush();
+      w.payments.flush();
+      w.trips.flush();
+      w.backing.flush();
+    });
+    return () => sub.remove();
+  }, [flushDraft]);
+
+  useEffect(() => {
+    if (loaded.current) writers.current?.hands.schedule(hands);
+  }, [hands]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.sessions.schedule(rawSessions);
+  }, [rawSessions]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.players.schedule(players);
+  }, [players]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.bankrolls.schedule(bankrolls);
+  }, [bankrolls]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.transfers.schedule(transfers);
+  }, [transfers]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.backers.schedule(backers);
+  }, [backers]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.packages.schedule(packages);
+  }, [packages]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.payments.schedule(payments);
+  }, [payments]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.trips.schedule(trips);
+  }, [trips]);
+  useEffect(() => {
+    if (loaded.current) writers.current?.backing.schedule(backing);
+  }, [backing]);
+  useEffect(() => {
+    if (loaded.current) persist(KEYS.settings, settings);
+  }, [settings]);
+  // A session in a new currency (or an import) gets a bankroll to count towards.
+  useEffect(() => {
+    if (!loaded.current) return;
+    setBankrolls((cur) => ensureBankrolls(cur, sessions, settings.currency));
+  }, [sessions, settings.currency]);
+
+  const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
+  // A deleted hand or session takes its public page with it (queued, so it also works
+  // without signal). The queue is keyed, so a second run of the updater changes nothing.
+  const deleteHand = useCallback(
+    (id: string) =>
+      setHands((l) => {
+        const h = l.find((x) => x.id === id);
+        if (h) forgetHandShare(h).catch(() => {});
+        markDeleted('hands', [id]);
+        return l.filter((x) => x.id !== id);
+      }),
+    [],
+  );
+  const saveSession = useCallback(
+    (s: Session) =>
+      setSessions((l) => {
+        const now = Date.now();
+        return upsert(l, { ...withLevelClock(l.find((x) => x.id === s.id), bare(s), now), updatedAt: now });
+      }),
+    [],
+  );
+  const deleteSession = useCallback(
+    (id: string) =>
+      setSessions((l) => {
+        const s = l.find((x) => x.id === id);
+        if (s?.live) queueLiveDelete(s.live);
+        markDeleted('sessions', [id]);
+        return l.filter((x) => x.id !== id);
+      }),
+    [],
+  );
+  const savePlayer = useCallback(
+    (p: PlayerNote) => setPlayers((l) => upsert(l, { ...p, updatedAt: Date.now() })),
+    [],
+  );
+  const deletePlayer = useCallback((id: string) => {
+    markDeleted('players', [id]);
+    setPlayers((l) => l.filter((x) => x.id !== id));
+  }, []);
+  const saveBankroll = useCallback((b: Bankroll) => setBankrolls((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
+  const firstBankrollIn = useCallback((c: string) => {
+    const b = bankrolls[0];
+    if (rawSessions.length || transfers.length || bankrolls.length !== 1 || b.currency === c || b.rules || b.shot) return;
+    const next = ensureBankrolls([], [], c);
+    setBankrolls(next);
+    setSettingsState((st) => (st.bankrollId === b.id ? { ...st, bankrollId: next[0].id } : st));
+  }, [bankrolls, rawSessions, transfers]);
+  const saveTransfer = useCallback((x: Transfer) => setTransfers((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
+  const deleteTransfer = useCallback((id: string) => {
+    markDeleted('transfers', [id]);
+    setTransfers((l) => l.filter((x) => x.id !== id));
+  }, []);
+  const deleteBankroll = useCallback(
+    (id: string) => {
+      const gone = bankrolls.find((b) => b.id === id);
+      if (!gone || bankrolls.length < 2) return false;
+      const to = sortBankrolls(bankrolls).find((b) => b.id !== id && b.currency === gone.currency);
+      const owned = sessions.some((s) => bankrollOf(s, bankrolls)?.id === id) || transfers.some((x) => x.bankrollId === id);
+      if (!to && owned) return false;
+      const now = Date.now();
+      if (to) {
+        setSessions((l) => l.map((s) => (s.bankrollId === id ? { ...s, bankrollId: to.id, updatedAt: now } : s)));
+        setTransfers((l) => l.map((x) => (x.bankrollId === id ? { ...x, bankrollId: to.id, updatedAt: now } : x)));
+      }
+      // By id and currency: the other phone may hold this id in another currency (deleted-math.ts).
+      markDeleted('bankrolls', [bankrollMark(id, gone.currency)]);
+      setBankrolls((l) => l.filter((b) => b.id !== id));
+      setSettingsState((st) => (st.bankrollId === id ? { ...st, bankrollId: to?.id } : st));
+      return true;
+    },
+    [bankrolls, sessions, transfers],
+  );
+  const saveBacker = useCallback((b: Backer) => setBackers((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
+  const deleteBacker = useCallback((id: string) => {
+    // Their fixed link goes too: the page stops opening for them.
+    const page = backers.find((x) => x.id === id)?.page;
+    if (page) queueBackerPageDelete(page);
+    markDeleted('backers', [id]);
+    setBackers((l) => l.filter((x) => x.id !== id));
+    setPackages((l) => {
+      markDeleted('packages', l.filter((x) => x.backerId === id).map((x) => x.id));
+      return l.filter((x) => x.backerId !== id);
+    });
+    setPayments((l) => {
+      markDeleted('payments', l.filter((x) => x.backerId === id).map((x) => x.id));
+      return l.filter((x) => x.backerId !== id);
+    });
+    const now = Date.now();
+    // Their pieces stay as unnamed sales, each with the makeup cut its package gave you.
+    const gone = new Set(packages.filter((p) => p.backerId === id).map((p) => p.id));
+    setSessions((l) => {
+      const kept = keepCuts(l, packages, gone, { table: rates, manual: settings.fxManual });
+      return l.map((s) => {
+        const stakes = kept.get(s.id) ?? s.stakes;
+        return stakes && (kept.has(s.id) || stakes.some((x) => x.backerId === id))
+          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}), ...(x.cutPct !== undefined ? { cutPct: x.cutPct, cumBefore: x.cumBefore } : {}) } : x)), updatedAt: now }
+          : s;
+      });
+    });
+  }, [backers, packages, rates, settings.fxManual]);
+  const savePackage = useCallback((p: StakePackage) => setPackages((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
+  const deletePackage = useCallback((id: string) => {
+    markDeleted('packages', [id]);
+    setPackages((l) => l.filter((x) => x.id !== id));
+    const now = Date.now();
+    // Its sessions keep the stake, as a plain sale to the same backer, with the makeup cut it gave you.
+    setSessions((l) => {
+      const kept = keepCuts(l, packages, new Set([id]), { table: rates, manual: settings.fxManual });
+      return kept.size ? l.map((s) => (kept.has(s.id) ? { ...s, stakes: kept.get(s.id), updatedAt: now } : s)) : l;
+    });
+  }, [packages, rates, settings.fxManual]);
+  const savePayment = useCallback((p: BackerPayment) => setPayments((l) => upsert(l, { ...p, updatedAt: Date.now() })), []);
+  const deletePayment = useCallback((id: string) => {
+    markDeleted('payments', [id]);
+    setPayments((l) => l.filter((x) => x.id !== id));
+  }, []);
+  const saveTrip = useCallback((x: Trip) => setTrips((l) => upsert(l, { ...x, updatedAt: Date.now() })), []);
+  const deleteTrip = useCallback((id: string) => {
+    markDeleted('trips', [id]);
+    setTrips((l) => l.filter((x) => x.id !== id));
+  }, []);
+  const backingRef = useRef(backing);
+  useEffect(() => {
+    backingRef.current = backing;
+  }, [backing]);
+  const saveBacked = useCallback((st: Statement) => {
+    const cur = backingRef.current.find((x) => x.id === st.id);
+    if (cur && cur.statement.at > st.at) return 'older' as const;
+    const now = Date.now();
+    setBacking((l) => upsert(l, { id: st.id, statement: st, createdAt: cur?.createdAt ?? now, updatedAt: now }));
+    return cur ? ('updated' as const) : ('new' as const);
+  }, []);
+  const deleteBacked = useCallback((id: string) => {
+    markDeleted('backing', [id]);
+    setBacking((l) => l.filter((x) => x.id !== id));
+  }, []);
+  const setSettings = useCallback((patch: Partial<Settings>) => setSettingsState((s) => ({ ...s, ...patch })), []);
+  const setDraft = useCallback(
+    (h: Hand | null) => {
+      draftRef.current = h;
+      setDraftKey(draftKeyOf(h));
+      if (!h) flushDraft();
+      else if (!draftTimer.current) draftTimer.current = setTimeout(flushDraft, 400);
+    },
+    [flushDraft],
+  );
+
+  const importData = useCallback(
+    (backup: BackupData, opts?: { sync?: boolean }) => {
+      // What the other phone deleted goes here too, unless it was edited here after (deleted-math.ts).
+      // A restore (a file, «Recuperar com código») brings back what it holds, even if it was deleted
+      // here: those come back with a fresh edit time, so another phone's older delete can't drop them again.
+      const deletedHere = currentDeleted();
+      // A bankroll id held here in another currency never writes over this phone's (bankroll-math.ts).
+      const apart = separateBankrolls(bankrolls, backup);
+      const { backup: b, revived } = opts?.sync ? { backup: apart, revived: [] } : revive(apart, deletedHere, Date.now());
+      forgetDeleted(revived);
+      const del: Deleted = joinDeleted(opts?.sync ? deletedHere : currentDeleted(), b.deleted);
+      importDeleted(b.deleted);
+      // Counted against what's loaded now (for the summary), without what is deleted. The lists themselves
+      // are merged into whatever they hold when React applies the update: a cloud copy can land while the
+      // player is saving a hand or moving a live stack, and that change must not be written over.
+      const count = <T extends { id: string; updatedAt?: number }>(cur: T[], incoming: T[], list: DeletedList) => mergeById(cur, alive(incoming, list, del));
+      const h = count(hands, b.hands, 'hands');
+      const incomingSessions = b.sessions.map(bare);
+      const s = count(rawSessions, incomingSessions, 'sessions');
+      const p = count(players, b.players, 'players');
+      const tx = count(transfers, b.transfers ?? [], 'transfers');
+      const bk = count(backers, b.backers ?? [], 'backers');
+      const tr = count(trips, b.trips ?? [], 'trips');
+      const pk = count(packages, b.packages ?? [], 'packages');
+      const pay = count(payments, b.payments ?? [], 'payments');
+      const bc = count(backing, b.backing ?? [], 'backing');
+      const gone = <T extends { id: string; updatedAt?: number }>(cur: T[], list: DeletedList) => cur.length - alive(cur, list, del).length;
+      const removed = gone(hands, 'hands') + gone(rawSessions, 'sessions') + gone(players, 'players') + gone(transfers, 'transfers') + gone(backers, 'backers') + gone(trips, 'trips') + gone(packages, 'packages') + gone(payments, 'payments') + gone(backing, 'backing') + gone(currentOwnFestivals(), 'ownFestivals') + gone(currentWeekly(), 'weekly');
+      const into = <T extends { id: string; updatedAt?: number }>(incoming: T[], list: DeletedList) => (cur: T[]) => alive(incoming.length ? mergeById(cur, incoming).list : cur, list, del);
+      setHands(into(b.hands, 'hands'));
+      // A backup made before «Apagar tudo» brings back links that the erase deleted: they stop showing as shared.
+      // Only links this phone doesn't already have are checked (a second phone's copy joined in on every upload).
+      const mine = new Map(hands.map((x) => [x.id, x.shareId]));
+      const linked = b.hands.filter((x) => x.shareId && mine.get(x.id) !== x.shareId);
+      if (linked.length)
+        void restoredGoneShares(linked)
+          .then((gone) => gone.size && setHands((l) => l.map((x) => (x.shareId && gone.get(x.id) === x.shareId ? unshared(x) : x))))
+          .catch(() => {});
+      // A separated copy that lands next to its bankroll in the same currency folds into it
+      // (bankroll-math.ts): worked out on what's loaded now, so sessions and transfers move with it.
+      // A bankroll the other phone deleted that still has something of this phone's in it (a deposit made
+      // here before the copy): that moves to another in its currency, or the bankroll stays (bankroll-math.ts).
+      const now = Date.now();
+      const allSessions = [...rawSessions, ...incomingSessions];
+      const allTransfers = [...transfers, ...(b.transfers ?? [])];
+      const rehomed = (cur: Bankroll[]) => {
+        const before = mergeById(cur, b.bankrolls ?? []).list;
+        return rehomeDeleted(before, alive(before, 'bankrolls', del), allSessions, allTransfers, now, b.bankrolls ?? []);
+      };
+      const moved = rehomed(bankrolls).to;
+      const keptNow = (cur: Bankroll[]) => {
+        const r = rehomed(cur);
+        const merged = r.bankrolls;
+        // What comes in counts as use too: imported € rows land in "Principal", which must stay; so does where things just moved.
+        return dropUnusedAuto(merged, b.bankrolls ?? [], { bankrolls: merged, sessions: rehome(allSessions, r.to, now), transfers: rehome(allTransfers, r.to, now) });
+      };
+      const predicted = foldSeparated(keptNow(bankrolls));
+      const { to } = predicted;
+      // For the summary: only the backup's bankrolls that stay (not deleted, folded or dropped as empty copies).
+      const dropNow = emptyDuplicates(predicted.bankrolls, refold(rehome(mergeById(rawSessions, incomingSessions).list, moved, now), to), refold(rehome(mergeById(transfers, b.transfers ?? []).list, moved, now), to), settings.bankrollId);
+      const stays = new Set(predicted.bankrolls.filter((x) => !dropNow.includes(x.id)).map((x) => x.id));
+      setSessions((cur) => refold(rehome(into(incomingSessions, 'sessions')(cur), moved, now), to));
+      setPlayers(into(b.players, 'players'));
+      setBankrolls((cur) => {
+        const use = { sessions: mergeById(rawSessions, incomingSessions).list, transfers: mergeById(transfers, b.transfers ?? []).list };
+        const kept = foldSeparated(keptNow(cur)).bankrolls;
+        // No delete mark for the empty copies: the other phone may have used one since (it drops its own).
+        const extra = emptyDuplicates(kept, refold(rehome(use.sessions, moved, now), to), refold(rehome(use.transfers, moved, now), to), settings.bankrollId);
+        return extra.length ? kept.filter((x) => !extra.includes(x.id)) : kept;
+      });
+      setTransfers((cur) => refold(rehome(into(b.transfers ?? [], 'transfers')(cur), moved, now), to));
+      const pick = (id: string) => to.get(moved.get(id) ?? id) ?? moved.get(id);
+      if (to.size || moved.size) setSettingsState((cur) => (cur.bankrollId && pick(cur.bankrollId) ? { ...cur, bankrollId: pick(cur.bankrollId) } : cur));
+      setBackers(into(b.backers ?? [], 'backers'));
+      setPackages(into(b.packages ?? [], 'packages'));
+      setPayments(into(b.payments ?? [], 'payments'));
+      setTrips(into(b.trips ?? [], 'trips'));
+      setBacking(into(b.backing ?? [], 'backing'));
+      const fresh = !hands.length && !rawSessions.length;
+      setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
+      // Counted against what's loaded now; importSwaps merges the same way.
+      const sw = mergeSwaps(currentSwaps(), b.swaps ?? []).added;
+      importSwaps(b.swaps ?? []).catch(() => {});
+      importGroups(b.swapGroups ?? []).catch(() => {});
+      importPlans(b.festivalPlans ?? {}).catch(() => {});
+      // These two have their own stores: the deletes are passed in, so one the other phone deleted goes here too.
+      importOwnFestivals(b.ownFestivals ?? [], del).catch(() => {});
+      importWeekly(b.weekly ?? [], del).catch(() => {});
+      // Values another phone had set aside: kept here too; each launch tries them again with this version's checks.
+      const q = (b.quarantine ?? []).filter(([k]) => !quarantine.some(([have]) => have === k));
+      if (q.length) {
+        AsyncStorage.multiSet(q).catch(storageFailed);
+        setQuarantine((cur) => [...cur, ...q]);
+      }
+      return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack((b.bankrolls ?? []).filter((x) => stays.has(x.id)), { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw, removed };
+    },
+    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, quarantine, settings.bankrollId],
+  );
+
+  const eraseAll = useCallback(async () => {
+    // Loaded on demand: the delete path pulls in cloud crypto, documents and voice notes.
+    const { eraseLocal, eraseRemote } = await import('@/lib/erase-all');
+    await eraseRemote({ hands, sessions: rawSessions, backers });
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = null;
+    draftRef.current = null;
+    // Empty lists written (and awaited) before the rest of the keys go, so no late write brings anything back.
+    const w = writers.current;
+    if (w) {
+      w.hands.schedule([]);
+      w.sessions.schedule([]);
+      w.players.schedule([]);
+      w.bankrolls.schedule([]);
+      w.transfers.schedule([]);
+      w.backers.schedule([]);
+      w.packages.schedule([]);
+      w.payments.schedule([]);
+      w.trips.schedule([]);
+      w.backing.schedule([]);
+      await Promise.all(Object.values(w).map((x) => x.flush()));
+    }
+    await eraseLocal();
+    clearPlans();
+    clearOwnFestivals();
+    clearWeekly();
+    clearDeleted();
+    setHands([]);
+    setSessions([]);
+    setPlayers([]);
+    setBankrolls(ensureBankrolls([], [], DEFAULT_SETTINGS.currency));
+    setTransfers([]);
+    setBackers([]);
+    setPackages([]);
+    setPayments([]);
+    setTrips([]);
+    setBacking([]);
+    setQuarantine([]);
+    setSettingsState(DEFAULT_SETTINGS);
+    setDraftKey(draftKeyOf(null));
+  }, [hands, rawSessions, backers]);
+
+  const activeSession = useMemo(
+    () => sessions.filter((s) => !s.endedAt).sort((a, b) => b.startedAt - a.startedAt)[0] ?? null,
+    [sessions],
+  );
+
+  const sortedTrips = useMemo(() => [...trips].sort((a, b) => b.from - a.from), [trips]);
+  const sortedBankrolls = useMemo(() => sortBankrolls(bankrolls), [bankrolls]);
+  const defaultBankroll = useMemo(
+    () =>
+      sortedBankrolls.find((b) => b.id === settings.bankrollId) ??
+      sortedBankrolls.find((b) => b.currency === settings.currency) ??
+      sortedBankrolls[0] ?? { id: '', name: '', currency: settings.currency, createdAt: 0 },
+    [sortedBankrolls, settings.bankrollId, settings.currency],
+  );
+
+  const value = useMemo<StoreValue>(
+    () => ({
+      ready,
+      hands,
+      sessions,
+      players,
+      bankrolls: sortedBankrolls,
+      transfers,
+      backers,
+      packages,
+      payments,
+      trips: sortedTrips,
+      backing,
+      quarantine,
+      settings,
+      activeSession,
+      defaultBankroll,
+      saveHand,
+      deleteHand,
+      saveSession,
+      deleteSession,
+      savePlayer,
+      deletePlayer,
+      saveBankroll,
+      firstBankrollIn,
+      deleteBankroll,
+      saveTransfer,
+      deleteTransfer,
+      saveBacker,
+      deleteBacker,
+      savePackage,
+      deletePackage,
+      savePayment,
+      deletePayment,
+      saveTrip,
+      deleteTrip,
+      saveBacked,
+      deleteBacked,
+      setSettings,
+      get draft() {
+        return draftRef.current;
+      },
+      setDraft,
+      eraseAll,
+      importData,
+      get swaps() {
+        return currentSwaps();
+      },
+      get swapGroups() {
+        return currentGroups();
+      },
+      get festivalPlans() {
+        return currentPlans();
+      },
+      get ownFestivals() {
+        return currentOwnFestivals();
+      },
+      get weekly() {
+        return currentWeekly();
+      },
+      get deleted() {
+        return currentDeleted();
+      },
+    }),
+    // draftKey: re-render consumers when a resumable draft appears or goes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, firstBankrollIn, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
+  );
+
+  // A launch that couldn't read the data goes to the root crash screen (see the launch effect).
+  if (bootError) throw bootError;
+  // Nothing renders before the data is in, so no screen flashes its empty
+  // state ("Regista a tua primeira mão") at a player with 2,000 hands.
+  return <Ctx.Provider value={value}>{ready ? children : null}</Ctx.Provider>;
+}
+
+export function useStore(): StoreValue {
+  const v = useContext(Ctx);
+  if (!v) throw new Error('useStore outside StoreProvider');
+  return v;
+}

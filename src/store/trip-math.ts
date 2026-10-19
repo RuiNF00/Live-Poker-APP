@@ -1,0 +1,189 @@
+// Trips: a festival or a card-room trip, the sessions played during it and
+// what it cost to get there. Pure, so it can be tested.
+//
+// A trip has one currency. Expenses may also be in the currency of `fx`
+// (a flight paid at home), converted at the rate the player typed: the app
+// works offline, so it never looks rates up.
+
+import { t } from '@/i18n';
+import { eventDay, type Festival } from '@/poker/festivals';
+
+import { endOfDay, inRange, startOfDay, type DateRange } from './bankroll-math';
+import type { FestivalPlan } from './festival-plan';
+import { addDays, playedMs, profit } from './session-math';
+import type { Expense, ExpenseKind, Session, Trip } from './types';
+
+const DAY = 86400000;
+
+export const EXPENSE_KINDS: ExpenseKind[] = ['flight', 'hotel', 'food', 'coaching', 'software', 'other'];
+
+/** Finished sessions started during the trip, oldest first. */
+export function tripSessions(trip: Pick<Trip, 'from' | 'to'>, sessions: Session[]): Session[] {
+  return sessions.filter((s) => s.endedAt && inRange(s.startedAt, { from: trip.from, to: trip.to })).sort((a, b) => a.startedAt - b.startedAt);
+}
+
+/** An amount in the trip's currency; null when it is in a currency the trip has no rate for. */
+export function toTripCurrency(amount: number, currency: string, trip: Pick<Trip, 'currency' | 'fx'>): number | null {
+  if (currency === trip.currency) return amount;
+  if (trip.fx && trip.fx.rate > 0 && currency === trip.fx.currency) return amount / trip.fx.rate;
+  return null;
+}
+
+/**
+ * The trip's currency changes. Moving to the rate's other currency flips the
+ * rate (1 $ = 0,92 € becomes 1 € = 1,087 $), so amounts keep their value;
+ * any other currency drops the rate, which no longer means anything.
+ */
+export function changeTripCurrency(trip: Pick<Trip, 'currency' | 'fx'>, fxCur: string, rate: number, next: string): Pick<Trip, 'currency' | 'fx'> {
+  if (next === trip.currency) return trip;
+  if (next === fxCur) {
+    if (!(rate > 0)) return { currency: next, fx: trip.fx ? { currency: trip.currency, rate: 0 } : undefined };
+    const inv = 1 / rate;
+    // 4 decimals, like the ECB rate offered in the form; 6 significant digits below 1, so going back and forth stays exact.
+    return { currency: next, fx: { currency: trip.currency, rate: Number(inv >= 1 ? inv.toFixed(4) : inv.toPrecision(6)) } };
+  }
+  return { currency: next, fx: trip.fx && trip.fx.currency !== next ? { currency: trip.fx.currency, rate: 0 } : undefined };
+}
+
+export interface TripSummary {
+  currency: string;
+  days: number;
+  sessions: number;
+  hours: number;
+  /** Poker results (session expenses already in them). */
+  poker: number;
+  /** Trip expenses. */
+  expenses: number;
+  byKind: Record<ExpenseKind, number>;
+  /** Poker minus expenses. */
+  net: number;
+  /** Sessions and expenses in a currency with no rate, left out of the totals. */
+  skipped: { currency: string; sessions: number; expenses: number }[];
+  /** The same totals in the `fx` currency, when the trip has a rate. */
+  converted: { currency: string; poker: number; expenses: number; net: number } | null;
+}
+
+export function tripSummary(trip: Trip, sessions: Session[]): TripSummary {
+  const byKind: Record<ExpenseKind, number> = { flight: 0, hotel: 0, food: 0, coaching: 0, software: 0, other: 0 };
+  const skipped = new Map<string, { currency: string; sessions: number; expenses: number }>();
+  const skip = (currency: string) => skipped.get(currency) ?? skipped.set(currency, { currency, sessions: 0, expenses: 0 }).get(currency)!;
+  let poker = 0;
+  let hours = 0;
+  let count = 0;
+  for (const s of tripSessions(trip, sessions)) {
+    const v = toTripCurrency(profit(s), s.currency, trip);
+    if (v === null) {
+      skip(s.currency).sessions++;
+      continue;
+    }
+    poker += v;
+    hours += playedMs(s) / 3600000;
+    count++;
+  }
+  let expenses = 0;
+  for (const x of trip.expenses) {
+    const v = toTripCurrency(Math.abs(x.amount), x.currency, trip);
+    if (v === null) {
+      skip(x.currency).expenses++;
+      continue;
+    }
+    expenses += v;
+    byKind[x.kind in byKind ? x.kind : 'other'] += v;
+  }
+  const net = poker - expenses;
+  const r = trip.fx && trip.fx.rate > 0 ? trip.fx : null;
+  return {
+    currency: trip.currency,
+    days: Math.max(1, Math.round((endOfDay(trip.to) + 1 - startOfDay(trip.from)) / DAY)),
+    sessions: count,
+    hours,
+    poker,
+    expenses,
+    byKind,
+    net,
+    skipped: [...skipped.values()],
+    converted: r ? { currency: r.currency, poker: poker * r.rate, expenses: expenses * r.rate, net: net * r.rate } : null,
+  };
+}
+
+/** Trips that overlap a date range, newest first. */
+export function tripsIn(trips: Trip[], range: DateRange): Trip[] {
+  return trips.filter((x) => (range.to === undefined || x.from <= range.to) && (range.from === undefined || x.to >= range.from)).sort((a, b) => b.from - a.from);
+}
+
+/** The trip the player is on right now, if any. */
+export function currentTrip(trips: Trip[], now = Date.now()): Trip | null {
+  return trips.filter((x) => inRange(now, { from: x.from, to: x.to })).sort((a, b) => b.from - a.from)[0] ?? null;
+}
+
+/**
+ * A festival's trip widened to take a session started at `at` for one of its
+ * events (played after the dates it was made with), or null when it already
+ * does or the festival has no trip.
+ */
+export function tripToCover(trips: Trip[], festivalId: string, at: number): Trip | null {
+  const x = trips.find((tr) => tr.festivalId === festivalId);
+  if (!x || inRange(at, { from: x.from, to: x.to })) return null;
+  return { ...x, from: Math.min(x.from, startOfDay(at)), to: Math.max(x.to, endOfDay(at)) };
+}
+
+export function blankTrip(id: string, currency: string, now = Date.now()): Trip {
+  return { id, name: '', venue: '', currency, from: startOfDay(now), to: endOfDay(addDays(now, 4)), expenses: [], createdAt: now };
+}
+
+export function blankExpense(id: string, kind: ExpenseKind, currency: string, now = Date.now()): Expense {
+  return { id, kind, amount: 0, currency, at: now, note: '' };
+}
+
+/** "YYYY-MM-DD" as a local day (the player's phone is where the festival is). */
+function localDay(day: string): number {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+
+/**
+ * A trip for a festival: from the day before the first planned event to the
+ * day after the last one (travel days, and a cash game on arrival), or the
+ * whole festival when nothing is planned yet.
+ */
+export function tripFromFestival(id: string, f: Festival, plan: FestivalPlan, fx?: Trip['fx'], now = Date.now()): Trip {
+  const picked = new Set(plan.picked);
+  const fromEvents = (picked.size ? f.events.filter((e) => picked.has(e.id)) : f.events).map(eventDay).sort();
+  // No schedule yet: the festival's official dates.
+  const days = fromEvents.length ? fromEvents : f.dates ? [f.dates.from, f.dates.to] : [new Date(now).toISOString().slice(0, 10)];
+  return {
+    id,
+    // A shipped festival's generic name in the player's language when the trip is made; an own one as typed.
+    name: f.own ? f.name : t(f.name),
+    venue: [f.venue, f.city.split(',')[0]].filter(Boolean).join(', '),
+    currency: f.currency,
+    from: startOfDay(addDays(localDay(days[0]), -1)),
+    to: endOfDay(addDays(localDay(days[days.length - 1]), 1)),
+    fx,
+    festivalId: f.id,
+    expenses: [],
+    createdAt: now,
+  };
+}
+
+/**
+ * An own festival's trip after the player changed the festival (dates, name or city), or null when
+ * nothing changes. Only what the trip still has as tripFromFestival made it from the festival as it
+ * was follows: a name the player typed or a day they moved stays theirs. It never narrows so a
+ * session it already counts falls out unseen: that side keeps its old day.
+ */
+export function tripFollowingFestival(trip: Trip, old: Festival, next: Festival, plan: FestivalPlan, sessions: Session[]): Trip | null {
+  const was = tripFromFestival(trip.id, old, plan, trip.fx, trip.createdAt);
+  const made = tripFromFestival(trip.id, next, plan, trip.fx, trip.createdAt);
+  const counted = sessions.filter((s) => inRange(s.startedAt, { from: trip.from, to: trip.to })).map((s) => s.startedAt);
+  let from = trip.from === was.from ? made.from : trip.from;
+  let to = trip.to === was.to ? made.to : trip.to;
+  if (from > trip.from && counted.some((at) => at < from)) from = trip.from;
+  if (to < trip.to && counted.some((at) => at > to)) to = trip.to;
+  // Days that no longer meet (the festival moved weeks away while one side stayed the player's): leave it.
+  if (from > to) return null;
+  const name = trip.name === was.name ? made.name : trip.name;
+  const venue = trip.venue === was.venue ? made.venue : trip.venue;
+  if (from === trip.from && to === trip.to && name === trip.name && venue === trip.venue) return null;
+  return { ...trip, from, to, name, venue };
+}
