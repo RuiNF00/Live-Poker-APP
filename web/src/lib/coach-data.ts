@@ -1,5 +1,7 @@
 // Shapes and input checks for private coaching links, shared by the API, the page and its tests.
 
+import { withoutPrivateGame } from './hand-private';
+
 export type Mark = 'good' | 'mistake' | 'question';
 export const MARKS: Mark[] = ['good', 'mistake', 'question'];
 
@@ -79,7 +81,7 @@ export function stripPrivate(hand: unknown): unknown {
       return q;
     });
   }
-  return rest;
+  return withoutPrivateGame(rest);
 }
 
 /** Biggest request the coach API reads: 50 hands of 64 KB, plus room. Comments are far smaller. */

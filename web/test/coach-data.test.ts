@@ -39,5 +39,7 @@ describe('stripPrivate', () => {
     expect(Object.keys(out).sort()).toEqual(['id', 'notes', 'players']);
     expect(out.players).toEqual([{ name: 'Ana', stack: 1 }]);
     expect(stripPrivate(null)).toBe(null);
+    const g = stripPrivate({ id: 'h2', game: { kind: 'mtt', name: 'Main Event', buyIn: 100, venue: 'Estoril', sb: 1, bb: 2 } }) as { game: Record<string, unknown> };
+    expect(g.game).toEqual({ kind: 'mtt', name: 'Main Event', sb: 1, bb: 2 });
   });
 });

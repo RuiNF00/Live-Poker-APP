@@ -25,8 +25,11 @@ function cut(s: string | undefined, max: number): string | undefined {
 
 export function publicHand(hand: Hand, opts: ShareOptions = DEFAULT_SHARE): Hand {
   const { sessionId: _s, shareToken: _t, shareId: _i, voiceNote: _v, folders: _f, streetNotes: _n, review: _r, reviewNote: _rn, reviewedAt: _ra, ...rest } = hand;
+  // What the player spends and where they play: no shared page shows them, so they stay here.
+  const { buyIn: _b, venue: _vn, ...game } = hand.game;
   return {
     ...rest,
+    game,
     // Cut to what the share page accepts: hands saved before the inputs had a limit still share.
     players: hand.players.map(({ playerId: _p, ...p }, i) => (i === hand.hero || opts.names ? { ...p, name: cut(p.name, MAX_NAME_LENGTH) } : { ...p, name: '' })),
     notes: opts.notes ? cut(hand.notes, MAX_NOTES_LENGTH) : '',

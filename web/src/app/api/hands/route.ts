@@ -5,6 +5,7 @@ import { BadCreateToken, CreateGone, createToken, getStore } from '@/lib/store';
 import { parseQuiz, resolveHand } from '@/lib/hand';
 import { limited } from '@/lib/abuse';
 import { cors } from '@/lib/cors';
+import { withoutPrivateGame } from '@/lib/hand-private';
 
 /** Fields of the app's hand that stay on the phone (the app strips them too). */
 const PRIVATE_FIELDS = ['streetNotes', 'reviewNote', 'voiceNote', 'folders', 'review', 'reviewedAt', 'shareToken', 'sessionId'] as const;
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
   // The player's private fields never go public, even from an older app that still sends them.
   // `notes` stays: the player can choose to share them.
   for (const key of PRIVATE_FIELDS) delete hand[key];
+  if (hand.game && typeof hand.game === 'object') hand.game = withoutPrivateGame(hand).game;
   // The player's own notebook ids for the people at the table stay on the phone.
   if (Array.isArray(hand.players)) hand.players = hand.players.map((p) => (p && typeof p === 'object' ? (({ playerId: _, ...rest }) => rest)(p as Record<string, unknown>) : p));
   if (typeof hand.notes === 'string' && isOffensive(hand.notes)) hand.notes = '';

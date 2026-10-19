@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { opaqueId } from './abuse';
 import { serviceClient } from './supabase';
 import { DEMO_SHARE } from './demo';
+import { withoutPrivateGame } from './hand-private';
 import type { HandComment, QuizSpot, SharedHand, VoteChoice } from './types';
 
 export * from './types';
@@ -541,7 +542,9 @@ let store: ShareStore | null = null;
 export async function loadShare(id: string): Promise<SharedHand | null> {
   if (!/^[A-Za-z0-9]{3,20}$/.test(id)) return null;
   const share = await getStore().getShare(id);
-  if (share || id !== 'demo') return share;
+  // Hands shared before the buy-in and venue were dropped still have them stored: never served.
+  if (share) return { ...share, payload: withoutPrivateGame(share.payload) };
+  if (id !== 'demo') return null;
   return { ...DEMO_SHARE, allowComments: false };
 }
 
