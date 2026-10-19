@@ -72,12 +72,12 @@ const HomeWidget = createWidget<WidgetProps>('SweatbookHome', (p, env) => {
           <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 8, bottom: 8 }), background(accent), cornerRadius(12)]}>
             <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle('#1A0A04'), lineLimit(1)]}>{'+ ' + p.labels.newHand}</Text>
           </Link>
-          <Link destination={p.pauseUrl} modifiers={[padding({ top: 8, bottom: 8, leading: 12, trailing: 12 }), background('#1A2521'), cornerRadius(12), accessibilityLabel(p.labels.pause)]}>
+          {p.pauseUrl ? (<Link destination={p.pauseUrl} modifiers={[padding({ top: 8, bottom: 8, leading: 12, trailing: 12 }), background('#1A2521'), cornerRadius(12), accessibilityLabel(p.labels.pause)]}>
             <Image systemName={p.paused ? 'play.fill' : 'pause.fill'} size={15} color={text} />
-          </Link>
-          <Link destination={p.rebuyUrl} modifiers={[padding({ top: 8, bottom: 8, leading: 12, trailing: 12 }), background('#1A2521'), cornerRadius(12), accessibilityLabel(p.labels.rebuy)]}>
+          </Link>) : null}
+          {p.rebuyUrl ? (<Link destination={p.rebuyUrl} modifiers={[padding({ top: 8, bottom: 8, leading: 12, trailing: 12 }), background('#1A2521'), cornerRadius(12), accessibilityLabel(p.labels.rebuy)]}>
             <Image systemName="arrow.counterclockwise" size={15} color={text} />
-          </Link>
+          </Link>) : null}
         </HStack>
       </VStack>
     );

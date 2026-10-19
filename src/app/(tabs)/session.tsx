@@ -487,7 +487,7 @@ function Live({ s }: { s: Session }) {
     });
   };
 
-  // Pause, resume or a rebuy tapped on the lock screen (Live Activity, widget): done here with the
+  // Pause, resume, a rebuy or "end" (opens the end form) tapped on the lock screen (Live Activity, widget): done here with the
   // usual "Anular". Fails closed: nothing happens while the app lock is up or still being read.
   const params = useLocalSearchParams<{ do?: string; id?: string }>();
   const lockUp = useLockScreenUp();
@@ -495,7 +495,8 @@ function Live({ s }: { s: Session }) {
   useEffect(() => {
     if (!params.do || lockUp) return;
     router.setParams({ do: undefined, id: undefined });
-    if (fromLock === 'rebuy') rebuy();
+    if (fromLock === 'end') startEnding();
+    else if (fromLock === 'rebuy') rebuy();
     else if (fromLock) togglePause();
     // Only a new link or the lock opening runs it; the session changing under it doesn't.
     // eslint-disable-next-line react-hooks/exhaustive-deps

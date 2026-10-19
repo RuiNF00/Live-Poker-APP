@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 // Its own line, so it merges cleanly with the integration's changes to the import below.
 /* eslint-disable import/no-duplicates */
-import { lockAction } from '../lock-screen/live-state';
+import { lockAction, lockActionPatch, parseTarget } from '../lock-screen/live-state';
 import { askForLockScreen, sessionNoticePreview } from '../lock-screen/live-state';
 
 import type { Session } from '../../store/types';
@@ -186,6 +186,8 @@ test('lock-screen buttons: pause, resume and rebuy only for this session and onl
   assert.equal(liveProps(paused, 20 * MIN).pauseUrl, 'sweatbook://session?do=resume&id=s');
   assert.equal(p.labels.rebuy, 'Re-entry');
   assert.equal(liveProps(mk({ kind: 'cash' }), 20 * MIN).labels.rebuy, 'Rebuy');
+  // VoiceOver reads the "→ next blinds" line by name, not as an arrow.
+  assert.equal(p.labels.nextBlinds, 'Blinds seguintes');
   assert.equal(lockAction('pause', 's', running), 'pause');
   assert.equal(lockAction('resume', 's', paused), 'resume');
   assert.equal(lockAction('rebuy', 's', running), 'rebuy');
@@ -216,4 +218,31 @@ test('Android lock-screen ask: the preview is the notification line, with privac
   const hidden = sessionNoticePreview(s, 0, true);
   assert.equal(hidden.title, 'Cash game');
   assert.match(hidden.body, /••• · 1\/2$/);
+});
+
+test('in-place lock-screen actions: pause and resume only, targets carry the session', () => {
+  const running = mk({ stackLog: [{ t: 0, stack: 30000, level: 1 }] });
+  const p = liveProps(running, 20 * MIN, false, true);
+  assert.equal(p.inPlace, true);
+  assert.equal(liveProps(running, 20 * MIN).inPlace, false);
+  assert.deepEqual(parseTarget(p.pauseTarget), { what: 'pause', id: 's' });
+  // A rebuy moves money: never a target, always a link into the app (with «Anular» there).
+  assert.ok(!Object.values(p).some((v) => typeof v === 'string' && v.startsWith('rebuy:')));
+  assert.equal(p.rebuyUrl, 'sweatbook://session?do=rebuy&id=s');
+  assert.deepEqual(lockActionPatch(running, 'pause', 5 * MIN).breaks, [{ start: 5 * MIN }]);
+  const paused = mk({ breaks: [{ start: 5 * MIN }] });
+  assert.deepEqual(lockActionPatch(paused, 'resume', 9 * MIN).breaks, [{ start: 5 * MIN, end: 9 * MIN }]);
+});
+
+test('"end" from the lock screen: opens the end form for this running session only, never in place', () => {
+  const running = mk();
+  const p = liveProps(running, 20 * MIN, false, true);
+  assert.equal(p.endUrl, 'sweatbook://session?do=end&id=s');
+  assert.equal(p.labels.end, 'Terminar sessão');
+  assert.equal(lockAction('end', 's', running), 'end');
+  assert.equal(lockAction('end', 's', mk({ breaks: [{ start: 10 * MIN }] })), 'end');
+  assert.equal(lockAction('end', 'other', running), null);
+  assert.equal(lockAction('end', 's', mk({ endedAt: 1 })), null);
+  // No in-place target for it: an "end:" target from a button would be ignored by the listener.
+  assert.ok(!Object.values(p).some((v) => typeof v === 'string' && v.startsWith('end:')));
 });

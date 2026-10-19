@@ -4,15 +4,21 @@
 // (no theme import, no helpers from outside the function). Colours are the
 // "Noite" tokens from src/theme.ts, copied by value.
 
-import { HStack, Image, Link, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { accessibilityLabel, activityBackgroundTint, background, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
-import { createLiveActivity, type LiveActivity } from 'expo-widgets';
+import { Button, HStack, Image, Link, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { accessibilityElement, accessibilityLabel, activityBackgroundTint, background, buttonStyle, cornerRadius, dynamicTypeSize, font, foregroundStyle, frame, lineLimit, minimumScaleFactor, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
+import { addUserInteractionListener, createLiveActivity, type LiveActivity } from 'expo-widgets';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 import type { LiveProps } from './live-state';
 
 const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, env) => {
   'widget';
+  // Ended by a push from another phone (push-to-end): the push carries no props at all, so nothing
+  // of the session travels through Apple. It is dismissed at once; this only keeps the render safe.
+  if (!p || !p.labels) {
+    const mark = <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle('#FF6A3D')]}>♠︎</Text>;
+    return { banner: <HStack modifiers={[padding({ all: 16 }), activityBackgroundTint('#0C1311')]}>{mark}</HStack>, compactLeading: mark, compactTrailing: mark, minimal: mark };
+  }
   const text = '#F1F4F2';
   const dim = '#B4BFBA';
   const accent = '#FF6A3D';
@@ -21,17 +27,28 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
   const track = '#1A2521';
   const DAY = 86400000;
   const pauseAt = p.pausedAt ? new Date(p.pausedAt) : undefined;
-  const mono = (size: number, color: string, weight: 'bold' | 'semibold' | 'regular' = 'bold') => [font({ size, weight, design: 'monospaced' }), monospacedDigit(), foregroundStyle(color)];
-  const clock = (size: number, color = p.paused ? warn : text) => (
-    <Text timerInterval={{ lower: new Date(p.clockFrom), upper: new Date(p.clockFrom + DAY) }} countsDown={false} pauseTime={pauseAt} modifiers={mono(size, color)} />
+  // Text follows Dynamic Type: each size maps to the system text style that is that size (or just
+  // under) at the default setting, so nothing changes until the user picks larger text.
+  const type = (size: number, weight: 'heavy' | 'bold' | 'semibold' | 'regular', design?: 'monospaced') =>
+    font({
+      textStyle: size <= 11 ? 'caption2' : size <= 12 ? 'caption' : size <= 14 ? 'footnote' : size <= 16 ? 'subheadline' : size <= 19 ? 'body' : size <= 21 ? 'title3' : size <= 27 ? 'title2' : 'title',
+      weight,
+      design,
+    });
+  const mono = (size: number, color: string, weight: 'bold' | 'semibold' | 'regular' = 'bold') => [type(size, weight, 'monospaced'), monospacedDigit(), foregroundStyle(color)];
+  // The big numbers shrink a little before they would cut, at the larger text sizes.
+  const fit = [lineLimit(1), minimumScaleFactor(0.7)];
+  const pin = dynamicTypeSize('large');
+  const clock = (size: number, color = p.paused ? warn : text, more: ReturnType<typeof lineLimit>[] = []) => (
+    <Text timerInterval={{ lower: new Date(p.clockFrom), upper: new Date(p.clockFrom + DAY) }} countsDown={false} pauseTime={pauseAt} modifiers={[...mono(size, color), ...more]} />
   );
-  const label = (s: string, color = dim) => <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(color), lineLimit(1)]}>{s.toUpperCase()}</Text>;
+  const label = (s: string, color = dim) => <Text modifiers={[type(11, 'semibold'), foregroundStyle(color), lineLimit(1)]}>{s.toUpperCase()}</Text>;
   // A tournament with a level clock: the time to the next level is what a glance is for.
   const leveled = p.levelFrom > 0;
   // A break stops the level clock with the session clock, so a paused level never reads as due.
   const levelDue = leveled && !p.paused && (env.isStale || p.nextLevelAt <= Date.now());
-  const countdown = (size: number, color = p.paused ? warn : text) => (
-    <Text timerInterval={{ lower: new Date(p.levelFrom), upper: new Date(p.nextLevelAt) }} countsDown pauseTime={pauseAt} modifiers={mono(size, color)} />
+  const countdown = (size: number, color = p.paused ? warn : text, more: ReturnType<typeof lineLimit>[] = []) => (
+    <Text timerInterval={{ lower: new Date(p.levelFrom), upper: new Date(p.nextLevelAt) }} countsDown pauseTime={pauseAt} modifiers={[...mono(size, color), ...more]} />
   );
   // Fills as the level runs; frozen at the pause during a break.
   const levelBar = p.paused ? (
@@ -40,41 +57,51 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
     <ProgressView timerInterval={{ lower: new Date(p.levelFrom), upper: new Date(p.nextLevelAt) }} countsDown={false} modifiers={[tint(accent)]} />
   );
   const newHand = (
-    <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 9, bottom: 9 }), background(accent), cornerRadius(12)]}>
-      <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle('#1A0A04'), lineLimit(1)]}>{'+ ' + p.labels.newHand}</Text>
+    <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 12, bottom: 12 }), background(accent), cornerRadius(12), accessibilityLabel(p.labels.newHand)]}>
+      <Text modifiers={[type(15, 'bold'), foregroundStyle('#1A0A04'), lineLimit(1)]}>{'+ ' + p.labels.newHand}</Text>
     </Link>
   );
-  // Secondary actions, one tap each: they open the session screen, which does them with "Anular"
-  // (only once the app lock, if any, is open). Icons keep the row on one line in every language.
-  const small = (url: string, icon: SFSymbol, name: string) => (
-    <Link destination={url} modifiers={[padding({ top: 9, bottom: 9, leading: 13, trailing: 13 }), background(track), cornerRadius(12), accessibilityLabel(name)]}>
-      <Image systemName={icon} size={16} color={text} />
-    </Link>
-  );
+  // Secondary actions, one tap each. With no app lock on they act in place (a LiveActivityIntent
+  // wakes the app in the background); otherwise they open the session screen, which asks for the
+  // lock first and then does them with "Anular". Icons keep the row on one line in every language.
+  // 16 pt icon + 2 × 14 = 44 pt each way, the smallest comfortable target.
+  const chip = [padding({ top: 14, bottom: 14, leading: 14, trailing: 14 }), background(track), cornerRadius(12)];
+  const small = (url: string, icon: SFSymbol, name: string, target = '') =>
+    target && p.inPlace ? (
+      <Button target={target} modifiers={[buttonStyle('plain'), ...chip, accessibilityLabel(name)]}>
+        <Image systemName={icon} size={16} color={text} />
+      </Button>
+    ) : (
+      <Link destination={url} modifiers={[...chip, accessibilityLabel(name)]}>
+        <Image systemName={icon} size={16} color={text} />
+      </Link>
+    );
   const actions = (
     <HStack spacing={8}>
       {newHand}
-      {small(p.pauseUrl, p.paused ? 'play.fill' : 'pause.fill', p.labels.pause)}
+      {small(p.pauseUrl, p.paused ? 'play.fill' : 'pause.fill', p.labels.pause, p.pauseTarget)}
+      {/* Money: the rebuy always opens the app, where it comes with «Anular» (Security P3). */}
       {small(p.rebuyUrl, 'arrow.counterclockwise', p.labels.rebuy)}
       {/* A tournament: its chip count as a story, without opening the session first. */}
       {p.shareUrl ? small(p.shareUrl, 'square.and.arrow.up', p.labels.shareStack) : null}
+      {p.endUrl ? small(p.endUrl, 'flag.checkered', p.labels.end) : null}
     </HStack>
   );
   const stackCol = (size: number) => (
     <VStack alignment="leading" spacing={2}>
       {label(p.labels.stack)}
-      <Text modifiers={[...mono(size, text), lineLimit(1)]}>{p.stack}</Text>
+      <Text modifiers={[...mono(size, text), ...fit]}>{p.stack}</Text>
       <Text modifiers={mono(12, dim, 'regular')}>{p.stackBB}</Text>
     </VStack>
   );
   const blindsCol = (
     <VStack alignment="trailing" spacing={2}>
       {label(leveled ? p.labels.blinds : p.level)}
-      <Text modifiers={[...mono(20, levelDue ? accent : text), lineLimit(1)]}>{p.blinds}</Text>
+      <Text modifiers={[...mono(20, levelDue ? accent : text), ...fit]}>{p.blinds}</Text>
       {levelDue ? (
-        <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(accent), lineLimit(1)]}>{p.labels.levelUp + ' → ' + p.nextBlinds}</Text>
+        <Text modifiers={[type(12, 'bold'), foregroundStyle(accent), lineLimit(1), accessibilityLabel(p.labels.levelUp + ', ' + p.labels.nextBlinds + ' ' + p.nextBlinds)]}>{p.labels.levelUp + ' → ' + p.nextBlinds}</Text>
       ) : leveled ? (
-        <Text modifiers={[...mono(12, dim, 'regular'), lineLimit(1)]}>{'→ ' + p.nextBlinds}</Text>
+        <Text modifiers={[...mono(12, dim, 'regular'), lineLimit(1), accessibilityLabel(p.labels.nextBlinds + ' ' + p.nextBlinds)]}>{'→ ' + p.nextBlinds}</Text>
       ) : null}
     </VStack>
   );
@@ -83,30 +110,32 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
   // name: it says whose session this is, it isn't an ad.
   const head = (
     <HStack spacing={6}>
-      <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(p.paused ? warn : good)]}>{'● ' + p.status.toUpperCase()}</Text>
-      {leveled ? clock(12, dim) : <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{p.title}</Text>}
+      <Text modifiers={[type(12, 'bold'), foregroundStyle(p.paused ? warn : good), accessibilityLabel(p.status)]}>{'● ' + p.status.toUpperCase()}</Text>
+      {leveled ? clock(12, dim) : <Text modifiers={[type(13, 'semibold'), foregroundStyle(dim), lineLimit(1)]}>{p.title}</Text>}
       <Spacer />
       {p.breakAt ? (
-        <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn), lineLimit(1)]}>{p.breakAt}</Text>
+        <Text modifiers={[type(12, 'semibold'), foregroundStyle(warn), lineLimit(1)]}>{p.breakAt}</Text>
       ) : (
-        <HStack spacing={0}>
-          <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(dim)]}>Sweat</Text>
-          <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(accent)]}>book</Text>
+        <HStack spacing={0} modifiers={[accessibilityElement('ignore'), accessibilityLabel('Sweatbook')]}>
+          <Text modifiers={[type(12, 'heavy'), foregroundStyle(dim)]}>Sweat</Text>
+          <Text modifiers={[type(12, 'heavy'), foregroundStyle(accent)]}>book</Text>
         </HStack>
       )}
     </HStack>
   );
   // Tournament with a level clock: the level countdown leads, a bar shows how much of the level is gone,
   // and the played time moves to the line below. Otherwise (cash, no level length): the played time leads.
-  // The lock screen gives a Live Activity about 160 pt: header, numbers, (level bar,) buttons.
-  const shell = [padding({ top: 14, bottom: 14, leading: 16, trailing: 16 }), activityBackgroundTint('#0C1311')];
+  // The lock screen gives a Live Activity about 160 pt: header, numbers, (level bar,) buttons. The 44 pt
+  // buttons take their height back from the padding and spacing; text grows up to xLarge, past that
+  // the banner would be cut.
+  const shell = [padding({ top: 10, bottom: 10, leading: 16, trailing: 16 }), activityBackgroundTint('#0C1311'), dynamicTypeSize({ max: 'xLarge' })];
   const banner = leveled ? (
-    <VStack alignment="leading" spacing={8} modifiers={shell}>
+    <VStack alignment="leading" spacing={6} modifiers={shell}>
       {head}
       <HStack alignment="top" spacing={12}>
         <VStack alignment="leading" spacing={2}>
           {label(p.level + ' · ' + p.labels.next, levelDue ? accent : dim)}
-          {countdown(28, levelDue ? accent : p.paused ? warn : text)}
+          {countdown(28, levelDue ? accent : p.paused ? warn : text, fit)}
         </VStack>
         <Spacer />
         {stackCol(20)}
@@ -117,12 +146,12 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
       {actions}
     </VStack>
   ) : (
-    <VStack alignment="leading" spacing={8} modifiers={shell}>
+    <VStack alignment="leading" spacing={6} modifiers={shell}>
       {head}
       <HStack alignment="top" spacing={12}>
         <VStack alignment="leading" spacing={2}>
           {label(p.labels.time)}
-          {clock(28)}
+          {clock(28, undefined, fit)}
         </VStack>
         <Spacer />
         {stackCol(20)}
@@ -136,41 +165,42 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
   return {
     banner,
     // Compact island: stack in big blinds on the left, the level countdown (or the played time) on the right.
-    // Timer text takes all the width it can, so it gets a fixed one.
-    compactLeading: <Text modifiers={[...mono(14, text), lineLimit(1)]}>{p.stackBB}</Text>,
+    // Timer text takes all the width it can, so it gets a fixed one. The island's room is fixed, so its
+    // text stays at the default size whatever the Dynamic Type setting (pin).
+    compactLeading: <Text modifiers={[...mono(14, text), lineLimit(1), pin]}>{p.stackBB}</Text>,
     compactTrailing: leveled ? (
       levelDue ? (
-        <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accent)]}>↑</Text>
+        <Text modifiers={[type(14, 'bold'), foregroundStyle(accent), accessibilityLabel(p.labels.levelUp), pin]}>↑</Text>
       ) : (
-        <VStack modifiers={[frame({ width: 52, alignment: 'trailing' })]}>{countdown(14, p.paused ? warn : accent)}</VStack>
+        <VStack modifiers={[frame({ width: 52, alignment: 'trailing' }), pin]}>{countdown(14, p.paused ? warn : accent)}</VStack>
       )
     ) : (
-      <VStack modifiers={[frame({ width: 64, alignment: 'trailing' })]}>{clock(14)}</VStack>
+      <VStack modifiers={[frame({ width: 64, alignment: 'trailing' }), pin]}>{clock(14)}</VStack>
     ),
-    minimal: <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(levelDue ? warn : accent)]}>{levelDue ? '↑' : '♠︎'}</Text>,
+    minimal: <Text modifiers={[type(14, 'bold'), foregroundStyle(levelDue ? warn : accent), accessibilityLabel(levelDue ? p.labels.levelUp : 'Sweatbook'), pin]}>{levelDue ? '↑' : '♠︎'}</Text>,
     expandedLeading: (
-      <VStack alignment="leading" spacing={2} modifiers={[padding({ leading: 4 })]}>
+      <VStack alignment="leading" spacing={2} modifiers={[padding({ leading: 4 }), pin]}>
         {leveled ? label(p.labels.next, levelDue ? accent : dim) : label(p.labels.time)}
         {leveled ? countdown(22, levelDue ? accent : p.paused ? warn : text) : clock(22)}
       </VStack>
     ),
     expandedTrailing: (
-      <VStack alignment="trailing" spacing={2} modifiers={[padding({ trailing: 4 })]}>
+      <VStack alignment="trailing" spacing={2} modifiers={[padding({ trailing: 4 }), pin]}>
         {label(p.level)}
         <Text modifiers={mono(18, levelDue ? accent : text)}>{p.blinds}</Text>
       </VStack>
     ),
     expandedCenter: (
-      <VStack spacing={2}>
+      <VStack spacing={2} modifiers={[pin]}>
         {label(p.labels.stack)}
         <Text modifiers={mono(18, text)}>{p.stack}</Text>
         <Text modifiers={mono(11, dim, 'regular')}>{p.stackBB}</Text>
       </VStack>
     ),
     expandedBottom: (
-      <VStack spacing={8}>
+      <VStack spacing={8} modifiers={[pin]}>
         {leveled ? levelBar : null}
-        {p.breakAt ? <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn)]}>{p.breakAt}</Text> : null}
+        {p.breakAt ? <Text modifiers={[type(12, 'semibold'), foregroundStyle(warn)]}>{p.breakAt}</Text> : null}
         {actions}
       </VStack>
     ),
@@ -179,22 +209,50 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
 
 let current: LiveActivity<LiveProps> | null = null;
 
+/** Push-to-end: called with this activity's APNs token whenever it is issued or changes. */
+let onToken: ((token: string) => void) | null = null;
+let tokenSub: { remove(): void } | null = null;
+export function onLiveToken(cb: ((token: string) => void) | null) {
+  onToken = cb;
+}
+function watchToken(a: LiveActivity<LiveProps>) {
+  tokenSub?.remove();
+  tokenSub = a.addPushTokenListener((e) => onToken?.(e.pushToken));
+  a.getPushToken().then((tk) => tk && onToken?.(tk), () => {});
+}
+
 /** Show or refresh the session on the lock screen. */
 export async function showSession(props: LiveProps): Promise<void> {
   // After a relaunch the activity is still up: pick it back up instead of starting a second one.
-  current ??= SessionActivity.getInstances()[0] ?? null;
+  if (!current) {
+    current = SessionActivity.getInstances()[0] ?? null;
+    if (current) watchToken(current);
+  }
   // Only ever one on the lock screen: any other left over (a start that raced a relaunch) goes.
   const extra = SessionActivity.getInstances().filter((a) => a.getId() !== current?.getId());
   await Promise.all(extra.map((a) => a.end('immediate').catch(() => {})));
   // Stale once the level should have gone up; a break stops that clock, so no stale date while paused.
   const stale = props.nextLevelAt && !props.paused ? new Date(props.nextLevelAt) : undefined;
   if (current) await current.update(props, stale);
-  else current = SessionActivity.start(props, 'sweatbook://session', stale);
+  else {
+    current = SessionActivity.start(props, 'sweatbook://session', stale);
+    watchToken(current);
+  }
 }
 
 /** Take it off the lock screen (session ended or deleted). */
 export async function endSession(): Promise<void> {
   const all = current ? [current, ...SessionActivity.getInstances().filter((a) => a.getId() !== current!.getId())] : SessionActivity.getInstances();
   current = null;
+  tokenSub?.remove();
+  tokenSub = null;
   await Promise.all(all.map((a) => a.end('immediate')));
+}
+
+/** A pause, resume or rebuy tapped on the Live Activity with the app in the background: its button target. */
+export function onLockButton(cb: (target: string) => void): () => void {
+  const sub = addUserInteractionListener((e) => {
+    if (e.source === 'SweatbookSession') cb(e.target);
+  });
+  return () => sub.remove();
 }
