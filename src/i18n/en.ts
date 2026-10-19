@@ -3157,6 +3157,7 @@ const en: Record<string, string> = {
   'A explicar a mão, num canto': 'Explaining the hand, in a corner',
   // Stack card for a festival day (share/session-card.ts).
   'Partilhar stack': 'Share stack',
+  'Blinds seguintes': 'Next blinds',
   'No saco': 'Bagged',
   '{name} · Dia {n} ensacado: {chips}': '{name} · Day {n} bagged: {chips}',
   '{name} · Dia {n}: {chips} em fichas': '{name} · Day {n}: {chips} in chips',

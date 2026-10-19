@@ -174,6 +174,8 @@ test('lock-screen buttons: pause, resume and rebuy only for this session and onl
   assert.equal(liveProps(paused, 20 * MIN).pauseUrl, 'sweatbook://session?do=resume&id=s');
   assert.equal(p.labels.rebuy, 'Re-entry');
   assert.equal(liveProps(mk({ kind: 'cash' }), 20 * MIN).labels.rebuy, 'Rebuy');
+  // VoiceOver reads the "→ next blinds" line by name, not as an arrow.
+  assert.equal(p.labels.nextBlinds, 'Blinds seguintes');
   assert.equal(lockAction('pause', 's', running), 'pause');
   assert.equal(lockAction('resume', 's', paused), 'resume');
   assert.equal(lockAction('rebuy', 's', running), 'rebuy');

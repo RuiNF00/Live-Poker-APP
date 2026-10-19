@@ -5,7 +5,7 @@
 // "Noite" tokens from src/theme.ts, copied by value.
 
 import { Button, HStack, Image, Link, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { accessibilityLabel, activityBackgroundTint, background, buttonStyle, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
+import { accessibilityElement, accessibilityLabel, activityBackgroundTint, background, buttonStyle, cornerRadius, font, foregroundStyle, frame, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
 import { addUserInteractionListener, createLiveActivity, type LiveActivity } from 'expo-widgets';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
@@ -46,7 +46,7 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
     <ProgressView timerInterval={{ lower: new Date(p.levelFrom), upper: new Date(p.nextLevelAt) }} countsDown={false} modifiers={[tint(accent)]} />
   );
   const newHand = (
-    <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 9, bottom: 9 }), background(accent), cornerRadius(12)]}>
+    <Link destination="sweatbook://hand/new" modifiers={[frame({ maxWidth: 10000 }), padding({ top: 9, bottom: 9 }), background(accent), cornerRadius(12), accessibilityLabel(p.labels.newHand)]}>
       <Text modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle('#1A0A04'), lineLimit(1)]}>{'+ ' + p.labels.newHand}</Text>
     </Link>
   );
@@ -87,9 +87,9 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
       {label(leveled ? p.labels.blinds : p.level)}
       <Text modifiers={[...mono(20, levelDue ? accent : text), lineLimit(1)]}>{p.blinds}</Text>
       {levelDue ? (
-        <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(accent), lineLimit(1)]}>{p.labels.levelUp + ' → ' + p.nextBlinds}</Text>
+        <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(accent), lineLimit(1), accessibilityLabel(p.labels.levelUp + ', ' + p.labels.nextBlinds + ' ' + p.nextBlinds)]}>{p.labels.levelUp + ' → ' + p.nextBlinds}</Text>
       ) : leveled ? (
-        <Text modifiers={[...mono(12, dim, 'regular'), lineLimit(1)]}>{'→ ' + p.nextBlinds}</Text>
+        <Text modifiers={[...mono(12, dim, 'regular'), lineLimit(1), accessibilityLabel(p.labels.nextBlinds + ' ' + p.nextBlinds)]}>{'→ ' + p.nextBlinds}</Text>
       ) : null}
     </VStack>
   );
@@ -98,13 +98,13 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
   // name: it says whose session this is, it isn't an ad.
   const head = (
     <HStack spacing={6}>
-      <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(p.paused ? warn : good)]}>{'● ' + p.status.toUpperCase()}</Text>
+      <Text modifiers={[font({ size: 12, weight: 'bold' }), foregroundStyle(p.paused ? warn : good), accessibilityLabel(p.status)]}>{'● ' + p.status.toUpperCase()}</Text>
       {leveled ? clock(12, dim) : <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{p.title}</Text>}
       <Spacer />
       {p.breakAt ? (
         <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(warn), lineLimit(1)]}>{p.breakAt}</Text>
       ) : (
-        <HStack spacing={0}>
+        <HStack spacing={0} modifiers={[accessibilityElement('ignore'), accessibilityLabel('Sweatbook')]}>
           <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(dim)]}>Sweat</Text>
           <Text modifiers={[font({ size: 12, weight: 'heavy' }), foregroundStyle(accent)]}>book</Text>
         </HStack>
@@ -155,14 +155,14 @@ const SessionActivity = createLiveActivity<LiveProps>('SweatbookSession', (p, en
     compactLeading: <Text modifiers={[...mono(14, text), lineLimit(1)]}>{p.stackBB}</Text>,
     compactTrailing: leveled ? (
       levelDue ? (
-        <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accent)]}>↑</Text>
+        <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(accent), accessibilityLabel(p.labels.levelUp)]}>↑</Text>
       ) : (
         <VStack modifiers={[frame({ width: 52, alignment: 'trailing' })]}>{countdown(14, p.paused ? warn : accent)}</VStack>
       )
     ) : (
       <VStack modifiers={[frame({ width: 64, alignment: 'trailing' })]}>{clock(14)}</VStack>
     ),
-    minimal: <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(levelDue ? warn : accent)]}>{levelDue ? '↑' : '♠︎'}</Text>,
+    minimal: <Text modifiers={[font({ size: 14, weight: 'bold' }), foregroundStyle(levelDue ? warn : accent), accessibilityLabel(levelDue ? p.labels.levelUp : 'Sweatbook')]}>{levelDue ? '↑' : '♠︎'}</Text>,
     expandedLeading: (
       <VStack alignment="leading" spacing={2} modifiers={[padding({ leading: 4 })]}>
         {leveled ? label(p.labels.next, levelDue ? accent : dim) : label(p.labels.time)}

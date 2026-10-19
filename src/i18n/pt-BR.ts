@@ -1502,6 +1502,7 @@ const ptBR: Record<string, string> = {
   'Vídeo com a tua cara': 'Vídeo com seu rosto',
   'A explicar a mão, num canto': 'Explicando a mão, em um canto',
   'Partilhar stack': 'Compartilhar stack',
+  'Blinds seguintes': 'Próximos blinds',
   'No saco': 'Fichas guardadas',
   '{name} · Dia {n} ensacado: {chips}': '{name} · Fim do Dia {n}: {chips}',
   // Replayer read aloud (VoiceOver/TalkBack).

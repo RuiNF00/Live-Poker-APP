@@ -53,7 +53,7 @@ export interface LiveProps {
   inPlace: boolean;
   /** Button targets for the in-place actions: "pause:<id>", read back by parseTarget. */
   pauseTarget: string;
-  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string; end: string };
+  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; nextBlinds: string; shareStack: string; pause: string; rebuy: string; end: string };
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
@@ -178,6 +178,7 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false, inP
       next: t('Sobe em'),
       levelUp: t('Subir nível'),
       newHand: t('Nova mão'),
+      nextBlinds: t('Blinds seguintes'),
       shareStack: t('Partilhar stack'),
       pause: paused ? t('Retomar') : t('Pausa'),
       rebuy: mtt ? 'Re-entry' : 'Rebuy',
