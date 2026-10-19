@@ -14,7 +14,7 @@ import { addSwapEntry, deleteSwap, fetchSwap, newCid, removeSwapEntry, setSwapOw
 
 import { quarantine } from './boot';
 import { currentDeleted, loadDeleted, markDeleted } from './deleted';
-import { entryId, liveSwaps } from './deleted-math';
+import { entryId, liveSwaps, reclaimDeleted } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwap } from './swap-validate';
 import { MAX_SWAP_ENTRIES, mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
@@ -105,7 +105,7 @@ export function onSwapNews(l: News): () => void {
 function applyRemote(id: string, remote: RemoteSwap) {
   const cur = getSwap(id);
   if (!cur) return;
-  const next = mergeRemote(cur, remote);
+  const next = reclaimDeleted(mergeRemote(cur, remote), currentDeleted(), (e) => e.side === cur.side, (e) => e.side);
   saveSwap(next);
   const news = newFromOther(cur, next);
   if (news.length) newsListeners.forEach((l) => l(next, news));

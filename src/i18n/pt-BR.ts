@@ -1784,6 +1784,7 @@ const ptBR: Record<string, string> = {
   'Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.': 'Sem conexão: o swap é criado quando tiver sinal e o link abre a partir daí.',
   'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'O swap “{title}” já tinha sido confirmado. Abra o link de novo para ver.',
   'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Seu lugar em “{title}” já tinha sido escolhido. Abra o link de novo para escolher outro.',
+  'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'Ficou sem registrar o acerto em “{titles}”: ele já tem o máximo de registros. Os outros foram registrados.',
 };
 
 export default ptBR;

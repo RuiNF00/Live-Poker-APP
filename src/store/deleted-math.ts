@@ -126,5 +126,22 @@ export function liveSwaps<T extends { id: string; entries: { cid: string; pendin
   return changed ? out : items;
 }
 
+/**
+ * One I deleted while it was still being sent: if the send had landed (its answer lost), the server
+ * hands it back. Out of the list and into `removing`, so the next sync deletes it there too, for both
+ * players, instead of it coming back. The same object when nothing changes.
+ */
+export function reclaimDeleted<T extends { id: string; entries: { id: string; cid: string; pending?: boolean }[]; removing?: string[] }>(
+  x: T,
+  d: Deleted,
+  mine: (e: T['entries'][number]) => boolean,
+  who: (e: T['entries'][number]) => string | number,
+): T {
+  const back = x.entries.filter((e) => !e.pending && mine(e) && d[keyOf('swapEntries', entryId(x.id, who(e), e.cid))] !== undefined);
+  if (!back.length) return x;
+  const ids = new Set(back.map((e) => e.id));
+  return { ...x, entries: x.entries.filter((e) => !ids.has(e.id)), removing: [...(x.removing ?? []).filter((r) => !ids.has(r)), ...ids] };
+}
+
 /** What «Apagar tudo» keeps: only the swaps' marks (see deleted.ts). */
 export const swapMarks = (d: Deleted): Deleted => Object.fromEntries(Object.entries(d).filter(([k]) => isSwapMark(k)));

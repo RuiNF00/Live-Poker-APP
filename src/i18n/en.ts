@@ -3461,6 +3461,7 @@ const en: Record<string, string> = {
   'Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.': 'No signal: the swap is created when you\'re back online, and the link opens from then on.',
   'O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.': 'The swap “{title}” had already been confirmed. Open the link again to see it.',
   'O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.': 'Your seat in “{title}” had already been taken. Open the link again to pick another.',
+  'Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.': 'The settle-up in “{titles}” wasn\'t recorded: it already has the most entries it can hold. The others were recorded.',
 };
 
 export default en;

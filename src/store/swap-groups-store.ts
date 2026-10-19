@@ -14,7 +14,7 @@ import { addGroupEntry, fetchGroup, leaveGroup, releaseSeat, removeGroupEntry, s
 
 import { quarantine } from './boot';
 import { currentDeleted, loadDeleted, markDeleted } from './deleted';
-import { entryId, liveSwaps } from './deleted-math';
+import { entryId, liveSwaps, reclaimDeleted } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwapGroup } from './swap-validate';
 import { MAX_GROUP_ENTRIES, mergeGroups, mergeRemoteGroup, newFromOthers, type GroupEntry, type RemoteGroup, type SwapGroup } from './swap-groups';
@@ -96,7 +96,7 @@ function applyRemote(id: string, remote: RemoteGroup) {
     saveGroup({ ...cur, gone: true, removed: true, entries: cur.entries.map(({ pending: _, ...e }) => e), updatedAt: Date.now() });
     return;
   }
-  const next = mergeRemoteGroup(cur, remote);
+  const next = reclaimDeleted(mergeRemoteGroup(cur, remote), currentDeleted(), (e) => e.seat === cur.seat, (e) => e.seat);
   saveGroup(next);
   const news = newFromOthers(cur, next);
   if (news.length) newsListeners.forEach((l) => l(next, news));

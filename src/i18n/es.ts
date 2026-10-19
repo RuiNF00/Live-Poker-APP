@@ -3455,6 +3455,7 @@ const es: Record<string, string> = {
   "Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.": "Sin conexión: el swap se crea cuando haya señal y el link abre a partir de ahí.",
   "O swap «{title}» já tinha sido confirmado. Abre o link outra vez para ver.": "El swap «{title}» ya estaba confirmado. Abre el link otra vez para verlo.",
   "O teu lugar em «{title}» já tinha sido escolhido. Abre o link outra vez para escolher outro.": "Tu lugar en «{title}» ya estaba elegido. Abre el link otra vez para elegir otro.",
+  "Ficou por registar o acerto em «{titles}»: já tem o máximo de registos. Os outros ficaram registados.": "Quedó sin registrar el ajuste en «{titles}»: ya tiene el máximo de registros. Los demás quedaron registrados.",
 };
 
 export default es;

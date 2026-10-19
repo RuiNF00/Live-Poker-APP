@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { parseBackup } from '../backup';
 import { sepId } from '../bankroll-math';
-import { alive, bankrollMark, cleanDeleted, joinDeleted, revive } from '../deleted-math';
+import { alive, bankrollMark, cleanDeleted, entryId, joinDeleted, reclaimDeleted, revive } from '../deleted-math';
 
 test('deletes: the later time of each wins, and only what was not edited after goes', () => {
   const d = joinDeleted({ 'sessions:a': 10, 'hands:x': 5 }, { 'sessions:a': 30 });
@@ -62,4 +62,30 @@ test('a bankroll mark has its currency: it drops that bankroll under either name
   // An older mark with no currency still matches the id; a restore revives what it matched.
   assert.deepEqual(alive([eur], 'bankrolls', { ['bankrolls:' + X]: 5 }), []);
   assert.deepEqual(revive({ bankrolls: [usdCopy] }, d, 9).revived, ['bankrolls:' + bankrollMark(X, '$')]);
+});
+
+test('an entry I deleted while its send was unanswered, handed back by the server: off the list and on its way out', () => {
+  const s = {
+    id: 'S1',
+    side: 'a',
+    removing: ['old'],
+    entries: [
+      { id: 'e1', cid: 'c1', side: 'a' }, // mine, deleted here while pending: the send had landed
+      { id: 'e2', cid: 'c1', side: 'b' }, // the other player's, same cid: theirs, never touched
+      { id: 'e3', cid: 'c3', side: 'a' }, // mine, not deleted
+      { id: 'local', cid: 'c4', side: 'a', pending: true }, // still mine to send: liveSwaps' job
+    ],
+  };
+  const d = { ['swapEntries:' + entryId('S1', 'a', 'c1')]: 5, ['swapEntries:' + entryId('S1', 'a', 'c4')]: 5 };
+  const out = reclaimDeleted(s, d, (e) => e.side === 'a', (e) => e.side);
+  assert.deepEqual(out.entries.map((e) => e.id), ['e2', 'e3', 'local']);
+  assert.deepEqual(out.removing, ['old', 'e1']);
+  // Nothing deleted: the same object. Twice: e1 is not queued twice.
+  assert.equal(reclaimDeleted(s, {}, () => true, (e) => e.side), s);
+  assert.deepEqual(reclaimDeleted({ ...s, removing: ['e1'] }, d, (e) => e.side === 'a', (e) => e.side).removing, ['e1']);
+  // A group: by seat.
+  const g: { id: string; entries: { id: string; cid: string; seat: number }[]; removing?: string[] } = { id: 'G1', entries: [{ id: 'g1', cid: 'c1', seat: 2 }, { id: 'g2', cid: 'c1', seat: 0 }] };
+  const out2 = reclaimDeleted(g, { ['swapEntries:' + entryId('G1', 2, 'c1')]: 5 }, (e) => e.seat === 2, (e) => e.seat);
+  assert.deepEqual(out2.entries.map((e) => e.id), ['g2']);
+  assert.deepEqual(out2.removing, ['g1']);
 });
