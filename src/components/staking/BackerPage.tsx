@@ -13,7 +13,7 @@ import { useOnline } from '@/lib/sync';
 import { nextEventFor, useOffers, type ActionOffer } from '@/store/action-offer';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals } from '@/store/my-festivals';
-import type { BackerLedger, YearStatement } from '@/store/staking';
+import { unconverted, type BackerLedger, type YearStatement } from '@/store/staking';
 import { uid, useStore } from '@/store/store';
 import type { Backer, BackerPayment, Session, StakePackage } from '@/store/types';
 
@@ -73,7 +73,7 @@ function Sync() {
     for (const b of backers) {
       const l = ledgers.get(b.id);
       // Part of the deal with no rate yet: the page keeps its last numbers until the rate is here.
-      if (!b.page || !b.shareKey || !l || l.apart.length) continue;
+      if (!b.page || !b.shareKey || !l || unconverted(l).length) continue;
       const st = statementFor({ ...b, shareKey: b.shareKey }, settings.nickname || '', l, { sessions, packages, payments, offers, home: settings.currency });
       const key = keyOf(st);
       const page = b.page;

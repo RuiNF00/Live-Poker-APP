@@ -10,6 +10,7 @@ import { money, settledMoney, shortDate } from '@/poker/format';
 import { pieceSteps, type BackerLedger, type BackerLedgerRow } from '@/store/staking';
 import { C, F, S } from '@/theme';
 import { dec, Sheet } from './sheets';
+import { apartLines } from './use-staking';
 
 const pct = (x: number) => `${Number.isInteger(Math.round(x * 1000) / 10) ? Math.round(x * 100) : dec(Math.round(x * 1000) / 10, 1)}%`;
 
@@ -39,6 +40,7 @@ function Step({ label, detail, amount, currency, total, color, sign = true }: { 
 export function SettlementCard({ l, name, currency }: { l: BackerLedger; name: string; currency: string }) {
   const done = l.rows.filter((r) => r.session.endedAt).length;
   const balColor = Math.abs(l.balance) < 0.01 ? C.textDim : l.balance > 0 ? C.warn : C.good;
+  const apart = apartLines(l);
   return (
     <Card style={{ paddingVertical: S.sm }}>
       <Step
@@ -60,12 +62,18 @@ export function SettlementCard({ l, name, currency }: { l: BackerLedger; name: s
         <Step label={l.paid > 0 ? t('Já lhe pagaste') : t('Já te pagou')} amount={-l.paid} currency={currency} />
       ) : null}
       <Step
-        label={Math.abs(l.balance) < 0.01 ? t('Acertado') : l.balance > 0 ? t('Deves a {name}', { name }) : t('{name} deve-te', { name })}
+        label={Math.abs(l.balance) < 0.01 ? (apart.length ? t('Saldo com câmbio') : t('Acertado')) : l.balance > 0 ? t('Deves a {name}', { name }) : t('{name} deve-te', { name })}
         amount={Math.abs(l.balance) < 0.01 ? 0 : Math.abs(l.balance)}
         currency={currency}
         total
         color={balColor}
       />
+      {/* Festival action with no rate: outside this balance, in its own currency. */}
+      {apart.map((x) => (
+        <T key={x} v="small" color={C.warn} style={{ paddingTop: S.xs }}>
+          {x}
+        </T>
+      ))}
       <T v="tiny" style={{ paddingTop: S.sm }}>
         {t('Os pagamentos fazem-se fora da app; aqui só os registas.')}
       </T>

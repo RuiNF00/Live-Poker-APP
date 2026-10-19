@@ -5,9 +5,10 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, withCuts } from '../staking';
+import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, packageDefaults, packageStates, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
+import { rate } from '../fx-math';
 
 let n = 0;
 function mk(over: Partial<Session> = {}): Session {
@@ -563,4 +564,35 @@ test('nothing goes to the backer while festival action has no rate (Voz/Bankroll
   addOfferDue(sq, '$', 302.5, 0, (a, b) => (a === b ? 1 : null));
   assert.equal(sq.balance, 0);
   assert.deepEqual(unconverted(sq), ['$']);
+});
+
+test('the headline never says «Acertado» above festival action with no rate (Design P2, 19 Oct)', () => {
+  const none = (a: string, b: string) => (a === b ? 1 : null);
+  const pay = [{ id: 'p', backerId: 'b1', amount: -30, at: 1 } as BackerPayment];
+  // The deal square in €, 7650 Kč apart: the Kč leads.
+  const l = backerLedger('b1', [], [], pay, undefined, { table: {}, fallback: '€' });
+  addOfferDue(l, '€', 30, 0, none);
+  addOfferDue(l, 'Kč', 7650, 0, none);
+  assert.equal(l.balance, 0);
+  assert.deepEqual(headlineOf(l, '€'), { balance: -7650, currency: 'Kč', apart: true });
+  // A balance in the deal's currency leads; nothing anywhere: square.
+  const m = backerLedger('b1', [], [], [], undefined, { table: {}, fallback: '€' });
+  addOfferDue(m, '€', 30, 0, none);
+  addOfferDue(m, 'Kč', 7650, 0, none);
+  assert.deepEqual(headlineOf(m, '€'), { balance: -30, currency: '€', apart: false });
+  assert.deepEqual(headlineOf(backerLedger('b1', [], [], []), '€'), { balance: 0, currency: '€', apart: false });
+});
+
+test('a currency the ECB does not publish: the rate the player types brings it in, and the send goes (QA P2, 19 Oct)', () => {
+  const l = backerLedger('b1', [], [], [], undefined, { table: {}, fallback: '€' });
+  l.rows.push({} as never); // a deal in € (a session)
+  l.currency = '€';
+  addOfferDue(l, 'ARS', 10000, 0, (a, b) => rate({}, a, b, 0, {}));
+  assert.deepEqual(unconverted(l), ['ARS'], 'no rate: the send waits');
+  const m = backerLedger('b1', [], [], [], undefined, { table: {}, fallback: '€' });
+  m.rows.push({} as never);
+  m.currency = '€';
+  addOfferDue(m, 'ARS', 10000, 0, (a, b) => rate({}, a, b, 0, { ARS: 1000 }));
+  assert.deepEqual(unconverted(m), []);
+  assert.equal(m.unpaid, 10);
 });
