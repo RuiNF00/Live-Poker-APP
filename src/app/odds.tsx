@@ -117,7 +117,7 @@ export default function OddsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('Calculadora de odds') }} />
+      <Stack.Screen options={{ title: t('Calculadora de equity') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 60 }}>
         <Card style={{ gap: S.md }}>
           {/* Wraps on narrow phones: two hole cards and five board cards don't fit one row at 320. */}

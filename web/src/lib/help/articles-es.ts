@@ -269,7 +269,7 @@ export const ES: Record<string, ArticleText> = {
           'Compartir por link sin límite, con replay y votación.',
           'Importar de otras apps.',
           'Seguridad: copia en la nube, ocultar importes y bloqueo de la app.',
-          'La sesión en la pantalla de bloqueo, la calculadora de odds, el ICM y el planificador del festival con los horarios.',
+          'La sesión en la pantalla de bloqueo, la calculadora de equity, el ICM y el planificador del festival con los horarios.',
           'Crear swaps y registrar resultados.',
           'Compartir tu conteo de fichas.',
           'Un bankroll y un viaje.',

@@ -1144,7 +1144,7 @@ const ptBR: Record<string, string> = {
   'Não vais ser cobrado. Tudo o que registares fica teu, mesmo depois.': 'Você não vai ser cobrado. Tudo o que você registrar continua seu, mesmo depois.',
   'O que fica grátis': 'O que continua grátis',
   'Partilha por link sem limite': 'Compartilhamento por link sem limite',
-  'Calculadora de odds e planeador de festivais': 'Calculadora de odds e planejador de festivais',
+  'Calculadora de equity e planeador de festivais': 'Calculadora de equity e planejador de festivais',
   'O que te fez desligar?': 'O que fez você desligar?',
   'Marca o próximo festival no planeador. Quando voltares a jogar, o caderno está como o deixaste.': 'Marque o próximo festival no planejador. Quando você voltar a jogar, o caderno estará como você deixou.',
   'Lembra-me no próximo festival': 'Me lembre no próximo festival',
