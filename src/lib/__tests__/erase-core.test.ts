@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { APP_PREFIXES, DELETE_KINDS, KEEP_KEYS, keysToErase } from '../erase-core';
+import { APP_PREFIXES, DELETE_KINDS, eraseInOrder, KEEP_KEYS, keysToErase } from '../erase-core';
 
 test('erasing removes every hand, session, setting and cloud code, and keeps the pending deletes and the free-plan log', () => {
   const all = ['rl.hands.v2', 'rl.hand.v2.a', 'rl.session.v2.b', 'rl.settings.v1', 'rl.cloud.v1', 'rl.draft.v1', 'rl.festivalPlans.v1', 'sweatbook.replayer.tips.v1', ...KEEP_KEYS, 'expo.other'];
@@ -51,4 +51,22 @@ test('every delete the app queues is one the outbox never gives up on', async ()
   assert.deepEqual(deletes.filter((k) => !DELETE_KINDS.includes(k)), []);
   // And no listed kind is a typo: each one has a sender.
   assert.deepEqual(DELETE_KINDS.filter((k) => !kinds.has(k)), []);
+});
+
+test('o apagar da cópia na nuvem vai primeiro; se falhar, nada mais corre e o código fica', async () => {
+  const log: string[] = [];
+  const rest = async () => void log.push('forgetHandShare', 'clearOffers');
+  await eraseInOrder('c', async () => void log.push('queueCloud'), rest, async () => void log.push('forgetCode'));
+  assert.deepEqual(log, ['queueCloud', 'forgetHandShare', 'clearOffers', 'forgetCode']);
+  // The cipher didn't load: share links, action packages and the code are all untouched.
+  const failed: string[] = [];
+  await assert.rejects(
+    eraseInOrder('c', async () => Promise.reject(new Error('chunk')), async () => void failed.push('forgetHandShare', 'clearOffers'), async () => void failed.push('forgetCode')),
+    /chunk/,
+  );
+  assert.deepEqual(failed, []);
+  // No cloud copy: the rest runs, then the (empty) code is forgotten.
+  const none: string[] = [];
+  await eraseInOrder(null, async () => void none.push('queueCloud'), async () => void none.push('rest'), async () => void none.push('forgetCode'));
+  assert.deepEqual(none, ['rest', 'forgetCode']);
 });

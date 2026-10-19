@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
-import { FESTIVALS, festivalSortKey, festivalSpan, type Festival } from '@/poker/festivals';
+import { FESTIVALS, festivalSortKey, festivalSpan, loadShippedFestivals, type Festival } from '@/poker/festivals';
 
 import { parseOrQuarantine } from './boot';
 import type { KV } from './persist';
@@ -82,7 +82,10 @@ function set(next: Festival[]) {
 }
 
 function load(): Promise<void> {
-  loaded ??= AsyncStorage.getItem(KEY)
+  loaded ??= loadShippedFestivals()
+    // The player's own festivals load even if the shipped schedules didn't.
+    .catch(() => {})
+    .then(() => AsyncStorage.getItem(KEY))
     .then(async (raw) => {
       const saved = ((raw && (await parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || []).filter((f) => f && f.own && f.dates);
       ready = true;

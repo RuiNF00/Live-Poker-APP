@@ -3,7 +3,6 @@
 // include the fee, times are local to the venue. When a schedule changes,
 // update the rows and `source.checked` together.
 
-import { ESPINHO_DEC_2026, LISBOA_NOV_2026, PERALADA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from './festivals-nov-2026';
 
 export interface FestivalEvent {
   /** Stable across app versions: plans and sessions point at it. */
@@ -593,16 +592,30 @@ export const FESTIVALS: Festival[] = [
   MONACO_MAY_2027,
   ESTORIL_MAY_2027,
   LAS_VEGAS_SUMMER_2027,
-  // November 2026 (festivals-nov-2026.ts). Lists sort by start; FESTIVALS[0] stays the first-run checklist's festival.
-  TORRELODONES_NOV_2026,
-  SAO_PAULO_NOV_2026,
-  LISBOA_NOV_2026,
-  PERALADA_NOV_2026,
-  ESPINHO_DEC_2026,
-  PRAGUE_DEC_2026,
-  PUNTA_DEL_ESTE_DEC_2026,
-  PUNTA_CANA_JAN_2027,
+  // Then November 2026 to January 2027 (festivals-nov-2026.ts), added by loadShippedFestivals.
+  // Lists sort by start; FESTIVALS[0] stays the first-run checklist's festival.
 ];
+
+let shipped: Promise<void> | null = null;
+
+/**
+ * The full schedules of November 2026 to January 2027 (~50 KB) load apart from
+ * the launch bundle. The store waits for them, through my-festivals, before the
+ * first screen, so every screen sees the whole list.
+ */
+export function loadShippedFestivals(load: () => Promise<typeof import('./festivals-nov-2026')> = () => import('./festivals-nov-2026')): Promise<void> {
+  shipped ??= load().then(
+    (m) => {
+      const more = [m.TORRELODONES_NOV_2026, m.SAO_PAULO_NOV_2026, m.LISBOA_NOV_2026, m.PERALADA_NOV_2026, m.ESPINHO_DEC_2026, m.PRAGUE_DEC_2026, m.PUNTA_DEL_ESTE_DEC_2026, m.PUNTA_CANA_JAN_2027];
+      FESTIVALS.push(...more.filter((f) => !FESTIVALS.includes(f)));
+    },
+    () => {
+      // Web without signal and the chunk not cached: try again on the next call.
+      shipped = null;
+    },
+  );
+  return shipped;
+}
 
 const zoneFmt = new Map<string, Intl.DateTimeFormat>();
 

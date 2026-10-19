@@ -84,7 +84,7 @@ const everything = () =>
 
 async function throughCloud(b: BackupData, secret = 'ABCDEFGHJKMNPQRS', readWith = secret): Promise<BackupData> {
   const body = await sealAsync(JSON.stringify(b), deriveKeys(secret).enc, new Uint8Array(12).fill(7), async () => {});
-  return parseBackup(unseal(body, deriveKeys(readWith).enc, true));
+  return parseBackup(await unseal(body, deriveKeys(readWith).enc, true));
 }
 
 test('backup → cloud → restore: every list comes back identical', async () => {

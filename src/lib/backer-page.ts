@@ -20,7 +20,7 @@ export interface BackerPage {
 }
 
 export const newPageKey = () => b64url(Crypto.getRandomBytes(32));
-export const sealPage = (data: unknown, page: Pick<BackerPage, 'id' | 'key'>): Sealed => seal(data, page.id, page.key, Crypto.getRandomBytes(12));
+export const sealPage = (data: unknown, page: Pick<BackerPage, 'id' | 'key'>): Promise<Sealed> => seal(data, page.id, page.key, Crypto.getRandomBytes(12));
 
 /** `ref`: the player's invite code, as on every shared link. */
 export function backerPageUrl(page: Pick<BackerPage, 'id' | 'key'>, ref?: string): string {

@@ -1525,6 +1525,7 @@ const en: Record<string, string> = {
   'Sem rede: copia quando voltar': 'Offline: copies when you’re back online',
   'Algo correu mal': 'Something went wrong',
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'The hand you were entering and your live session are saved. Go back and carry on; if it happens again, close and reopen the app.',
+  'Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.': 'Nothing was deleted from this phone. Try again; if you’re offline, connect first.',
   'Sem rede': 'Offline',
   'Sem rede · {n} por enviar': 'Offline · {n} to send',
   'Tudo guardado no telemóvel. Envia quando houver sinal.': 'Everything is saved on your phone. It sends when there’s signal.',
