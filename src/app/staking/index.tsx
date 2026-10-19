@@ -13,7 +13,7 @@ import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T
 import { t } from '@/i18n';
 import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
-import type { BackerLedger, StakingTotals } from '@/store/staking';
+import { headlineOf, type BackerLedger, type StakingTotals } from '@/store/staking';
 import type { Backer } from '@/store/types';
 import { C, S } from '@/theme';
 import { ReadOnlyNote, useProReadOnly, withPro } from '@/components/ProGate';
@@ -54,8 +54,11 @@ function StakingScreen() {
                 {sorted.map((b) => {
                   const l = ledgers.get(b.id);
                   const cur = l?.currency ?? totals.currency;
-                  const bal = { ...balanceLabel(l?.balance ?? 0, cur), owe: (l?.balance ?? 0) > 0 };
-                  const square = Math.abs(l?.balance ?? 0) < 0.01;
+                  // With the deal square, festival action with no rate still shows (never «Acertado» above a debt).
+                  const head = l ? headlineOf(l, cur) : { balance: 0, currency: cur, apart: false };
+                  const bal = { ...balanceLabel(head.balance, head.currency), owe: head.balance > 0 };
+                  const square = Math.abs(head.balance) < 0.01;
+                  const apart = l ? apartLines(l) : [];
                   const n = l?.rows.length ?? 0;
                   return (
                     <ListItem
@@ -70,12 +73,18 @@ function StakingScreen() {
                           </T>
                           {/* One line per amount, never cut: what is still owed must always show. */}
                           {l
-                            ? [...parts(l, cur), ...apartLines(l)].map((p) => (
+                            ? parts(l, cur).map((p) => (
                                 <T key={p} v="tiny">
                                   {p}
                                 </T>
                               ))
                             : null}
+                          {/* Apart for want of a rate: in the warning colour, so it doesn't read as part of the sum. */}
+                          {apart.map((p) => (
+                            <T key={p} v="tiny" color={C.warn}>
+                              {p}
+                            </T>
+                          ))}
                         </View>
                       }
                       right={
@@ -86,7 +95,7 @@ function StakingScreen() {
                             </T>
                           )}
                           <T v="mono" color={bal.color} style={{ fontSize: 15 }}>
-                            {square ? t('Acertado') : money(Math.abs(l?.balance ?? 0), cur)}
+                            {square ? t('Acertado') : money(Math.abs(head.balance), head.currency)}
                           </T>
                         </View>
                       }

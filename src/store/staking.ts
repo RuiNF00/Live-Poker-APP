@@ -215,6 +215,17 @@ export function unconverted(l: BackerLedger): string[] {
   return l.apart.filter((a) => Math.abs(a.balance) >= 0.01 || Math.abs(a.unpaid) >= 0.01).map((a) => a.currency);
 }
 
+/**
+ * What the backer's headline shows: the deal's balance or, with it square, the first festival
+ * amount kept apart for want of a rate. «Acertado» is only said when nothing is owed either way
+ * (Design P2, 19 Oct: «Acertado» above «Deve-te 7650Kč»).
+ */
+export function headlineOf(l: BackerLedger, currency: string): { balance: number; currency: string; apart: boolean } {
+  if (Math.abs(l.balance) >= 0.01) return { balance: l.balance, currency, apart: false };
+  const a = l.apart.find((x) => Math.abs(x.balance) >= 0.01);
+  return a ? { balance: a.balance, currency: a.currency, apart: true } : { balance: 0, currency, apart: false };
+}
+
 export interface BackerLedger {
   rows: BackerLedgerRow[];
   /**

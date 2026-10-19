@@ -23,11 +23,11 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { inFestivalPackage, offerPackageIds, useOffers } from '@/store/action-offer';
-import { symbolOf } from '@/store/currencies';
+import { inFestivalPackage, offerPackageIds, useOffers, type ActionOffer } from '@/store/action-offer';
+import { isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, ledgerYears, packageDefaults, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, headlineOf, ledgerYears, packageDefaults, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -38,11 +38,22 @@ function confirm(title: string, body: string, ok: () => void, okLabel = t('Sim')
   else Alert.alert(title, body, [{ text: t('Cancelar'), style: 'cancel' }, { text: okLabel, style: 'destructive', onPress: ok }]);
 }
 
-/** A message with one OK (Alert.alert does nothing on react-native-web). */
-function tell(title: string, body: string) {
-  if (Platform.OS === 'web') window.alert(`${title}\n\n${body}`);
-  else Alert.alert(title, body);
+/** A message with OK, and a way there when there is one (Alert.alert does nothing on react-native-web). */
+function tell(title: string, body: string, open?: () => void) {
+  if (Platform.OS === 'web') {
+    if (!open) window.alert(`${title}\n\n${body}`);
+    else if (window.confirm(`${title}\n\n${body}\n\n${t('Abrir o pacote?')}`)) open();
+  } else Alert.alert(title, body, open ? [{ text: 'OK', style: 'cancel' }, { text: t('Abrir o pacote'), onPress: open }] : undefined);
 }
+
+/** A currency as the backer reads it: its symbol, or its code where the symbol is shared ($, kr, ¥). */
+function curName(c: string): string {
+  const s = symbolOf(c);
+  return ['$', 'kr', '¥'].includes(s) ? (isoOf(c) ?? s) : s;
+}
+
+/** Opens the festival package, from an alert that says to go there. */
+const openOffer = (o: ActionOffer | undefined) => (o ? () => router.push({ pathname: '/action/[id]', params: { id: o.id } }) : undefined);
 
 function BackerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,7 +84,10 @@ function BackerScreen() {
       </>
     );
 
-  const bal = balanceLabel(l.balance, cur);
+  // With the deal square, festival action with no rate leads: never «Acertado» above a debt (Design P2).
+  const head = headlineOf(l, cur);
+  const bal = balanceLabel(head.balance, head.currency);
+  const apart = unconverted(l);
   const mine = packages.filter((p) => p.backerId === backer.id).sort((a, b) => Number(!!a.closedAt) - Number(!!b.closedAt) || b.createdAt - a.createdAt);
   const pays = payments.filter((p) => p.backerId === backer.id).sort((a, b) => b.at - a.at);
   // A package started during a trip is usually for that festival.
@@ -92,6 +106,7 @@ function BackerScreen() {
     setPiece(null);
   };
 
+  // Nothing to settle in the deal's currency (festival action apart, if any, can't be settled without a rate).
   const square = Math.abs(l.balance) < 0.01;
   // Settle the whole balance in one payment, the way Splitwise's "settle up" does.
   const markPaid = () =>
@@ -105,7 +120,7 @@ function BackerScreen() {
         savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now });
         tap('medium');
         // Store-review moment C (design/pedido-avaliacao.md): the balance is now "Acertado".
-        void maybeAskForReview('settled');
+        if (!apart.length) void maybeAskForReview('settled');
       },
       t('Marcar como pago'),
     );
@@ -113,9 +128,8 @@ function BackerScreen() {
   const shareSummary = async (withYear = false) => {
     if (sending.current) return;
     // Festival action with no rate yet: the text and the link would show less than the real balance.
-    const apart = unconverted(l);
     if (apart.length)
-      return tell(t('Falta o câmbio de {list}', { list: apart.map(symbolOf).join(', ') }), t('Sem ele, as contas que o backer recebe ficavam incompletas. Com rede, ou com o câmbio escrito no Bankroll, envia outra vez.'));
+      return tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('Sem ele, as contas que o backer recebe ficavam incompletas. Com rede, ou com o câmbio escrito no Bankroll, envia outra vez.'));
     sending.current = true;
     try {
       await sendSummary(withYear);
@@ -146,7 +160,7 @@ function BackerScreen() {
           ? t('Devo-te {amount}.', { amount: money(l.balance, cur) })
           : t('Deves-me {amount}.', { amount: money(-l.balance, cur) }),
       // Sessions counted 1:1 for want of a rate: the backer is told, in the player's voice to them.
-      l.missing.length ? t('Contas aproximadas: falta o câmbio de {list}.', { list: l.missing.map(symbolOf).join(', ') }) : '',
+      l.missing.length ? t('Contas aproximadas: falta o câmbio de {list}.', { list: l.missing.map(curName).join(', ') }) : '',
     ].filter((x) => x !== '');
     // The statement as a link they can open, or save in their own Sweatbook to follow every session.
     // It carries only this backer's own pieces (see lib/backing-link).
@@ -216,14 +230,19 @@ function BackerScreen() {
           <T v="monoXL" color={bal.color} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 34, lineHeight: 40 }}>
             {bal.text}
           </T>
+          {head.apart ? (
+            <T v="small" color={C.warn} style={{ textAlign: 'center' }}>
+              {t('Sem câmbio: fica fora do total.')}
+            </T>
+          ) : null}
           {/* Offline with no rate yet: sessions in another currency are counted 1 to 1, so say it. */}
           {l.missing.length ? (
             <T v="small" color={C.warn} style={{ textAlign: 'center' }}>
-              {t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.join(', ') })}
+              {t('Sem câmbio para {list}: contas aproximadas até haver rede.', { list: l.missing.map(symbolOf).join(', ') })}
             </T>
           ) : null}
-          {/* Festival action with no rate: never added in, shown apart in its own currency. */}
-          {apartLines(l).map((x) => (
+          {/* Festival action with no rate: never added in, shown apart in its own currency (the one leading is above). */}
+          {apartLines(l).slice(head.apart ? 1 : 0).map((x) => (
             <T key={x} v="small" color={C.warn} style={{ textAlign: 'center' }}>
               {x}
             </T>
@@ -234,10 +253,11 @@ function BackerScreen() {
             </T>
           ) : null}
           {square ? (
-            <Row gap={S.sm} style={{ alignSelf: 'stretch', marginTop: S.xs }}>
-              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
-              <Button size="md" kind="secondary" style={{ flex: 1 }} icon="cash-outline" title={t('Pagamento')} onPress={gate(() => setPaying(true))} />
-            </Row>
+            // Stacked too: side by side, «Enviar contas» is cut at 320 points and with large text (Design P3).
+            <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
+              <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
+              <Button size="md" kind="secondary" icon="cash-outline" title={t('Pagamento')} onPress={gate(() => setPaying(true))} />
+            </View>
           ) : (
             // Stacked: "Marcar como pago" (and "Marcar como pagado" in es) doesn't fit half the width of an iPhone.
             <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
@@ -246,6 +266,12 @@ function BackerScreen() {
             </View>
           )}
           {square ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={gate(() => setPaying(true))} />}
+          {/* Known before the tap: the statement waits for the rate (Design P3). */}
+          {apart.length ? (
+            <T v="tiny" color={C.warn} style={{ textAlign: 'center' }}>
+              {t('Para enviar as contas, falta o câmbio de {list}.', { list: apart.map(curName).join(', ') })}
+            </T>
+          ) : null}
           {backer.page ? (
             // Their fixed link: the player sees exactly what the backer sees, and can take it down.
             <View style={{ alignSelf: 'stretch', alignItems: 'center', gap: 2 }}>
@@ -429,7 +455,7 @@ function BackerScreen() {
         onDelete={() =>
           // Their festival pieces would keep counting as sold, and their links stay open: taken out there first.
           inFestivalPackage(offers, backer.id)
-            ? tell(t('{name} tem ação de festival', { name: backer.name }), t('Tira {name} no pacote do festival, para o link mudar também.', { name: backer.name }))
+            ? tell(t('{name} tem ação de festival', { name: backer.name }), t('Para tirar {name}, vai ao pacote do festival: assim o link também muda.', { name: backer.name }), openOffer(offers.find((o) => o.lines.some((x) => x.backerId === backer.id))))
             : confirm(t('Apagar {name}?', { name: backer.name }), t('Os pacotes e pagamentos deste backer também são apagados. As sessões ficam, com a ação vendida sem nome.'), () => {
             setEditing(false);
             deleteBacker(backer.id);
@@ -471,7 +497,7 @@ function BackerScreen() {
           pkg && packages.some((p) => p.id === pkg.id)
             ? () => {
                 // A festival package's piece lives in the festival's package (and the backer's link): taken out there.
-                if (offerPackageIds(offers).has(pkg.id)) return tell(t('Este pacote é de uma ação de festival'), t('Tira {name} no pacote do festival, para o link mudar também.', { name: backer.name }));
+                if (offerPackageIds(offers).has(pkg.id)) return tell(t('Este pacote é de uma ação de festival'), t('Para tirar {name}, vai ao pacote do festival: assim o link também muda.', { name: backer.name }), openOffer(offers.find((o) => o.lines.some((x) => x.packageId === pkg.id))));
                 confirm(t('Apagar pacote?'), t('As sessões ficam vendidas a {name}, fora de pacote.', { name: backer.name }), () => {
                   deletePackage(pkg.id);
                   setPkg(null);
@@ -497,7 +523,7 @@ function BackerScreen() {
           savePayment(p);
           setPaying(false);
           // A payment that squares the balance is moment C too.
-          if (Math.abs(l.balance - p.amount) < 0.01) void maybeAskForReview('settled');
+          if (Math.abs(l.balance - p.amount) < 0.01 && !apart.length) void maybeAskForReview('settled');
         }}
       />
     </>
