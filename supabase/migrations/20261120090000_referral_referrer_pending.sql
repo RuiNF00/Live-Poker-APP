@@ -95,7 +95,25 @@ begin
   return c;
 end $$;
 
+-- Swaps QA P2-B (coordinator, 19 Oct): erasing one side no longer takes the other side's discount
+-- with it. A reward stays when its referral goes (friend_install_id set to null); the erased side's own
+-- rewards are deleted by install_id. Here, with purge_referrals below, so neither change overwrites the other.
+alter table public.referral_rewards drop constraint referral_rewards_friend_install_id_fkey;
+alter table public.referral_rewards alter column friend_install_id drop not null;
+alter table public.referral_rewards add constraint referral_rewards_friend_install_id_fkey
+  foreign key (friend_install_id) references public.referrals (friend_install_id) on delete set null;
+
+create or replace function public.erase_referrals(p_install_id uuid) returns void
+language sql security definer set search_path = public as $$
+  delete from referral_rewards where install_id = p_install_id;
+  delete from referrals where friend_install_id = p_install_id;
+  delete from referral_codes where install_id = p_install_id;
+$$;
+revoke all on function public.erase_referrals(uuid) from public, anon, authenticated;
+grant execute on function public.erase_referrals(uuid) to service_role;
+
 -- An inviter who never comes back: the wait (a hash) goes after its 30 days, not at 400 (Security P3).
+-- A reward whose referral is gone goes 400 days after it ended, like the referrals themselves (P2-B).
 create or replace function public.purge_referrals() returns void
 language sql security definer set search_path = public as $$
   update referrals set referrer_pending_hash = null
@@ -109,5 +127,10 @@ language sql security definer set search_path = public as $$
   delete from referral_codes c
   where c.last_seen_at < now() - interval '400 days'
     and not exists (select 1 from referrals r where r.referrer_install_id = c.install_id or r.friend_install_id = c.install_id);
+  delete from referral_rewards w
+  where w.friend_install_id is null
+    and greatest(w.created_at, coalesce(w.pro_until, w.offer_until, w.created_at)) < now() - interval '400 days';
   delete from referral_rc_tally where created_at < now() - interval '400 days';
 $$;
+revoke all on function public.purge_referrals() from public, anon, authenticated;
+grant execute on function public.purge_referrals() to service_role;

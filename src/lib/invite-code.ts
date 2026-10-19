@@ -15,3 +15,13 @@ export function inviteCodeFrom(text: string): string | null {
   const inLink = /\/r\/([A-Za-z0-9]{8,10})(?=[/?#\s]|$)/.exec(s)?.[1] ?? /[?&]r=([A-Za-z0-9]{8,10})(?=[&#\s]|$)/.exec(s)?.[1];
   return normalize(inLink ?? s);
 }
+
+/**
+ * Whether to register this install's code with the server now. Once is enough, unless that time
+ * went before RevenueCat had a user: then once more with it, so a reward waiting on this inviter
+ * is booked on a launch, not only when «Convidar» is opened. `done` is what the last
+ * registration stored: 'rc' (sent with a RevenueCat user), 'true' (without, or from before) or null.
+ */
+export function shouldRegister(done: string | null, hasRc: boolean): boolean {
+  return !done || (done !== 'rc' && hasRc);
+}

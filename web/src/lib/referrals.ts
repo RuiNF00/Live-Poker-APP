@@ -255,7 +255,8 @@ class LocalBackend implements ReferralBackend {
       const gone = new Set(Object.entries(d.referrals).filter(([f, r]) => f === installId || r.referrer === installId).map(([f]) => f));
       for (const f of gone) delete d.referrals[f];
       delete d.codes[installId];
-      d.rewards = d.rewards.filter((w) => !gone.has(w.friend));
+      // The erased side's own rewards go; the other side keeps theirs (P2-B, as erase_referrals).
+      d.rewards = d.rewards.filter((w) => w.installId !== installId);
     });
   }
 }

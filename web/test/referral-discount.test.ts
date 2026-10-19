@@ -68,3 +68,18 @@ describe('an inviter with no RevenueCat user yet (1st update)', () => {
     expect((await b.status(me))?.discounts).toBe(0);
   });
 });
+
+describe('erasing one side (P2-B)', () => {
+  it("keeps the other side's discount and drops the erased side's own", async () => {
+    const b = referrals()!;
+    const inv = '77777777-7777-4777-8777-777777777777';
+    const pal = '88888888-8888-4888-8888-888888888888';
+    await b.codeFor(inv, 'INVA2345', 'rc_inv');
+    await b.codeFor(pal, 'PALB2345', 'rc_pal_b');
+    await b.claim(pal, 'INVA2345', 'link', null);
+    await b.activate(pal);
+    await b.erase(inv);
+    expect(await b.offer(pal, 'android')).not.toBeNull();
+    expect(await b.offer(inv, 'android')).toBeNull();
+  });
+});
