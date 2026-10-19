@@ -14,7 +14,7 @@ import { ALPHA, parseCloud, type CloudState } from './cloud-code';
 import { BACKUP_MAX_BYTES, countsOf, uploadBlock } from './cloud-guard';
 import { longSignal } from './net';
 import { isOnline } from './online';
-import { outcomeOf, queue, registerSender } from './sync';
+import { outcomeOf, queueOrThrow, registerSender } from './sync';
 
 // The ciphers and gzip (fflate, noble: ~90 KB) load only once a copy is actually sent or read, not at launch.
 const crypto = () => import('./backup-crypto');
@@ -248,7 +248,8 @@ export async function removeRemote(c: CloudState): Promise<void> {
  * the queue: it can delete the copy but not read it.
  */
 export async function queueCloudDelete(c: CloudState): Promise<void> {
-  queue('cloud-delete', { id: c.id, auth: (await crypto()).deriveKeys(c.secret).auth }, c.id);
+  // If it can't be saved, «Apagar tudo» stops and keeps the code (eraseInOrder).
+  await queueOrThrow('cloud-delete', { id: c.id, auth: (await crypto()).deriveKeys(c.secret).auth }, c.id);
 }
 
 registerSender('cloud-delete', async (p) => {
