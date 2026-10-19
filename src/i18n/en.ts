@@ -3373,7 +3373,7 @@ const en: Record<string, string> = {
   'Os bounties passam a ser partilhados': 'The bounties are now shared',
   'Muda o que o backer recebe na sessão já jogada deste pacote, e o saldo com ele.': 'This changes what the backer gets in the session already played in this package, and your balance with them.',
   'Muda o que o backer recebe nas {n} sessões já jogadas deste pacote, e o saldo com ele.': 'This changes what the backer gets in the {n} sessions already played in this package, and your balance with them.',
-  'Torneio PKO: o prémio do lugar acima, os bounties aqui.': 'PKO event: the prize for your finish above, the bounties here.',
+  'Torneio com bounties: o prémio do lugar acima, os bounties aqui.': 'Bounty event: the prize for your finish above, the bounties here.',
   'ROI sem bounties': 'ROI without bounties',
   'Dos prémios': 'Share of prizes',
   '{amount} em bounties': '{amount} in bounties',

@@ -623,7 +623,7 @@ function Live({ s }: { s: Session }) {
                 {mtt ? (
                   <Row gap={S.sm} style={{ alignItems: 'flex-end' }}>
                     <NumField money label={t('Bounties ({currency})', { currency: s.currency })} value={finish.bounties} onChange={(bounties) => setFinish((f) => ({ ...f, bounties }))} />
-                    {finish.bounties > 0 ? <T v="small" style={{ flex: 2 }}>{t('Total: {amount}', { amount: money(total, s.currency) })}</T> : after?.e.pko ? <T v="small" style={{ flex: 2 }}>{t('Torneio PKO: o prémio do lugar acima, os bounties aqui.')}</T> : <View style={{ flex: 2 }} />}
+                    {finish.bounties > 0 ? <T v="small" style={{ flex: 2 }}>{t('Total: {amount}', { amount: money(total, s.currency) })}</T> : after?.e.pko ? <T v="small" style={{ flex: 2 }}>{t('Torneio com bounties: o prémio do lugar acima, os bounties aqui.')}</T> : <View style={{ flex: 2 }} />}
                   </Row>
                 ) : null}
                 <View style={{ gap: S.sm }}>

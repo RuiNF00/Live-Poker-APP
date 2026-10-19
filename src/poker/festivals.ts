@@ -27,7 +27,7 @@ export interface FestivalEvent {
   takes?: string;
   /** Registration closes this many minutes after the start, when the organiser publishes it. */
   lateRegMin?: number;
-  /** Published as a knockout (PKO, bounty): the end of the session asks for the bounties first. */
+  /** Published with bounties (PKO, knockout, mystery bounty): the end of the session says where they go. */
   pko?: true;
 }
 
