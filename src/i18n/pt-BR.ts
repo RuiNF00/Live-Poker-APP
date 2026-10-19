@@ -1699,6 +1699,7 @@ const ptBR: Record<string, string> = {
   'Criar o meu link para backers': 'Criar meu link para backers',
   'O meu currículo': 'Meu currículo',
   'Incluir as minhas notas da mão': 'Incluir minhas notas da mão',
+  'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.': 'Pro para sempre. A assinatura começa a cobrar em {date}: cancele na loja.',
   'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.': 'Pro para sempre. A assinatura ainda renova em {date}: cancele na loja.',
   'A tua subscrição continua a renovar até a cancelares na {store}.': 'Sua assinatura continua renovando até você cancelar na {store}.',
   'Pro para sempre': 'Pro para sempre',

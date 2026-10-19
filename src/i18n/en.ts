@@ -2022,6 +2022,7 @@ const en: Record<string, string> = {
   'Stories com voz, sem marca de água': 'Stories with voice, no watermark',
   'Regista um torneio': 'Log a tournament',
   'Escolhe os torneios do próximo festival': 'Pick your events at the next festival',
+  'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.': 'Pro for good. Your subscription starts charging on {date}: cancel it in the store.',
   'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.': 'Pro for good. Your subscription still renews on {date}: cancel it in the store.',
   'A tua subscrição continua a renovar até a cancelares na {store}.': 'Your subscription keeps renewing until you cancel it in {store}.',
   'Pro para sempre': 'Pro for good',

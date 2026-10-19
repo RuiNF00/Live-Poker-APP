@@ -89,12 +89,12 @@ export default function SettingsScreen() {
   const { settings, setSettings, hands, sessions, players } = store;
   const pro = usePro();
   // Renewal date, or the end of the paid period once cancelled, so nobody wonders whether the cancel worked. Lifetime has no date.
-  const [period, setPeriod] = useState<{ date: string; renews: boolean } | null>(null);
+  const [period, setPeriod] = useState<{ date: string; renews: boolean; trial?: boolean } | null>(null);
   // Paid once: «Gerir subscrição» says so instead of asking why they want to cancel.
   const [forGood, setForGood] = useState(false);
   useEffect(() => {
     void (pro.isPro ? getSubscription() : Promise.resolve(null)).then((s) =>
-      setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew } : null),
+      setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew, trial: s.trial } : null),
     );
     void (pro.isPro ? hasLifetime() : Promise.resolve(false)).then(setForGood);
   }, [pro.isPro]);
@@ -247,7 +247,7 @@ export default function SettingsScreen() {
               icon="card-outline"
               iconColor={pro.isPro ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : forGood && period?.renews ? t('Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.', { date: period.date }) : forGood ? t('Pro para sempre') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : forGood && period?.renews ? t(period.trial ? 'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.' : 'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.', { date: period.date }) : forGood ? t('Pro para sempre') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
               // A failed renewal goes straight to the store's page, where the card is changed.
               onPress={() =>
                 // Paid once while a subscription still renews: straight to the store to cancel it.
