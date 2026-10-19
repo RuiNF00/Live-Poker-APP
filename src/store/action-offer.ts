@@ -381,7 +381,9 @@ export function unpaidLinesIn(
  * their due is in the balance). Marked paid, the package screen says what the backer screen says,
  * and the payment keeps only the rest (QA P2, 19 Oct). `due` is in the deal's currency, converted as
  * the balance did: the events no session carries yet (`rateOf`) and, once the festival is under way,
- * the unpaid stakes the piece already has on sessions (`stakesDue`, Bankroll P2).
+ * the unpaid stakes the piece already has on sessions (`stakesDue`, Bankroll P2), less what goes back
+ * for events not played. Marked paid with the events started now (setLinePaid), the refunded events
+ * are no longer covered (paidSkipped): nothing more goes back, and one played after all is owed again.
  */
 export function linesSettledWith(
   offers: ActionOffer[],
@@ -400,8 +402,10 @@ export function linesSettledWith(
     const st = started(f.id);
     for (const l of o.lines) {
       if (l.backerId !== backerId) continue;
-      const due = pendingCost(f, o, l, st) * x + stakesDue(l);
-      if (due > 0.005) out.push({ offerId: o.id, festivalId: f.id, lineId: l.id, due });
+      // A refund for events not played is in the balance too: settled, it is paid back (QA P2, 19 Oct).
+      const back = missedRefund(f, o, l, st);
+      const due = (pendingCost(f, o, l, st) - back) * x + stakesDue(l);
+      if (Math.abs(due) > 0.005 || back > 0) out.push({ offerId: o.id, festivalId: f.id, lineId: l.id, due });
     }
   }
   return out;
