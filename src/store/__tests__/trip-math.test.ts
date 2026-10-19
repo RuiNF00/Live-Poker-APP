@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { BAHAMAS_DEC_2026 as F, BAHIA_JAN_2027 } from '../../poker/festivals';
+import { BAHAMAS_DEC_2026 as F, BAHIA_JAN_2027 } from '../../poker/festival-data';
 import { SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals-nov-2026';
 import { EMPTY_PLAN, togglePicked } from '../festival-plan';
 import { blankTrip, changeTripCurrency, currentTrip, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';

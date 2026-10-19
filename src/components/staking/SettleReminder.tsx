@@ -12,9 +12,9 @@ import { AppState, Platform } from 'react-native';
 import { t } from '@/i18n';
 import { notifications, setup } from '@/lib/lock-screen/reminder';
 import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
-import { FESTIVALS } from '@/poker/festivals';
 import { getOffers, settleReminders, useOffers } from '@/store/action-offer';
 import { festivalName, getPlan } from '@/store/festival-plan';
+import { shippedFestivals } from '@/store/my-festivals';
 import { isPaused } from '@/store/session-math';
 import { useStore } from '@/store/store';
 
@@ -36,7 +36,7 @@ async function sync(names: Map<string, string>, playing: boolean) {
     if (playing || !notifyKindOn('money')) return;
     const sent: Record<string, number> = JSON.parse((await AsyncStorage.getItem(SENT_KEY)) ?? '{}');
     const items = getOffers().flatMap((o) => {
-      const f = FESTIVALS.find((x) => x.id === o.festivalId);
+      const f = shippedFestivals().find((x) => x.id === o.festivalId);
       return f ? [{ f, o, started: getPlan(f.id).sessions }] : [];
     });
     for (const r of settleReminders(items, Date.now(), sent).map((x) => ({ ...x, at: notifyAt('money', x.at) }))) {

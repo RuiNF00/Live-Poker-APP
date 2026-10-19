@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { festivalOn } from '../../lib/attribution';
-import { BAHAMAS_DEC_2026, BARCELONA_MAR_2027, FESTIVALS, festivalSortKey, festivalSpan, LOS_ANGELES_JAN_2027 } from '../../poker/festivals';
+import { BAHAMAS_DEC_2026, BARCELONA_MAR_2027, FESTIVALS, LOS_ANGELES_JAN_2027 } from '../../poker/festival-data';
+import { festivalSortKey, festivalSpan } from '../../poker/festivals';
 import { EMPTY_PLAN } from '../festival-plan';
-import { allFestivals, dayKey, deleteOwnFestival, festivalById, notOver, ownFestival, ownFestivalOk, saveOwnFestival, soon } from '../my-festivals';
+import { allFestivals, dayKey, loadOwnFestivals, shippedFestivals, deleteOwnFestival, festivalById, notOver, ownFestival, ownFestivalOk, saveOwnFestival, soon } from '../my-festivals';
 import { tripFromFestival } from '../trip-math';
 
 const DAY = 86_400_000;
@@ -34,7 +35,9 @@ test('the form needs a name and an end on or after the start', () => {
   assert.equal(ownFestivalOk({ ...input, to: input.from }), true, 'one-day festival');
 });
 
-test('own festivals sit in the list by start date, are found by id, and go when deleted', () => {
+test('own festivals sit in the list by start date, are found by id, and go when deleted', async () => {
+  await loadOwnFestivals();
+  assert.equal(shippedFestivals(), FESTIVALS, 'the schedules come in with the launch load');
   const f = ownFestival('fx_2', input);
   saveOwnFestival(f);
   const ids = allFestivals().map((x) => x.id);

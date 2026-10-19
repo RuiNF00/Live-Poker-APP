@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
-import { FESTIVALS, festivalSortKey, festivalSpan, type Festival } from '@/poker/festivals';
+import { festivalSortKey, festivalSpan, type Festival } from '@/poker/festivals';
 
 import { parseOrQuarantine } from './boot';
 import type { KV } from './persist';
@@ -69,29 +69,42 @@ export function ownFestival(id: string, x: OwnFestivalInput, now = Date.now()): 
 const KEY = 'rl.myFestivals.v1';
 
 let mine: Festival[] = [];
+/** The shipped schedules: empty until load() brings them in (the app waits for it at launch). */
+let shipped: Festival[] = [];
 const byStart = (l: Festival[]) => [...l].sort((a, b) => festivalSortKey(a).localeCompare(festivalSortKey(b)));
-let all: Festival[] = byStart(FESTIVALS);
+let all: Festival[] = [];
+let ownRead: Promise<void> | null = null;
+let dataRead: Promise<void> | null = null;
 let loaded: Promise<void> | null = null;
 let ready = false;
 const listeners = new Set<() => void>();
 
 function set(next: Festival[]) {
   mine = next;
-  all = byStart([...FESTIVALS, ...mine]);
+  all = byStart([...shipped, ...mine]);
   for (const l of listeners) l();
 }
 
 function load(): Promise<void> {
-  loaded ??= AsyncStorage.getItem(KEY)
-    .then(async (raw) => {
-      const saved = ((raw && (await parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || []).filter((f) => f && f.own && f.dates);
-      ready = true;
-      set([...saved.filter((f) => !mine.some((x) => x.id === f.id)), ...mine]);
-    })
-    .catch(() => {
-      ready = true;
+  ownRead ??= AsyncStorage.getItem(KEY)
+    .then(async (raw) => ((raw && (await parseOrQuarantine<Festival[]>(AsyncStorage as unknown as KV, KEY, raw, Array.isArray))) || []).filter((f) => f && f.own && f.dates))
+    .catch(() => [] as Festival[])
+    .then((saved) => set([...saved.filter((f) => !mine.some((x) => x.id === f.id)), ...mine]));
+  // The schedules (~70 KB) stay out of the launch bundle: their own chunk, read next to the player's list.
+  // If it doesn't come (web, offline), the next read tries again and the screens update when it does.
+  dataRead ??= import('../poker/festival-data').then(
+    (m) => {
+      shipped = m.FESTIVALS;
       set(mine);
-    });
+    },
+    () => {
+      dataRead = null;
+    },
+  );
+  loaded ??= Promise.all([ownRead, dataRead]).then(() => {
+    ready = true;
+    set(mine);
+  });
   return loaded;
 }
 
@@ -135,7 +148,13 @@ export function saveOwnFestival(f: Festival) {
   persist();
 }
 
-/** Reads the player's own festivals; the app waits for it at launch (see store.tsx). */
+/** The festivals that ship with the app, without the player's own. */
+export function shippedFestivals(): Festival[] {
+  void load();
+  return shipped;
+}
+
+/** Reads the shipped schedules and the player's own festivals; the app waits for it at launch (see store.tsx). */
 export const loadOwnFestivals = (): Promise<void> => load();
 
 /** The player's own festivals, for the backup. */
