@@ -83,9 +83,11 @@ test('derived prices keep the store currency', async () => {
 });
 
 test('per-month price is written like the store price next to it', async () => {
-  const { priceLike } = await import('../plans');
+  const plans = await import('../plans');
+  // Compared as plain text; the no-break characters have their own test below.
+  const priceLike = (...a: Parameters<typeof plans.priceLike>) => plans.priceLike(...a).replace(/\u2060/g, '').replace(/\u00a0/g, ' ');
   assert.equal(priceLike('$199.99', 16.67, 'USD', 'en-GB'), '$16.67');
-  assert.equal(priceLike('199,99\u00a0US$', 16.67, 'USD', 'pt-PT'), '16,67\u00a0US$');
+  assert.equal(priceLike('199,99\u00a0US$', 16.67, 'USD', 'pt-PT'), '16,67 US$');
   assert.equal(priceLike('R$ 1.099,90', 91.66, 'BRL', 'pt-BR'), 'R$ 91,66');
   // Zero- and three-decimal currencies keep the store's thousands separator and decimals.
   assert.equal(priceLike('¥29,800', 2483.33, 'JPY', 'ja-JP'), '¥2,483');
@@ -98,7 +100,7 @@ test('per-month price is written like the store price next to it', async () => {
   assert.equal(priceLike('CHF 19’999.00', 1666.58, 'CHF', 'de-CH'), 'CHF 1’666.58');
   assert.equal(priceLike('199 kr', 16.58, 'SEK', 'sv-SE'), '16,58 kr');
   // Forint and rupiah: ISO gives cents, stores write them whole, so a month past 1000 stays whole.
-  assert.equal(priceLike('79\u00a0990\u00a0Ft', 6665.83, 'HUF', 'hu-HU'), '6\u00a0666\u00a0Ft');
+  assert.equal(priceLike('79\u00a0990\u00a0Ft', 6665.83, 'HUF', 'hu-HU'), '6 666 Ft');
   assert.equal(priceLike('Rp 3.299.000', 274916.67, 'IDR', 'id-ID'), 'Rp 274.917');
   assert.equal(priceLike('2 399 kr', 199.92, 'SEK', 'sv-SE'), '199,92 kr');
   assert.equal(priceLike('199 kr', 17, 'SEK', 'sv-SE'), '17 kr');
@@ -124,4 +126,20 @@ test('every Pro feature leads its own paywall: a feature row, and the paywall op
     assert.equal(rows[0].feature.key, f, `${f} does not lead its paywall`);
     assert.equal(rows[0].highlight, true);
   }
+});
+
+test('a price never splits across two lines', async () => {
+  const { formatPrice, priceLike } = await import('../plans');
+  // At 150% on 360 pt the store's "16,67 US$" broke as "16,67 US" / "$".
+  const breaks = (p: string) => /[ \u2009]|[A-Za-z][^A-Za-z\d\s\u2060]|[^A-Za-z\d\s\u2060][A-Za-z]/.test(p);
+  for (const p of [
+    priceLike('199,99 US$', 16.67, 'USD', 'pt-PT'),
+    priceLike('R$ 1.099,90', 91.66, 'BRL', 'pt-BR'),
+    priceLike('CA$279.99', 23.33, 'CAD', 'en-CA'),
+    priceLike('CHF 1’999.00', 166.58, 'CHF', 'de-CH'),
+    formatPrice(16.67, 'USD', 'pt-PT'),
+    formatPrice(16.67, 'XXX', 'pt-PT'),
+  ])
+    assert.equal(breaks(p), false, JSON.stringify(p));
+  assert.equal(priceLike('199,99 US$', 16.67, 'USD', 'pt-PT'), '16,67\u00a0US\u2060$');
 });

@@ -61,7 +61,7 @@ describe('locale helpers', () => {
     expect(formatMoney(12345, '€', 'es')).toBe(`12.345${NB}€`);
     expect(formatMoney(2500, '$', 'en')).toBe('$2,500');
     expect(formatMoney(12.5, '£', 'en')).toBe('£12.50');
-    expect(formatMoney(150, 'CHF', 'en')).toBe('CHF 150');
+    expect(formatMoney(150, 'CHF', 'en')).toBe('CHF\u00a0150');
     expect(formatMoney(3000, 'JPY', 'en')).toBe('¥3,000');
     expect(formatMoney(20, '€', 'pt', true)).toBe('+20€');
     expect(formatMoney(0, '€', 'pt', true)).toBe('0€');

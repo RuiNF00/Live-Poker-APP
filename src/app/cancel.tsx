@@ -9,7 +9,7 @@ import { cancelReasons, logged, markOfferSeen, offerOnScreen, offersSeen, offerT
 import { pctOff } from '@/billing/disclosure';
 import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
-import { getSubscription, lifetimeOffer, manageSubscription, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
+import { getSubscription, hasLifetime, lifetimeOffer, manageSubscription, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -32,6 +32,8 @@ export default function Cancel() {
   const [product, setProduct] = useState<string | null>(null);
   const [storeOffer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<StoreOffer | null>(null);
+  // Pro for good already: no reasons, no offers, nothing about losing Pro.
+  const [forGood, setForGood] = useState(false);
   // Paid once: the subscription still renews until it is cancelled in the store, which stays one tap away.
   const [paidOnce, setPaidOnce] = useState(false);
   const annual = plans.find((p) => p.id === 'annual');
@@ -55,6 +57,7 @@ export default function Cancel() {
       setWillRenew(s?.willRenew ?? null);
       setProduct(s?.product ?? null);
     });
+    hasLifetime().then(setForGood);
     // Each offer shows once ever: on a later visit only the plain way out is left.
     offersSeen().then((s) => {
       setSeen(s);
@@ -63,8 +66,8 @@ export default function Cancel() {
   }, []);
   // The −40% is on the monthly plan: someone on the yearly one isn't offered it.
   useEffect(() => {
-    if (seen && !seen.includes('discount') && plan === 'monthly') retentionOffer(plans).then(setOffer);
-  }, [seen, plans, plan]);
+    if (seen && !seen.includes('discount') && plan === 'monthly') retentionOffer(plans, product).then(setOffer);
+  }, [seen, plans, plan, product]);
   // An offer is used up only once it is taken or turned down with a tap («Continuar a cancelar»):
   // going back, or a purchase that fails, leaves it there for the next visit (App Store 2.1).
   const shownOffer = offerOnScreen(reason, { discount: !!offer, lifetime: !!lifetime });
@@ -76,6 +79,8 @@ export default function Cancel() {
     track('cancel_flow', { step: 'reason', reason: r });
     if (r === 'noSubscription' && lifetime) track('lifetime_offer_shown', { reason: r, plan: plan ?? '', will_renew: willRenew ?? '' });
     setReason(r);
+    // The list turns into the answer for this reason: say which, so a screen reader isn't left on nothing.
+    AccessibilityInfo.announceForAccessibility(t(CANCEL_REASONS.find((x) => x.key === r)!.label));
   };
   const keep = () => {
     track('cancel_flow', { step: 'kept', reason: reason ?? '' });
@@ -114,6 +119,8 @@ export default function Cancel() {
     setRestoring(true);
     const res = await restore();
     setRestoring(false);
+    // A one-time Pro restored here: the screen turns into «Tens o Pro para sempre», not the reasons to leave.
+    if (res === 'ok' || res === 'lifetime') hasLifetime().then(setForGood);
     restoreNotice(res, Platform.OS === 'android' ? 'Google Play' : 'App Store');
   };
   const send = () => {
@@ -148,11 +155,15 @@ export default function Cancel() {
                   month: new Date(mine.since).toLocaleDateString(locale, { month: 'long', year: 'numeric' }),
                 })}
               </T>
-              <T v="small">{t('Fica tudo guardado. Sem Pro, voltas às 3 mãos por dia.')}</T>
+              {forGood ? null : <T v="small">{t('Fica tudo guardado. Sem Pro, voltas às 3 mãos por dia.')}</T>}
             </View>
           ) : null}
 
-          {reason === null ? (
+          {forGood ? (
+            <OfferCard icon="infinite" title={t('Tens o Pro para sempre')} body={t('Não há nada para cancelar no Pro. Se a subscrição ainda renova, cancela-a na {store} e o Pro fica.', { store })}>
+              <Button kind="secondary" title={t('Abrir a {store}', { store })} onPress={toStore} />
+            </OfferCard>
+          ) : reason === null ? (
             <View style={{ gap: S.sm }}>
               <T v="h2">{t('Porque queres cancelar?')}</T>
               <ListGroup>
@@ -164,7 +175,7 @@ export default function Cancel() {
           ) : (
             <View style={{ gap: S.md }}>
               <Row gap={S.sm}>
-                <T v="h2" style={{ flex: 1 }}>
+                <T v="h2" accessibilityRole="header" style={{ flex: 1 }}>
                   {t(CANCEL_REASONS.find((r) => r.key === reason)!.label)}
                 </T>
                 <Button kind="ghost" small title={t('Mudar')} onPress={() => {

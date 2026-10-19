@@ -220,7 +220,7 @@ export default function Welcome() {
                   ))}
               </View>
             </View>
-            <Preview mtt={isMtt(a.plays)} currency={settings.currency} />
+            <Preview mtt={isMtt(a.plays)} currency={settings.currency} plays={a.plays} />
             <View style={{ gap: S.md }}>
               {plan.points.map((p) => (
                 <Row key={p} gap={S.md}>
@@ -256,10 +256,9 @@ export default function Welcome() {
             {/* One main action, the fastest to something useful: a live session (its start is also where the trial is offered). */}
             <Button title={t('Começar sessão')} icon="play" onPress={() => close('sessao')} />
             <Button kind="secondary" icon="flash-outline" title={t('Registar uma mão')} onPress={() => close('mesa')} />
-            <Row gap={S.xs}>
-              <Button kind="ghost" size="sm" title={t('Responder a 4 perguntas')} onPress={next} style={{ flex: 1 }} lines={2} />
-              <Button kind="ghost" size="sm" title={t('Vens de outra app?')} onPress={switchApp} style={{ flex: 1 }} lines={2} />
-            </Row>
+            {/* Stacked, full width: side by side they broke into two lines at 320 px and at large text. */}
+            <Button kind="ghost" size="sm" title={t('Responder a 4 perguntas')} onPress={next} lines={2} />
+            <Button kind="ghost" size="sm" title={t('Vens de outra app?')} onPress={switchApp} lines={2} />
           </View>
         ) : null}
         {at === 'goals' ? <Button title={t('Continuar')} disabled={!a.goals.length} onPress={next} /> : null}
@@ -325,16 +324,28 @@ function Option({ label, sub, icon, badge, active, multi, compact, onPress }: { 
   );
 }
 
+/** Example numbers at the stakes the player just picked: a 5/10 example after choosing 1/2 read as someone else's game. */
+const EXAMPLE: Record<string, { stakes?: string; profit?: number; buyIn?: number }> = {
+  cash1: { stakes: '1/2', profit: 240 },
+  cash2: { stakes: '5/10', profit: 1240 },
+  cash3: { stakes: '10/20', profit: 2480 },
+  cash4: { stakes: '50/100', profit: 12400 },
+  mtt1: { buyIn: 330 },
+  mtt2: { buyIn: 1100 },
+  mtt3: { buyIn: 10300 },
+};
+
 /** The screen they'll use most, as it will look: a live session for cash, a tournament for MTT. Example numbers, labelled. */
-function Preview({ mtt, currency }: { mtt: boolean; currency: string }) {
+function Preview({ mtt, currency, plays }: { mtt: boolean; currency: string; plays?: string | null }) {
+  const ex = EXAMPLE[plays ?? ''] ?? {};
   const rows: [string, string][] = mtt
     ? [
-        [t('Buy-in'), money(1100, currency)],
+        [t('Buy-in'), money(ex.buyIn ?? 1100, currency)],
         [t('Dia'), '2'],
         [t('Stack'), chips(184000)],
       ]
     : [
-        [t('Stakes'), '5/10'],
+        [t('Stakes'), ex.stakes ?? '5/10'],
         [t('Tempo'), '4h 12m'],
         [t('Mãos'), '6'],
       ];
@@ -350,7 +361,7 @@ function Preview({ mtt, currency }: { mtt: boolean; currency: string }) {
         </T>
       </Row>
       <T v="monoL" color={C.good}>
-        {mtt ? t('Top {n}', { n: 38 }) : '+' + money(1240, currency)}
+        {mtt ? t('Top {n}', { n: 38 }) : '+' + money(ex.profit ?? 1240, currency)}
       </T>
       <Row gap={S.lg}>
         {rows.map(([k, v]) => (

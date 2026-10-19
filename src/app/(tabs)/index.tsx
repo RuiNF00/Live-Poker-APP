@@ -238,8 +238,9 @@ export default function HandsScreen() {
                   sessions={sessions}
                   streak={hands.length > 0}
                   handsLeft={hands.length > 0 ? handsLeft : null}
-                  cta={handsLeft === 0 && trialDays ? t('{days} dias grátis', { days: trialDays }) : t('Ver Pro')}
-                  onPro={() => paywall(handsLeft === 0 ? 'hands' : 'generic')}
+                  // The trial is never offered at the table: there the free-hands cell only opens the paywall.
+                  cta={handsLeft === 0 && trialDays && !activeSession ? t('{days} dias grátis', { days: trialDays }) : t('Ver com Pro')}
+                  onPro={() => paywall(handsLeft === 0 ? (activeSession ? 'handsLive' : 'hands') : 'generic')}
                 />
               ) : null}
               {searching ? null : hasDraft ? (
@@ -418,7 +419,7 @@ export default function HandsScreen() {
               setPicked(new Set());
             }}
           />
-          <IconButton name="analytics-outline" label={t('Abrir no GTO Wizard')} onPress={() => (isPro ? toSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
+          <IconButton name="analytics-outline" label={t('Abrir no GTO Wizard')} onPress={() => (isPro || picked.size === 1 ? toSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
           <IconButton
@@ -518,7 +519,8 @@ function HomeSummary({ sessions, streak, handsLeft, cta, onPro }: { sessions: Se
         hitSlop={6}
         style={({ pressed }) => [sumSt.cell, { opacity: pressed ? 0.7 : 1 }]}>
         <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3} color={handsLeft === 0 ? C.accent : undefined}>
-          {t('Grátis hoje')}
+          {/* Out of free hands, the caption says so: next to "3 dias grátis" it read like an offer. */}
+          {handsLeft === 0 ? t('Esgotadas hoje') : t('Grátis hoje')}
         </T>
         {handsLeft === 0 ? (
           <T v="small" numberOfLines={1} color={C.accent} style={{ fontFamily: ff(800), lineHeight: 20 }}>

@@ -47,12 +47,16 @@ async function getSubscriber(appUserId: string): Promise<Subscriber | null> {
 export const revenueCatConfigured = () => !!process.env.REVENUECAT_SECRET_KEY;
 
 /**
- * Referral rewards go to new players only: the RevenueCat user must exist and have been
- * first seen in the last `days` days, so an old or made-up id earns nothing.
+ * Referral rewards go to new players only: the RevenueCat user must have been first seen in
+ * the last `days` days, so an old id earns nothing. The v1 lookup creates a customer it doesn't
+ * know (first_seen = now), so a user first seen in the last minute is refused too: a made-up id
+ * would otherwise pass as brand new (Security, 19 Oct). The app retries on its next launch.
+ * That only delays a made-up id by a minute (the same install asks again and passes): the real
+ * brake is the 40 App Store codes a day in referral_offer (20261019050000). Don't count on this one.
  */
-export async function isNewSubscriber(appUserId: string, days = 7): Promise<boolean> {
+export async function isNewSubscriber(appUserId: string, days = 7, now = Date.now()): Promise<boolean> {
   const first = Date.parse((await getSubscriber(appUserId))?.first_seen ?? '');
-  return Number.isFinite(first) && Date.now() - first < days * 86_400_000;
+  return Number.isFinite(first) && now - first >= 60_000 && now - first < days * 86_400_000;
 }
 
 const proCache = new Map<string, { pro: boolean; at: number }>();

@@ -342,7 +342,7 @@ export const ES: Record<string, ArticleText> = {
     summary: 'Los dos reciben un 50% en el primer mes de Pro.',
     body: [
       'Ajustes → Herramientas → Invitar amigos → Compartir invitación.',
-      'Cuando tu amigo instala y guarda su primera mano en los 7 días siguientes, los dos reciben un 50% en el primer mes de Pro, para usar en las 72 horas siguientes. En iPhone el descuento es un código de la App Store que la app abre por ti. Cuenta para hasta 10 amigos al año.',
+      'Cuando tu amigo instala y guarda su primera mano en los 7 días siguientes, los dos reciben un 50% en el primer mes de Pro, para usar en las 72 horas siguientes. En iPhone el descuento es un código de la App Store que la app abre por ti. Cuenta para hasta 10 amigos al año. Solo cuenta la primera invitación de cada amigo.',
       '¿Te llegó un código en vez de un link? En Ajustes, toca Tengo un código de invitación y luego Usar (solo en los primeros 7 días después de instalar).',
     ],
   },

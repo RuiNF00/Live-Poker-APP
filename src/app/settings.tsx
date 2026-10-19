@@ -92,12 +92,14 @@ export default function SettingsScreen() {
   const [period, setPeriod] = useState<{ date: string; renews: boolean; trial?: boolean } | null>(null);
   // Paid once: «Gerir subscrição» says so instead of asking why they want to cancel.
   const [forGood, setForGood] = useState(false);
+  // Bumped by a restore: a monthly subscriber who restores lifetime is already Pro, so isPro alone wouldn't re-read it.
+  const [restored, setRestored] = useState(0);
   useEffect(() => {
     void (pro.isPro ? getSubscription() : Promise.resolve(null)).then((s) =>
       setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew, trial: s.trial } : null),
     );
     void (pro.isPro ? hasLifetime() : Promise.resolve(false)).then(setForGood);
-  }, [pro.isPro]);
+  }, [pro.isPro, restored]);
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -273,6 +275,7 @@ export default function SettingsScreen() {
                       setRestoring(true);
                       const res = await pro.restore();
                       setRestoring(false);
+                      if (res === 'ok' || res === 'lifetime') setRestored((n) => n + 1);
                       restoreNotice(res, Platform.OS === 'android' ? 'Google Play' : 'App Store');
                     }
               }

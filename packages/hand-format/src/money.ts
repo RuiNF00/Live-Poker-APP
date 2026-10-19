@@ -117,9 +117,21 @@ export function moneyIn(
   // A backer's 3744,33 is what they are owed, not 3744: cents stay from 1000 up too.
   const s = cents % 100 === 0 ? num().format(cents / 100) : num(2).format(cents / 100);
   const sym = symbolOf(currency);
-  // Letter codes (CHF, SEK) always need a space; symbols follow the language.
-  const gap = /^[A-Za-z]{2,}$/.test(sym) ? ' ' : f.currencySpace;
+  // Letter codes (CHF, SEK) always need a space, a no-break one; symbols follow the language.
+  const gap = /^[A-Za-z]{2,}$/.test(sym) ? '\u00a0' : f.currencySpace;
   return f.currencyAfter ? `${sign}${s}${gap}${sym}` : `${sign}${sym}${gap}${s}`;
+}
+
+/**
+ * A price that never splits across two lines: at large text a narrow column broke the store's
+ * "16,67 US$" into "16,67 US" / "$". Spaces become no-break spaces, and a word joiner (U+2060,
+ * zero-width) holds letters to the symbol next to them ("US$", "R$", "CA$"). Display only.
+ */
+export function unbroken(s: string): string {
+  return s
+    .replace(/[ \u2009]/g, '\u00a0')
+    .replace(/([A-Za-z])(?=[^A-Za-z\d\s\u2060])/g, '$1\u2060')
+    .replace(/([^A-Za-z\d\s\u2060])(?=[A-Za-z])/g, '$1\u2060');
 }
 
 /** A balance settled to the cent: "0,00€", so it reads as squared up, not as a missing value. Currencies without cents stay "0¥". */

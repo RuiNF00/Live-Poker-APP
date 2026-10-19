@@ -196,8 +196,8 @@ function BankrollTab() {
   };
   const withdraw = (amount = 0) => setSheet({ type: 'transfer', x: { ...blankTransfer(pastBankroll.id, 'withdrawal'), amount }, isNew: true });
 
-  const newBankroll = () => (!isPro && FREE.bankrolls !== null && bankrolls.length >= FREE.bankrolls ? paywall('stats') : setSheet({ type: 'bankroll' }));
-  const openFilters = () => (locked ? paywall('stats') : setSheet({ type: 'filters' }));
+  const newBankroll = () => (!isPro && FREE.bankrolls !== null && bankrolls.length >= FREE.bankrolls ? paywall('stats', () => setSheet({ type: 'bankroll' })) : setSheet({ type: 'bankroll' }));
+  const openFilters = () => (locked ? paywall('stats', () => setSheet({ type: 'filters' })) : setSheet({ type: 'filters' }));
   const clearFilters = () => {
     setGame('all');
     setFormat('all');
@@ -307,7 +307,11 @@ function BankrollTab() {
                     label={o.key === 'custom' && preset === 'custom' ? rangeLabel(preset, custom) : o.key === 'all' ? t('Tudo') : o.label}
                     icon={o.key !== 'all' && locked ? 'lock-closed' : o.key === 'custom' ? 'calendar-outline' : undefined}
                     active={preset === o.key}
-                    onPress={() => (o.key === 'all' ? setPreset('all') : locked ? paywall('stats') : o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key))}
+                    onPress={() => {
+                      const go = () => (o.key === 'custom' ? setSheet({ type: 'filters' }) : setPreset(o.key));
+                      // After buying from the lock, the filter that was tapped applies by itself.
+                      return o.key === 'all' ? setPreset('all') : locked ? paywall('stats', go) : go();
+                    }}
                   />
                 ))}
               </ChipRow>
@@ -377,7 +381,7 @@ function BankrollTab() {
               <Insights list={list} cur={cur} hidden={!!settings.hideAmounts} />
               <Breakdowns list={list} cur={cur} />
               {!isPro ? (
-                <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Experimentar Pro')}>
+                <Card tone="accent" onPress={() => paywall('stats')} style={{ gap: S.sm }} accessibilityLabel={t('Ver com Pro')}>
                   <Row>
                     <Ionicons name="sparkles" size={18} color={C.accent} />
                     <T v="h3" style={{ flex: 1 }}>
@@ -386,7 +390,7 @@ function BankrollTab() {
                   </Row>
                   <T v="small">{t('Com Pro vês todas as salas, jogos e stakes, filtras por datas e a calculadora de variância usa os teus números.')}</T>
                   <T v="h3" color={C.accent}>
-                    {t('Experimentar Pro')} ›
+                    {t('Ver com Pro')} ›
                   </T>
                 </Card>
               ) : null}
@@ -837,7 +841,7 @@ function Breakdowns({ list, cur }: { list: Session[]; cur: string }) {
             </View>
           ))
         )}
-        {!isPro && rows.length > 1 ? <Button kind="outline" size="sm" icon="lock-closed" title={t('Ver todas ({n}) com Pro', { n: rows.length })} onPress={() => paywall('stats')} style={{ alignSelf: 'flex-start' }} /> : null}
+        {!isPro && rows.length > 1 ? <Button kind="outline" size="sm" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall('stats')} style={{ alignSelf: 'flex-start' }} /> : null}
       </Card>
     </Section>
   );

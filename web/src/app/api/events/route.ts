@@ -1,5 +1,5 @@
 import { after, NextResponse } from 'next/server';
-import { APP_EVENTS, getStore, type AppEvent } from '@/lib/store';
+import { APP_EVENTS, getStore, SERVER_EVENTS, type AppEvent } from '@/lib/store';
 import { limited } from '@/lib/abuse';
 import { analytics } from '@/lib/analytics';
 import { cors } from '@/lib/cors';
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
   const installId = body?.installId;
   if (
     !APP_EVENTS.includes(event) ||
+    SERVER_EVENTS.includes(event) ||
     !PLATFORMS.includes(platform) ||
     typeof installId !== 'string' ||
     !UUID.test(installId)

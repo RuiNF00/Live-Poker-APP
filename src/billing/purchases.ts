@@ -6,6 +6,7 @@
 import { Linking, Platform } from 'react-native';
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 
+import { unbroken } from '../../packages/hand-format/src/money';
 import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 
 import { buyError, playSubscriptionId, restoreFound, type BuyResult } from './buy-result';
@@ -80,7 +81,7 @@ function hasPro(info: CustomerInfo): boolean {
 
 function usd(n: number) {
   const s = decimalComma ? n.toFixed(2).replace('.', ',') : n.toFixed(2);
-  return lang === 'en' ? `$${s}` : currencyAfter ? `${s}\u00a0US$` : `US$\u00a0${s}`;
+  return unbroken(lang === 'en' ? `$${s}` : currencyAfter ? `${s} US$` : `US$ ${s}`);
 }
 
 function fallbackPlans(): StorePlan[] {
@@ -118,7 +119,7 @@ async function loadPlans(): Promise<StorePlan[] | null> {
   const plans: StorePlan[] = [];
   for (const id of Object.keys(PRODUCTS) as PlanId[]) {
     const pkg = pkgs.find((p) => p.product.identifier.startsWith(PRODUCTS[id]) || p.packageType === (id === 'monthly' ? 'MONTHLY' : 'ANNUAL'));
-    if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: pkg.product.priceString, currency: pkg.product.currencyCode || 'USD', trialDays: trialDays(pkg) });
+    if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: unbroken(pkg.product.priceString), currency: pkg.product.currencyCode || 'USD', trialDays: trialDays(pkg) });
   }
   if (Platform.OS === 'ios' && plans.length) {
     // iOS lists the intro offer even to players who already used it, so ask.
@@ -252,7 +253,7 @@ export interface StoreOffer {
  * `months` are the store's own, so the screen's "−40% durante 3 meses" matches what is
  * charged (`months` null: the store didn't say it in months).
  */
-export async function retentionOffer(plans: StorePlan[]): Promise<(StoreOffer & { price: number; months: number | null }) | null> {
+export async function retentionOffer(plans: StorePlan[], replacing?: string | null): Promise<(StoreOffer & { price: number; months: number | null }) | null> {
   const monthly = plans.find((p) => p.id === 'monthly');
   // Demo store (dev builds and web): same shape as the lifetime one, so the cancel flow can be walked end to end.
   if (!LIVE) {
@@ -269,16 +270,22 @@ export async function retentionOffer(plans: StorePlan[]): Promise<(StoreOffer & 
       const Purchases = await rc();
       const offer = await Purchases.getPromotionalOffer(pkg.product, d);
       if (!offer) return null;
-      return { priceString: d.priceString, price: d.price, months: offerMonths(d.periodUnit, d.periodNumberOfUnits, d.cycles), buy: () => attempt(() => Purchases.purchaseDiscountedPackage(pkg, offer)) };
+      return { priceString: unbroken(d.priceString), price: d.price, months: offerMonths(d.periodUnit, d.periodNumberOfUnits, d.cycles), buy: () => attempt(() => Purchases.purchaseDiscountedPackage(pkg, offer)) };
     }
     const opt = pkg.product.subscriptionOptions?.find((o) => o.tags.includes(RETENTION.discount.android) || o.id.endsWith(`:${RETENTION.discount.android}`));
     const first = opt?.pricingPhases[0];
     if (!RETENTION.discount.android || !opt || !first) return null;
     return {
-      priceString: first.price.formatted,
+      priceString: unbroken(first.price.formatted),
       price: first.price.amountMicros / 1e6,
       months: offerMonths(first.billingPeriod.unit, first.billingPeriod.value, first.billingCycleCount),
-      buy: () => attempt(async () => (await rc()).purchaseSubscriptionOption(opt)),
+      // A monthly subscriber can't buy the same subscription again on Google Play: the offer
+      // replaces the running one, with the unused days credited.
+      buy: async () => {
+        const { PRORATION_MODE } = await rcModule();
+        const change = replacing ? { oldProductIdentifier: playSubscriptionId(replacing), prorationMode: PRORATION_MODE.IMMEDIATE_WITH_TIME_PRORATION } : null;
+        return attempt(async () => (await rc()).purchaseSubscriptionOption(opt, change));
+      },
     };
   } catch {
     return null;
@@ -290,7 +297,7 @@ export function inviteOfferPrice(plans: StorePlan[]): { priceString: string; pri
   if (!LIVE || Platform.OS !== 'android') return null;
   const opt = plans.find((p) => p.id === 'monthly')?.pkg?.product.subscriptionOptions?.find((o) => o.tags.includes(INVITE.android) || o.id.endsWith(`:${INVITE.android}`));
   const first = opt?.pricingPhases[0]?.price;
-  return first ? { priceString: first.formatted, price: first.amountMicros / 1e6 } : null;
+  return first ? { priceString: unbroken(first.formatted), price: first.amountMicros / 1e6 } : null;
 }
 
 // One store sheet at a time: the sheet takes a moment to appear, and a second tap meanwhile
@@ -349,7 +356,7 @@ export async function lifetimeOffer(): Promise<StoreOffer | null> {
     const cur = (await P.getOfferings()).current;
     if (!cur || cur.metadata?.lifetime === false) return null;
     const pkg = cur.availablePackages.find((p) => p.product.identifier === LIFETIME.product || p.packageType === 'LIFETIME');
-    return pkg ? { priceString: pkg.product.priceString, buy: () => attempt(() => P.purchasePackage(pkg)) } : null;
+    return pkg ? { priceString: unbroken(pkg.product.priceString), buy: () => attempt(() => P.purchasePackage(pkg)) } : null;
   } catch {
     return null;
   }

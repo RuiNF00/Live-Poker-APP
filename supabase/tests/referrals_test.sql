@@ -154,7 +154,12 @@ set role service_role;
 \set dfriend '''a2222222-2222-2222-2222-222222222222'''
 select referral_code_for(:dref, 'DREF2345', 'rc_dref') = 'DREF2345' as discount_code_created;
 select claim_referral(:dfriend, 'DREF2345', 'link') = 'ok' as discount_claimed;
+-- Without the friend's RevenueCat user nothing is booked and the referral stays open (P1, 19 Oct).
+select count(*) = 1 as discount_needs_friend_rc from (select activate_referral_discount(:dfriend)) x;
+select activated_at is null as discount_waits_for_rc from referrals where friend_install_id = :dfriend;
+select referral_code_for(:dfriend, 'DFRE2345', 'rc_dfriend') = 'DFRE2345' as discount_friend_rc_set;
 reset role;
+select count(*) = 0 as no_reward_without_rc from referral_rewards where friend_install_id = :dfriend;
 insert into invite_offer_codes (code) values ('INVITEAAA111'), ('INVITEBBB222');
 set role service_role;
 select count(*) = 1 as discount_booked from (select activate_referral_discount(:dfriend)) x;
@@ -174,9 +179,88 @@ update referral_rewards set offer_until = now() - interval '1 minute' where frie
 set role service_role;
 select count(*) = 0 as expired_offer_gone from referral_offer(:dfriend, 'ios');
 reset role;
+
+-- P1 (19 Oct): same RevenueCat user on both sides books nothing; a second install of the same
+-- friend gets no second friend reward; the referrer's 10 a year count per RevenueCat user.
+set role service_role;
+\set dself '''a3333333-3333-3333-3333-333333333333'''
+select referral_code_for(:dself, 'DSEL2345', 'rc_dref') = 'DSEL2345' as self_code;
+select claim_referral(:dself, 'DREF2345', 'link') = 'ok' as self_claimed;
+select count(*) = 1 from (select activate_referral_discount(:dself)) x;
+reset role;
+select count(*) = 0 as self_referral_books_nothing from referral_rewards where friend_install_id = :dself;
+set role service_role;
+\set dagain '''a4444444-4444-4444-4444-444444444444'''
+select referral_code_for(:dagain, 'DAGA2345', 'rc_dfriend') = 'DAGA2345' as again_code;
+select claim_referral(:dagain, 'DREF2345', 'link') = 'ok' as again_claimed;
+select count(*) = 1 from (select activate_referral_discount(:dagain)) x;
+reset role;
+-- Swaps QA P2-A: a friend's store account books once, for the referrer too.
+select count(*) filter (where role = 'friend') = 0 and count(*) filter (where role = 'referrer') = 0 as friend_account_books_once_for_both
+  from referral_rewards where friend_install_id = :dagain;
+-- Ten more friends (fresh RevenueCat users) for a second install of the same referrer: the cap is per RevenueCat user.
+set role service_role;
+\set dref2 '''a5555555-5555-5555-5555-555555555555'''
+select referral_code_for(:dref2, 'DRFB2345', 'rc_dref') = 'DRFB2345' as referrer_second_install;
+select count(*) = 10 from (
+  select referral_code_for(('b0000000-0000-0000-0000-00000000000' || to_hex(i))::uuid, 'DCAP' || substr('ABCDEFGHJK', i, 1) || 'ZZ', 'rc_cap_' || i),
+         claim_referral(('b0000000-0000-0000-0000-00000000000' || to_hex(i))::uuid, 'DRFB2345', 'link'),
+         activate_referral_discount(('b0000000-0000-0000-0000-00000000000' || to_hex(i))::uuid)
+  from generate_series(1, 10) i
+) x;
+reset role;
+select count(*) = 10 as referrer_cap_per_rc
+  from referral_rewards w join referral_codes c on c.install_id = w.install_id
+  where w.role = 'referrer' and c.rc_user_id = 'rc_dref';
 \set ON_ERROR_STOP off
 set role anon;
 select * from invite_offer_codes;
 select referral_offer(:dfriend, 'ios');
+reset role;
+\set ON_ERROR_STOP on
+
+-- Security 05:05: at most 40 App Store codes leave the pool in 24 hours, whoever asks.
+insert into invite_offer_codes (code, taken_at) select 'CAPTAKEN' || lpad(i::text, 4, '0'), now() from generate_series(1, 40) i;
+insert into invite_offer_codes (code) values ('INVITECCC333');
+set role service_role;
+select count(*) = 1 and bool_and(ios_code is null) as daily_cap_holds_codes
+  from referral_offer(('b0000000-0000-0000-0000-000000000001')::uuid, 'ios');
+reset role;
+-- Older than a day: they no longer count (and leave the pool, as if handed out).
+delete from invite_offer_codes where code like 'CAPTAKEN%';
+insert into invite_offer_codes (code, taken_at) select 'CAPOLD' || lpad(i::text, 4, '0'), now() - interval '25 hours' from generate_series(1, 40) i;
+update invite_offer_codes set created_at = now() + interval '1 hour' where code like 'CAPOLD%';
+set role service_role;
+select (select ios_code from referral_offer(('b0000000-0000-0000-0000-000000000001')::uuid, 'ios')) = 'INVITECCC333' as cap_frees_after_a_day;
+reset role;
+-- Ecrã P3: «Apagar todos os dados» doesn't reset the counts kept per RevenueCat user.
+set role service_role;
+select erase_referrals(:dref2);
+select referral_code_for('c0000000-0000-0000-0000-000000000001', 'DRFC2345', 'rc_dref') = 'DRFC2345' as referrer_after_erase;
+select referral_code_for('c0000000-0000-0000-0000-000000000002', 'DNEW2345', 'rc_dnew');
+select claim_referral('c0000000-0000-0000-0000-000000000002', 'DRFC2345', 'link');
+select activate_referral_discount('c0000000-0000-0000-0000-000000000002');
+-- A friend who already had theirs erases and comes back on a new install.
+select erase_referrals('b0000000-0000-0000-0000-000000000002');
+select referral_code_for('c0000000-0000-0000-0000-000000000003', 'DBAK2345', 'rc_cap_2');
+select referral_code_for('c0000000-0000-0000-0000-000000000004', 'DREF4567', 'rc_dref_new');
+select claim_referral('c0000000-0000-0000-0000-000000000003', 'DREF4567', 'link') = 'ok' as back_claim;
+select activate_referral_discount('c0000000-0000-0000-0000-000000000003');
+reset role;
+select count(*) = 0 as referrer_cap_survives_erase from referral_rewards where install_id = 'c0000000-0000-0000-0000-000000000001';
+select count(*) = 0 as friend_once_survives_erase from referral_rewards where install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'friend';
+select count(*) = 0 as referrer_not_paid_for_returning_friend from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000003' and role = 'referrer';
+select count(*) = 1 as new_friend_still_gets_theirs from referral_rewards where friend_install_id = 'c0000000-0000-0000-0000-000000000002' and role = 'friend';
+select count(*) = 0 as tally_has_no_raw_ids from referral_rc_tally where rc_hash like 'rc_%';
+
+-- RevenueCat webhook retries: one event per id (Swaps QA, 19 Oct).
+set role service_role;
+select log_rc_event('rc-evt-1', 'store_purchase', '99999999-9999-4999-8999-999999999999', 'ios', '{"plan":"monthly"}') as first_delivery_recorded;
+select not log_rc_event('rc-evt-1', 'store_purchase', '99999999-9999-4999-8999-999999999999', 'ios', '{"plan":"monthly"}') as retry_not_recorded;
+reset role;
+select count(*) = 1 as one_row_per_rc_event from app_events where install_id = '99999999-9999-4999-8999-999999999999';
+\set ON_ERROR_STOP off
+set role anon;
+select log_rc_event('rc-evt-2', 'store_purchase', '99999999-9999-4999-8999-999999999999', 'ios', '{}');
 reset role;
 \set ON_ERROR_STOP on

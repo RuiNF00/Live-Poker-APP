@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
@@ -28,6 +28,9 @@ export default function Paywall() {
   const win = useWindowDimensions();
   // Short screens and large text both: the plans stay above the fold.
   const compact = win.height < 760 || win.fontScale > 1.3;
+  // Most iPhones (844-874 pt): without the icon and with only the feature this paywall is about,
+  // both plans sit above the footer (Store, 19 Oct: the monthly card was half under it at 844).
+  const medium = !compact && win.height < 900;
   // Very short screens (320×568): the fixed footer keeps the billed price, the button and
   // the disclosures; Restore and the other ways out move to the end of the scroll.
   const short = win.height < 640;
@@ -97,7 +100,9 @@ export default function Paywall() {
   useEffect(() => () => void takeResume(), [takeResume]);
 
   // Pro arrived: straight back to the screen that was tapped, now unlocked, and finish what was tapped there.
-  const unlocked = () => {
+  // Said out loud before closing, so a screen reader doesn't land back on the screen in silence.
+  const unlocked = (said = t('Pro ativo')) => {
+    AccessibilityInfo.announceForAccessibility(said);
     const then = takeResume();
     close();
     if (then) setTimeout(then, 350);
@@ -146,9 +151,10 @@ export default function Paywall() {
     setBusy('restore');
     const res = await restore();
     setBusy(null);
+    // The one-time Pro restores as 'lifetime': it unlocks just the same.
     const found = res === 'ok' || res === 'lifetime';
     if (!found) acting.current = false;
-    if (found) return unlocked();
+    if (found) return unlocked(res === 'lifetime' ? t('O teu Pro para sempre está ativo nesta conta da loja.') : t('Compras restauradas'));
     restoreNotice(res, store);
   };
 
@@ -205,9 +211,8 @@ export default function Paywall() {
   const footer = (
     <View onLayout={(e) => measure('footer', e.nativeEvent.layout.height)} style={inline ? { gap: S.xs } : { paddingHorizontal: S.gutter, paddingTop: short ? S.sm : S.md, paddingBottom: insets.bottom + S.sm, gap: short ? S.xs : S.sm, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.bgDeep }}>
       {busy === 'buy' ? (
-        <View style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={C.accent} />
-        </View>
+        // The button stays, busy and saying what is happening, so the focus doesn't jump.
+        <Button title={t('A abrir a {store}…', { store })} disabled onPress={onBuy} />
       ) : (
         <>
           {/* The billed amount is the most visible price element; the trial comes after it (App Store 3.1.2). */}
@@ -241,21 +246,21 @@ export default function Paywall() {
         <IconButton name="close" label={t('Fechar')} onPress={dismiss} />
 
         <View style={{ gap: short ? S.sm : S.md }}>
-          {compact ? null : (
+          {compact || medium ? null : (
             <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
               <Ionicons name="flash" size={28} color={C.accentInk} />
             </View>
           )}
           <T v={compact ? 'h1' : 'title'}>{copy.title}</T>
           <T v="callout">{copy.body}</T>
-          {hands.length >= 3 && reason !== 'welcome' ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
+          {hands.length >= 3 && reason !== 'welcome' && !medium ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
 
-        {table && !compact ? <FreeVsPro /> : null}
+        {table && !compact && !medium ? <FreeVsPro /> : null}
 
         {/* Small phones skip the feature list so both plans fit above the footer. */}
         <View style={{ gap: S.sm, display: compact || table ? 'none' : 'flex' }}>
-          {featuresFor(reason).map(({ feature: f, highlight }) => (
+          {featuresFor(reason).slice(0, medium ? 1 : undefined).map(({ feature: f, highlight }) => (
             <Row key={f.key} gap={S.md} style={{ minHeight: 40 }}>
               <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: highlight ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name={f.icon as IconName} size={18} color={highlight ? C.accentInk : C.accent} />
@@ -349,7 +354,8 @@ function PlanCard({
   /** One row: radio, name and line on the left, price on the right. */
   compact?: boolean;
 }) {
-  const bigText = useWindowDimensions().fontScale >= 1.6;
+  // Same threshold as compact's text check: at 150% on a 360 pt screen the line still broke inside «16,67 US$».
+  const bigText = useWindowDimensions().fontScale > 1.3;
   return (
     <Pressable
       accessibilityRole="radio"
@@ -370,7 +376,7 @@ function PlanCard({
         opacity: pressed ? 0.9 : 1,
       })}>
       {compact ? (
-        // Text at 160%+: the price goes under the name, or it squeezed the line to "16, 6…".
+        // Large text: the price goes under the name, or it squeezed the line to "16, 6…".
         <Row gap={S.sm} style={bigText ? { flexWrap: 'wrap' } : null}>
           <Radio active={active} />
           <View style={{ flex: 1, gap: 1 }}>
@@ -378,7 +384,8 @@ function PlanCard({
               <T v="h3">{title}</T>
               {tags[0] ? <T style={{ color: C.textDim, fontSize: 12, fontFamily: ff(800), fontWeight: '800' }}>{tags[0]}</T> : null}
             </Row>
-            <T v="tiny" numberOfLines={bigText ? undefined : 2}>
+            {/* Wraps rather than clips: at 150% on 360 pt «Cancela quando quiseres» lost its end. */}
+            <T v="tiny">
               {line}
             </T>
           </View>
@@ -416,7 +423,7 @@ function PlanCard({
             </T>
           ) : null}
         </Row>
-        <T v="small" numberOfLines={1}>
+        <T v="small">
           {line}
         </T>
       </View>
@@ -482,19 +489,23 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
       : { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancela e não pagas nada.') },
     { icon: 'card-outline', when: day(end), what: t('Começa: {price}', { price: after }) },
   ];
+  // Large text: the line goes under the day, or «Tudo desbloqueado. Nada a pagar.» broke into three at 150% on 360 pt.
+  const stacked = useWindowDimensions().fontScale > 1.3;
   return (
     <View style={{ paddingHorizontal: 4, paddingTop: S.sm, gap: S.md }}>
       {steps.map((s, i) => (
-        <Row key={s.when} gap={S.md}>
+        <Row key={s.when} gap={S.md} style={stacked ? { alignItems: 'flex-start' } : null}>
           <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: i === 0 ? C.accentSoft : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name={s.icon} size={14} color={i === 0 ? C.accent : C.textDim} />
           </View>
-          <T v="h3" style={{ width: 92 }}>
-            {s.when}
-          </T>
-          <T v="small" style={{ flex: 1 }}>
-            {s.what}
-          </T>
+          <View style={stacked ? { flex: 1, gap: 2 } : { flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+            <T v="h3" style={stacked ? null : { width: 92 }}>
+              {s.when}
+            </T>
+            <T v="small" style={stacked ? null : { flex: 1 }}>
+              {s.what}
+            </T>
+          </View>
         </Row>
       ))}
     </View>

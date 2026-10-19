@@ -82,7 +82,7 @@ export default function VarianceScreen() {
                 ? t('{n} torneios: ROI {roi}, buy-in médio {bi}, desvio padrão de {sd} buy-ins.', { n: mtt.tournaments, roi: mtt.roi === null ? '—' : `${Math.round(mtt.roi)}%`, bi: money(mtt.avgBuyIn, cur), sd: decimal(mtt.sdBuyIns) })
                 : t('Com 5 torneios terminados calculamos o teu ROI e desvio padrão.')}
           </T>
-          {mine ? <Button size="sm" kind={isPro ? 'secondary' : 'outline'} icon={isPro ? 'download-outline' : 'lock-closed'} title={isPro ? t('Usar os meus números') : t('Usar os meus números com Pro')} onPress={useMine} style={{ alignSelf: 'flex-start' }} /> : null}
+          {mine ? <Button size="sm" kind={isPro ? 'secondary' : 'outline'} icon={isPro ? 'download-outline' : 'lock-closed'} title={isPro ? t('Usar os meus números') : t('Ver com Pro')} onPress={useMine} style={{ alignSelf: 'flex-start' }} /> : null}
         </Card>
 
         <Section title={t('Pressupostos ({currency})', { currency: cur })} hint={

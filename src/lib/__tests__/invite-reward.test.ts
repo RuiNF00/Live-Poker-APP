@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CLAIM_KEY, createInviteReward } from '../invite-reward';
+import { CLAIM_KEY, createInviteReward, inviteStatusFrom } from '../invite-reward';
 
 function mem() {
   const m = new Map<string, string>();
@@ -81,4 +81,20 @@ test('a claim saved by an older version (handSaved on the claim, no hand marker)
   const r = createInviteReward(kv, post);
   assert.equal(await r.pending(), true);
   assert.equal(await r.activate(), 'granted');
+});
+
+test('an invite status without a link is no status: the screen offers to try again', () => {
+  assert.equal(inviteStatusFrom(null), null);
+  assert.equal(inviteStatusFrom({ code: 'ABCD2345' }), null);
+  assert.equal(inviteStatusFrom({ code: 'ABCD2345', url: '' }), null);
+  assert.equal(inviteStatusFrom({ code: 'ABCD2345', url: 'javascript:alert(1)' }), null);
+  assert.equal(inviteStatusFrom({ url: 'https://sweatbook.poker/r/ABCD2345' }), null);
+  assert.deepEqual(inviteStatusFrom({ code: 'ABCD2345', url: 'https://sweatbook.poker/r/ABCD2345', invited: 2, activated: 'x', offer: { until: '2026-11-01T00:00:00Z' } }), {
+    code: 'ABCD2345',
+    url: 'https://sweatbook.poker/r/ABCD2345',
+    invited: 2,
+    activated: 0,
+    discounts: 0,
+    offer: { until: '2026-11-01T00:00:00Z', iosCode: null },
+  });
 });
