@@ -50,9 +50,11 @@ Privacy Policy URL: `https://{{WEB_DOMAIN}}/privacy`
 - Gambling / contests, real-money gambling: **No**.
 - Mature themes, violence, profanity, medical, alcohol/tobacco/drugs: **None**.
 - User-generated content: **Yes** (shared hands and comments). Requires report + removal, see `review-risks.md`.
-- Messaging / chat: No. Unrestricted web access: No.
+- Social media: **No** (no feed, no follows, no conversations).
+- Messaging and chat: **Yes**. Apple's definition includes "public posting", and per-street comments on shared hands are public posts (pesquisa/apple-classificacao-etaria.md).
+- Unrestricted web access: **No**, pending the Replayer's check that no in-app browser has a free address bar (if one does, the answer is Yes).
 - Age assurance questions (2025+): parental controls **No**, age verification **No**, ads **No** (the app shows no ads).
-- Then set the **age override to 18+**: the app is about casino poker and the terms require 18+. Over-rating never causes a rejection; under-rating a poker app sometimes draws a question.
+- The answers compute **4+** (Brazil A12). Then **Override to Higher Age Rating → 18+**, which Apple makes mandatory when the terms set a higher minimum age ("you must override"); ours say 18+. Over-rating never causes a rejection.
 
 ## Apple: other App Store Connect fields
 
