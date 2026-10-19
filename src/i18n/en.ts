@@ -3358,6 +3358,7 @@ const en: Record<string, string> = {
   'Esgotadas hoje': 'Used up today',
   'Pro ativo': 'Pro is on',
   'A abrir a {store}…': 'Opening the {store}…',
+  'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'You paid once: there is no subscription to cancel and nothing renews.',
 };
 
 export default en;

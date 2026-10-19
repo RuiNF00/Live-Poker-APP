@@ -1671,6 +1671,7 @@ const ptBR: Record<string, string> = {
   'Tens o Pro para sempre': 'Você tem o Pro para sempre',
   'A abrir a {store}…': 'Abrindo a {store}…',
   'Pro para sempre': 'Pro para sempre',
+  'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Você pagou uma vez: não há assinatura para cancelar nem renovações.',
 };
 
 export default ptBR;
