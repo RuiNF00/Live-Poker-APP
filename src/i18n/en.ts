@@ -3370,22 +3370,23 @@ const en: Record<string, string> = {
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
   'A tua parte, re-entries incluídas': 'Your share, re-entries included',
   // PKO bounties
+  'Torneio PKO: o prémio do lugar acima, os bounties aqui.': "Knockout event: the place's prize above, the bounties here.",
   'ROI sem bounties': 'ROI without bounties',
   'Do retorno': 'Of the return',
   '{amount} em bounties': '{amount} in bounties',
   'Bounties ({currency})': 'Bounties ({currency})',
   'Total: {amount}': 'Total: {amount}',
   'Bounties ficam comigo': 'I keep the bounties',
-  'Os backers têm parte do prémio sem os bounties (PKO).': 'Backers get a piece of the prize without the bounties (PKO).',
+  'Os backers têm parte do prémio sem os bounties (PKO).': 'Backers get a piece of the prize excluding the bounties (PKO).',
   'Os backers têm parte do prémio todo, bounties incluídos.': 'Backers get a piece of the whole prize, bounties included.',
   'bounties ficam contigo': 'you keep the bounties',
-  'O backer tem parte do prémio sem os bounties (PKO).': 'The backer gets a piece of the prize without the bounties (PKO).',
+  'O backer tem parte do prémio sem os bounties (PKO).': 'The backer gets a piece of the prize excluding the bounties (PKO).',
   'O backer tem parte do prémio todo, bounties incluídos.': 'The backer gets a piece of the whole prize, bounties included.',
-  'Dos quais bounties': 'Of which bounties',
+  'Dos quais bounties': 'Bounties included',
   'Os ganhos incluem os bounties recebidos em dinheiro.': 'Winnings include bounties received in cash.',
-  'dos quais bounties {amount}': 'of which bounties {amount}',
+  'dos quais bounties {amount}': 'of which {amount} in bounties',
   'os bounties ficam com o jogador': 'the player keeps the bounties',
-  'Sem {amount} em bounties, que ficam contigo': 'Without {amount} in bounties, which you keep',
+  'Sem {amount} em bounties, que ficam contigo': 'Excluding {amount} in bounties, which you keep',
 };
 
 export default en;

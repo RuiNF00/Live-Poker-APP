@@ -1679,6 +1679,7 @@ const ptBR: Record<string, string> = {
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'O makeup deste pacote já passou para «{name}», que já tem sessões. Ele continua sendo recuperado lá.',
   'A tua parte, re-entries incluídas': 'Sua parte, re-entries incluídos',
   // PKO bounties
+  'Torneio PKO: o prémio do lugar acima, os bounties aqui.': 'Torneio PKO: o prêmio da colocação acima, os bounties aqui.',
   'Os backers têm parte do prémio sem os bounties (PKO).': 'Os backers têm parte do prêmio sem os bounties (PKO).',
   'Os backers têm parte do prémio todo, bounties incluídos.': 'Os backers têm parte do prêmio todo, bounties incluídos.',
   'bounties ficam contigo': 'bounties ficam com você',
