@@ -31,7 +31,9 @@ async function capture(locale, key) {
     // One-time coach-mark tours (rl.coach.<screen>.v1) would cover their screens: report every one as seen.
     const get = Storage.prototype.getItem;
     Storage.prototype.getItem = function (k) { return /^rl\.coach\./.test(k) ? '1' : get.call(this, k); };
-    if (localStorage.getItem('rl.hands.v1')) return;
+    // Seed once per context: newer builds migrate rl.hands.v1 away, so it can't be the marker.
+    if (localStorage.getItem('shots.seeded')) return;
+    localStorage.setItem('shots.seeded', '1');
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
   }, tr({ 'rl.hands.v1': seed.hands, 'rl.sessions.v1': seed.sessions, 'rl.players.v1': seed.players, 'rl.settings.v1': seed.settings, 'rl.offer.welcome.v1': '1', 'rl.trial.defer.v1': { shown: 1 }, 'sweatbook.replayer.tips.v1': '1', 'rl.trips.v1': seed.trips.map((x) => x.id), ...Object.fromEntries(seed.trips.map((x) => ['rl.trip.v1.' + x.id, x])), 'rl.backing.v1': seed.backing.map((x) => x.id), ...Object.fromEntries(seed.backing.map((x) => ['rl.backed.v1.' + x.id, x])), 'rl.start.hidden.v1': '1' }));
   // The sandbox has no route to the backend, so the app would show its
@@ -48,6 +50,11 @@ async function capture(locale, key) {
     // rl.offer.welcome.v1 and sweatbook.replayer.tips.v1 (seeded above) stop the one-time welcome paywall
     // and the replayer's first-open tip from covering their frames.
     await page.evaluate(() => localStorage.removeItem('rl.draft.v1')).catch(() => {});
+    // `hideAmounts`: store art shows no money, so these frames turn on the app's own "Hide amounts" setting.
+    await page.evaluate((on) => {
+      const s = JSON.parse(localStorage.getItem('rl.settings.v1') || '{}');
+      localStorage.setItem('rl.settings.v1', JSON.stringify({ ...s, hideAmounts: on }));
+    }, !!f.hideAmounts).catch(() => {});
     await page.goto(appUrl + f.route.split('#')[0], { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
     // A frame can open something first: tap the button whose label matches `act.click`, then type `act.fill` (per language) into the sheet's text box.
@@ -106,8 +113,13 @@ async function capture(locale, key) {
   return shots;
 }
 
-function html(lines, shot, t) {
-  const shotW = Math.round(t.w * 0.78), capSize = Math.round(t.w * 0.075);
+function html(f, key, shot, t) {
+  const lines = f[key], sub = f.sub?.[key];
+  const capSize = Math.round(t.w * 0.075), subSize = Math.round(t.w * 0.03);
+  // The phone keeps the screen's 440×956 shape; on the shorter Android canvas it shrinks so the bottom
+  // of the screen (the locked voice button, "See with Pro") isn't cut off.
+  const top = t.h * 0.09 + capSize * 2.2 + (sub ? subSize * 2 : 0);
+  const shotW = Math.round(Math.min(t.w * 0.78, ((t.h - top - t.h * 0.02) * 440) / 956));
   return `<!doctype html><html><head><meta charset="utf-8">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@700;800&display=block" rel="stylesheet">
 <style>
@@ -116,10 +128,12 @@ body{display:flex;flex-direction:column;align-items:center;font-family:'Hanken G
  background:radial-gradient(120% 60% at 50% 0%, rgba(244,90,39,.22), transparent 60%), ${BG}}
 h1{color:#F4F1EC;font-weight:800;font-size:${capSize}px;line-height:1.08;text-align:center;letter-spacing:-.02em;margin:${Math.round(t.h*0.055)}px 0 ${Math.round(t.h*0.035)}px}
 h1 span{color:${ACCENT}}
+h1 em{font-style:normal;font-size:.42em;vertical-align:.55em;margin-left:.3em;padding:.12em .45em;border-radius:.5em;background:${ACCENT};color:#0C1311;letter-spacing:0}
+p.sub{color:#B9C2BE;font-weight:700;font-size:${subSize}px;text-align:center;margin:-${Math.round(t.h*0.02)}px ${Math.round(t.w*0.08)}px ${Math.round(t.h*0.025)}px}
 .phone{width:${shotW}px;border-radius:${Math.round(shotW*0.09)}px;overflow:hidden;border:${Math.round(t.w*0.008)}px solid #26302C;
  box-shadow:0 ${Math.round(t.w*0.03)}px ${Math.round(t.w*0.08)}px rgba(0,0,0,.55)}
 .phone img{display:block;width:100%}
-</style></head><body><h1>${lines[0]}<br><span>${lines[1]}</span></h1>
+</style></head><body><h1>${lines[0]}<br><span>${lines[1]}</span>${f.badge ? `<em>${f.badge}</em>` : ''}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}
 <div class="phone"><img src="data:image/png;base64,${shot}"></div></body></html>`;
 }
 
@@ -131,7 +145,7 @@ for (const [locale, key] of [['pt-PT', 'pt'], ['en-US', 'en'], ['pt-BR', 'pt-BR'
     const ctx = await browser.newContext({ viewport: { width: t.w, height: t.h }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
     for (let i = 0; i < picked.length; i++) {
-      await page.setContent(html(picked[i].f[key], shots[i], t), { waitUntil: 'networkidle' });
+      await page.setContent(html(picked[i].f, key, shots[i], t), { waitUntil: 'networkidle' });
       await page.screenshot({ path: path.join(dir, `${picked[i].n}.png`) });
     }
     await ctx.close();
