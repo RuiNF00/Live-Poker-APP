@@ -42,7 +42,7 @@ for (const [locale, key] of LOCALES) {
   await ctx.route('**/*', (r) => {
     const u = r.request().url();
     if (u.startsWith(local)) return r.continue();
-    if (u.includes('/api/swaps/')) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ swap: remote }) });
+    if (u.includes('/api/swaps/')) return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ swap: tr(remote) }) });
     return r.fulfill({ status: 204, body: '' });
   });
   const page = await ctx.newPage();
@@ -54,6 +54,8 @@ for (const [locale, key] of LOCALES) {
     await page.waitForTimeout(600);
     // No money in marketing images: the app-wide «Esconder valores» setting (seeded above) starts every card with amounts hidden.
     for (const txt of hide) await page.evaluate((txt) => { for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && el.textContent.includes(txt)) el.style.visibility = 'hidden'; }, txt);
+    // The web build's back button ("Close") doesn't exist on the phone, where the native X is: drop it.
+    await page.evaluate(() => { for (const el of document.querySelectorAll('div')) if (el.childElementCount === 0 && ['Fechar', 'Close', 'Cerrar'].includes(el.textContent.trim())) (el.closest('[role="button"],[tabindex]') ?? el).style.display = 'none'; });
     await page.screenshot({ path: path.join(dir, it.name + '.png') });
   }
   await ctx.close();
