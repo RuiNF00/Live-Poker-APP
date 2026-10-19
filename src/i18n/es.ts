@@ -3364,7 +3364,8 @@ const es: Record<string, string> = {
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': 'El makeup de este paquete ya pasó a «{name}», que ya tiene sesiones. Se sigue recuperando allí.',
   'A tua parte, re-entries incluídas': 'Tu parte, re-entries incluidos',
   // PKO bounties
-  '{pct} sem bounties ({amount})': '{pct} sin bounties ({amount})',
+  'ROI sem bounties': 'ROI sin bounties',
+  'Do retorno': 'Del retorno',
   '{amount} em bounties': '{amount} en bounties',
   'Bounties ({currency})': 'Bounties ({currency})',
   'Total: {amount}': 'Total: {amount}',

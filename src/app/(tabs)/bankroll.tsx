@@ -361,7 +361,7 @@ function BankrollTab() {
               </Card>
               <StatGrid cols={2}>
                 <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={rateShown(tot.hours) ? fmt(Math.round(tot.hourly), cur) : '—'} tone={!rateShown(tot.hours) ? undefined : tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
-                {tot.roi !== null ? <Stat label="ROI" sub={tot.roiNoBounties !== null ? t('{pct} sem bounties ({amount})', { pct: pct(tot.roiNoBounties), amount: money(tot.bounties, cur) }) : t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
+                {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
                 {tot.itm !== null ? <Stat label="ITM" sub={t('Torneios com prémio')} value={`${tot.itm.toFixed(0)}%`} /> : null}
                 <Stat label={t('Buy-ins')} sub={t('A tua parte, re-entries incluídas')} value={fmt(tot.invested, cur)} />
                 {tot.tips ? <Stat label={t('Gorjetas')} sub={t('Já descontadas')} value={fmt(tot.tips, cur)} /> : null}

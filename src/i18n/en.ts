@@ -3370,7 +3370,8 @@ const en: Record<string, string> = {
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
   'A tua parte, re-entries incluídas': 'Your share, re-entries included',
   // PKO bounties
-  '{pct} sem bounties ({amount})': '{pct} without bounties ({amount})',
+  'ROI sem bounties': 'ROI without bounties',
+  'Do retorno': 'Of the return',
   '{amount} em bounties': '{amount} in bounties',
   'Bounties ({currency})': 'Bounties ({currency})',
   'Total: {amount}': 'Total: {amount}',

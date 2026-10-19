@@ -116,6 +116,15 @@ export default function TournamentStatsScreen() {
 
         {pro.isPro ? (
           <>
+            {sum.bounties > 0 && sum.invested > 0 ? (
+              // PKO: a deeper read of the ROI, so Pro only; the free ROI above already counts the bounties.
+              <Section title="Bounties">
+                <StatGrid cols={2}>
+                  <Stat label={t('ROI sem bounties')} value={signedPct(((sum.net - sum.bounties) / sum.invested) * 100)} />
+                  <Stat label={t('Do retorno')} value={sum.net + sum.invested > 0 ? pct((sum.bounties / (sum.net + sum.invested)) * 100) : '—'} sub={hidden ? undefined : t('{amount} em bounties', { amount: money(sum.bounties, currency) })} />
+                </StatGrid>
+              </Section>
+            ) : null}
             <Breakdown title={t('Por buy-in')} rows={bands} currency={currency} hidden={hidden} />
             <Breakdown title={t('Por festival')} rows={festivals} currency={currency} hidden={hidden} />
             <Breakdown title={t('Por jogo')} rows={games} currency={currency} hidden={hidden} />
