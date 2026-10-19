@@ -110,7 +110,8 @@ export default function StoryScreen() {
 
   // The image goes public too: same privacy as the link.
   const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
-  const moment = useMemo(() => (shown ? storyMoment(shown, mode === 'question' ? 'question' : 'result', settings.inBB) : null), [shown, mode, settings.inBB]);
+  // Shared pictures are always in big blinds, like the poster: in cash, chips are money.
+  const moment = useMemo(() => (shown ? storyMoment(shown, mode === 'question' ? 'question' : 'result', true) : null), [shown, mode]);
   // The replayer's own motion timeline, so the video plays what the app shows.
   const motion = useMemo(() => (shown && moment ? motionTimeline(shown, moment.replay) : []), [shown, moment]);
   const talkS = withFace && face ? face.ms / 1000 : withVoice ? voiceMs / 1000 : null;
@@ -366,7 +367,7 @@ export default function StoryScreen() {
                 {isPoster ? (
                   <HandPoster ref={card} hand={shown} moment={moment} comment={comment} brand={brand || !pro.isPro} />
                 ) : (
-                  <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB={settings.inBB} brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : direct && igDirect ? 'hint' : null} face={withFace ? faceView : null} />
+                  <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : direct && igDirect ? 'hint' : null} face={withFace ? faceView : null} />
                 )}
               </View>
             </View>
