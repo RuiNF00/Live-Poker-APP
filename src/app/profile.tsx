@@ -17,6 +17,7 @@ import { EMPTY_DRAFT, handleLooksValid, MAX_ITEMS, normalizeHandle, profileBody,
 import { checkHandle, createProfile, deleteProfile, loadProfileLink, profileUrl, updateProfile, type HandleCheck, type SaveResult } from '@/lib/public-profile';
 import { shareRef } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
+import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
 import { useStore } from '@/store/store';
 import { C, F, S } from '@/theme';
 import { ordinal } from '@/share/festival-card';
@@ -111,6 +112,7 @@ export default function ProfileScreen() {
 
   const save = async () => {
     tap('medium');
+    if (!link && !(await acceptUgcTerms())) return;
     setBusy(true);
     const body = profileBody(draft, { hands, sessions }, (await shareRef()) || null);
     const r = link ? await updateProfile(link, draft, body, h) : await createProfile(h, draft, body);

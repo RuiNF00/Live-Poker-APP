@@ -16,6 +16,7 @@ import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/StoryCard';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t, variant } from '@/i18n';
+import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } from '@/lib/instagram-story';
@@ -61,7 +62,7 @@ export default function FestivalCardScreen() {
       const ref = await shareRef().catch(() => '');
       let link = withLang(`${BRAND.webUrl}/r/${ref}?utm_source=instagram&utm_medium=story&utm_campaign=festival`, variant);
       // The best hand's replay is the link (sharing is unlimited on every plan).
-      if (best) {
+      if (best && (best.hand.shareId || (await acceptUgcTerms()))) {
         try {
           const isNew = !best.hand.shareId;
           const shareId = await ensureShareId(best.hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });

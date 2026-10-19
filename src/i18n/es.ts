@@ -3370,6 +3370,10 @@ const es: Record<string, string> = {
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Pagaste una vez: no hay suscripción que cancelar ni renovaciones.',
   'Toca para atualizar': 'Toca para actualizar',
   '{what}. Podes anular.': '{what}. Puedes deshacerlo.',
+  'Antes de publicares': 'Antes de publicar',
+  'Comentários, mãos partilhadas e o perfil público ficam à vista de outras pessoas. Ao continuar, aceitas os Termos de utilização: não há tolerância para conteúdo ofensivo nem para quem abusa de outras pessoas. Removemos esse conteúdo e afastamos quem o publica.': 'Los comentarios, las manos compartidas y el perfil público quedan a la vista de otras personas. Al continuar, aceptas los Términos de uso: no hay tolerancia para el contenido ofensivo ni para quien abusa de otras personas. Eliminamos ese contenido y apartamos a quien lo publica.',
+  'Ler os termos': 'Leer los términos',
+  'Aceito': 'Acepto',
 };
 
 export default es;

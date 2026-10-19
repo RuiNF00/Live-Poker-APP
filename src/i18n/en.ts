@@ -3376,6 +3376,10 @@ const en: Record<string, string> = {
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'You paid once: there is no subscription to cancel and nothing renews.',
   'Toca para atualizar': 'Tap to update',
   '{what}. Podes anular.': '{what}. You can undo it.',
+  'Antes de publicares': 'Before you post',
+  'Comentários, mãos partilhadas e o perfil público ficam à vista de outras pessoas. Ao continuar, aceitas os Termos de utilização: não há tolerância para conteúdo ofensivo nem para quem abusa de outras pessoas. Removemos esse conteúdo e afastamos quem o publica.': 'Comments, shared hands and your public profile can be seen by other people. By continuing you agree to the Terms of Use: there is no tolerance for objectionable content or abusive users. We remove that content and remove whoever posted it.',
+  'Ler os termos': 'Read the terms',
+  'Aceito': 'I agree',
 };
 
 export default en;

@@ -7,6 +7,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { t } from '@/i18n';
 import { isRateLimited } from '@/lib/net';
 import { postComment, reportComment, type Comment } from '@/lib/share-api';
+import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
 import { BRAND, C, F, R, S } from '@/theme';
@@ -97,6 +98,7 @@ export function CommentsList({
   const about = grouped && onStreet && street ? street : undefined;
   const send = async () => {
     if (!text.trim()) return;
+    if (!(await acceptUgcTerms())) return;
     setBusy(true);
     setErr('');
     try {

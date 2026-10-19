@@ -38,6 +38,7 @@ import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
 import { openInGtoWizard } from '@/lib/gto-wizard';
 import { shareSampleHand } from '@/lib/sample-share';
+import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
@@ -184,6 +185,7 @@ export default function HandScreen() {
 
   const ensureId = async (): Promise<string | null> => {
     if (hand.shareId) return hand.shareId;
+    if (!(await acceptUgcTerms())) return null;
     setBusy(true);
     try {
       // One public copy per hand: reuse a link made offline, or wait for the one being sent.

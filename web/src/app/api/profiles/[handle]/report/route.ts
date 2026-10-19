@@ -21,7 +21,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ handle:
   const result = await profileStore().report(handle, reporterId(req));
   if (result === 'ok') {
     after(async () => {
-      if (await firstTime('report-profile', handle)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/u/${handle}`);
+      if (await firstTime('report-profile', handle)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/u/${handle}. Esconder: update player_profiles set hidden_at = now() where handle = '${handle}';`);
     });
   }
   if (result === 'hidden') {

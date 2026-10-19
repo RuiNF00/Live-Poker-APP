@@ -1706,6 +1706,8 @@ const ptBR: Record<string, string> = {
   'Pagaste uma vez: não há subscrição para cancelar nem renovações.': 'Você pagou uma vez: não há assinatura para cancelar nem renovações.',
   'Toca para atualizar': 'Toque para atualizar',
   '{what}. Podes anular.': '{what}. Você pode desfazer.',
+  'Antes de publicares': 'Antes de publicar',
+  'Comentários, mãos partilhadas e o perfil público ficam à vista de outras pessoas. Ao continuar, aceitas os Termos de utilização: não há tolerância para conteúdo ofensivo nem para quem abusa de outras pessoas. Removemos esse conteúdo e afastamos quem o publica.': 'Comentários, mãos compartilhadas e o perfil público ficam visíveis para outras pessoas. Ao continuar, você aceita os Termos de uso: não há tolerância para conteúdo ofensivo nem para quem abusa de outras pessoas. Removemos esse conteúdo e afastamos quem o publica.',
 };
 
 export default ptBR;

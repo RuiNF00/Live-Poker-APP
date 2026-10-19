@@ -23,7 +23,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const result = await getStore().reportHand(id, reporterId(req), reason);
   if (result === 'ok') {
     after(async () => {
-      if (await firstTime('report-hand', id)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/h/${id}`);
+      // The reporter's reason as plain text on one line; the commands only name the id the database just found.
+      const why = reason ? ` Motivo: «${reason.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim()}».` : '';
+      if (await firstTime('report-hand', id)) await notifyModeration(`Nova denúncia: ${brand.siteUrl}/h/${id}.${why} Remover: update shared_hands set deleted_at = now() where id = '${id}';`);
     });
   }
   if (result === 'hidden') {

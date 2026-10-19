@@ -16,6 +16,7 @@ import { withLang } from '@/lib/link-lang';
 import { createPack } from '@/lib/pack-api';
 import { MAX_PACK_HANDS, packHands } from '@/lib/pack-core';
 import { shareRef } from '@/lib/referrals';
+import { acceptUgcTerms } from '@/lib/ugc-terms-ask';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
@@ -49,6 +50,7 @@ export default function NewPack() {
 
   const create = async () => {
     tap('medium');
+    if (!(await acceptUgcTerms())) return;
     setBusy(true);
     const name = title.trim().slice(0, 80);
     const r = await createPack({ hands: send, title: name, hideAmounts: !chips, share: { names: settings.shareNames, notes: settings.shareNotes }, saveHand });

@@ -42,6 +42,19 @@ describe('a shared hand keeps the player’s private fields off the server', () 
   });
 });
 
+describe('names at the table pass the comment filter', () => {
+  it('drops an offensive name and keeps the others', async () => {
+    const players = SAMPLE_TOURNAMENT_HAND.players.map((p, i) => (i === 1 ? { ...p, name: 'CABRÃO' } : i === 2 ? { ...p, name: 'Ana' } : p));
+    const res = await hands.POST(new Request('http://x/api/hands', { method: 'POST', body: JSON.stringify({ hand: { ...SAMPLE_TOURNAMENT_HAND, players } }) }));
+    expect(res.status).toBe(201);
+    const { id } = await res.json();
+    const stored = (await (await one.GET(new Request('http://x'), ctx(id))).json()).hand as { players: { name?: string }[] };
+    expect(stored.players).toHaveLength(players.length);
+    expect(stored.players[1].name).toBe('');
+    expect(stored.players[2].name).toBe('Ana');
+  });
+});
+
 describe('GET vote?reveal=1', () => {
   it('sends the whole hand without a vote, and 404 for a missing one', async () => {
     const { id } = await (await hands.POST(new Request('http://x/api/hands', { method: 'POST', body: JSON.stringify({ hand: SAMPLE_TOURNAMENT_HAND }) }))).json();
