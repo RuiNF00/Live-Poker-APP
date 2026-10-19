@@ -145,9 +145,12 @@ function BackerScreen() {
             return a + Math.round(r.cost * (!c || c === cur ? 1 : (rate(fx.table, c, cur, r.session.startedAt, fx.manual) ?? 1)) * 100) / 100;
           }, 0),
     );
-  // Settle the whole balance in one payment, the way Splitwise's "settle up" does.
+  // Settle the whole balance in one payment, the way Splitwise's "settle up" does. A session or payment
+  // with no rate counts 1:1 in the balance: recorded as paid, that guess would stay (QA P2, 19 Oct).
   const markPaid = () =>
-    confirm(
+    l.missing.length
+      ? tell(t('Falta o câmbio de {list}', { list: l.missing.map(curName).join(', ') }), t('Para enviar as contas ou registar o pagamento, falta o câmbio de {list}.', { list: l.missing.map(curName).join(', ') }))
+      : confirm(
       t('Marcar como pago?'),
       l.balance > 0
         ? t('Pagaste {amount} a {name} e ficam acertados.', { amount: money(l.balance, cur), name: backer.name })
