@@ -69,8 +69,8 @@ function ranks(r: Rank, single: string[], plural: string[]) {
   plural.forEach((w) => (PAIR_WORDS[w] = r));
 }
 ranks('A', ['as', 'ace', 'az'], ['ases', 'aces', 'azes']);
-ranks('K', ['rei', 'rey', 'king', 'k', 'ka', 'capa'], ['reis', 'reyes', 'kings']);
-ranks('Q', ['dama', 'rainha', 'reina', 'queen', 'q'], ['damas', 'rainhas', 'reinas', 'queens']);
+ranks('K', ['rei', 'rey', 'king', 'k', 'ka', 'capa'], ['reis', 'reyes', 'kings', 'kas']);
+ranks('Q', ['dama', 'rainha', 'reina', 'queen', 'q', 'qu'], ['damas', 'rainhas', 'reinas', 'queens']);
 ranks('J', ['valete', 'jota', 'jack', 'j', 'valet', 'jaque'], ['valetes', 'jotas', 'jacks', 'valets']);
 ranks('T', ['dez', 'diez', 'ten', '10'], ['dezes', 'dieces', 'tens']);
 ranks('9', ['nove', 'nueve', 'nine', '9'], ['noves', 'nueves', 'nines']);
@@ -85,7 +85,7 @@ ranks('2', ['dois', 'duas', 'dos', 'two', 'deuce', 'duque', '2'], ['duques', 'tw
 const ARTICLES = new Set(['o', 'a', 'the', 'el', 'la', 'um', 'uma', 'un', 'una', 'an', 'os', 'as', 'los', 'las']);
 
 /** Words that are also ordinary words: a card only next to another card word. */
-const WEAK_RANKS = new Set(['as', 'a', 'dos', 'k', 'q', 'j', 'ka', 'az', 'two', 'ten', 'capa']);
+const WEAK_RANKS = new Set(['as', 'a', 'dos', 'k', 'q', 'qu', 'j', 'ka', 'az', 'two', 'ten', 'capa']);
 
 const SUIT_WORDS: Record<string, Suit> = {
   espadas: 's', espada: 's', picas: 's', pica: 's', spades: 's', spade: 's',
@@ -117,7 +117,7 @@ const HERO_REF = new Set(['eu', 'hero', 'i', 'yo', 'me', 'mim', 'im']);
 const HERO_MARK = new Set(['estou', 'tou', 'sou', 'estava', 'estoy', 'estaba', 'soy', 'am']);
 const HAVE_1 = new Set(['tenho', 'tinha', 'tengo', 'tenia', 'have', 'had', 'got', 'recebo', 'recebi', 'levo', 'peguei']);
 const VILLAIN_REF = new Set(['ele', 'ela', 'vilao', 'villain', 'he', 'she', 'him', 'adversario', 'oponente', 'opponent', 'rival', 'gajo', 'tipo', 'cara', 'guy', 'reg', 'fish', 'peixe', 'pescado']);
-const SHOW = new Set(['mostra', 'mostrou', 'shows', 'showed', 'muestra', 'mostro', 'ensena', 'enseno', 'vira', 'virou', 'tem', 'has', 'tiene']);
+const SHOW = new Set(['mostra', 'mostrou', 'shows', 'showed', 'muestra', 'mostro', 'ensena', 'enseno', 'voltea', 'volteo', 'vira', 'virou', 'tem', 'has', 'tiene']);
 const WIN_1 = new Set(['ganho', 'ganhei', 'gano', 'gane', 'win', 'won', 'levo', 'levei', 'arrasto']);
 const WIN_3 = new Set(['ganha', 'ganhou', 'gana', 'gano', 'wins', 'leva', 'levou', 'arrasta', 'arrastou', 'llevo', 'lleva']);
 const SPLIT = new Set(['split', 'chop', 'dividimos', 'dividem', 'dividido', 'empate', 'empatamos', 'repartimos']);
@@ -141,18 +141,18 @@ function verbs(kind: VerbDef['kind'], p0: string[], p1: string[], p3: string[], 
   p3.forEach((w) => (VERBS[w] = { kind, person: 3, ...extra }));
 }
 verbs('fold', ['fold', 'folded', 'foldeo', 'tiro', 'retiro'], ['foldo', 'foldei', 'folde', 'desisto', 'desisti', 'largo', 'larguei', 'corri', 'corro', 'fujo', 'fugi'], ['folds', 'folda', 'foge', 'fugiu', 'foldou', 'desiste', 'desistiu', 'larga', 'largou', 'correu', 'corre', 'foldea', 'tira', 'retira']);
-verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou']);
+verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee', 'checo', 'cheque'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou', 'checa']);
 verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
 verbs('bet', ['bet', 'betted', 'cbet', 'donk', 'lead', 'barrel', 'beteo', 'probe'], ['aposto', 'apostei', 'apuesto', 'aposte', 'beto', 'betei', 'cbeto', 'disparo', 'disparei'], ['bets', 'aposta', 'apostou', 'apuesta', 'beta', 'betou', 'cbets', 'leads', 'barrels', 'donks', 'betea', 'dispara', 'disparou']);
 verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
 verbs('bet', ['cbet'], ['cbeto'], ['cbets'], { cbet: true });
 verbs('raise', ['3bet', '4bet', '5bet', 'treebet', 'tribet'], ['3beto', '4beto', '3betei', '4betei'], ['3bets', '4bets', '5bets', '3beta', '4beta', '3betou', '4betou'], { open: true });
 verbs('fold', [], [], ['foldam', 'foldaram', 'desistem', 'desistiram', 'largam', 'largaram', 'correm', 'correram', 'foldean', 'foldearon'], { plural: true });
-verbs('check', [], [], ['passam', 'passaram', 'checkam', 'checkaram', 'pasan', 'pasaron', 'chequean'], { plural: true });
+verbs('check', [], [], ['passam', 'passaram', 'checkam', 'checkaram', 'pasan', 'pasaron', 'chequean', 'checan', 'checaron'], { plural: true });
 verbs('call', [], [], ['pagam', 'pagaram', 'limpam', 'limparam', 'igualam', 'igualaram', 'pagan', 'pagaron', 'igualan', 'limpean', 'completam', 'entram', 'entraram'], { plural: true });
 verbs('passto', ['passto'], [], []);
 verbs('foldall', ['foldall'], [], []);
-verbs('allin', ['allin', 'shove', 'shoved', 'jam', 'jammed', 'push', 'pushed'], ['shovo', 'shovei', 'empurro', 'empurrei'], ['shoves', 'jams', 'pushes', 'shova', 'shovou', 'empurra', 'empurrou']);
+verbs('allin', ['allin', 'shove', 'shoved', 'jam', 'jammed', 'push', 'pushed'], ['shovo', 'shovei', 'empurro', 'empurrei', 'empujo', 'empuje'], ['shoves', 'jams', 'pushes', 'shova', 'shovou', 'empurra', 'empurrou', 'empuja']);
 
 /** Accented Spanish past forms, told apart before accents go: "pagó" is him, "pago" is me. */
 const ES_PAST_3: Record<string, VerbDef> = {
@@ -282,11 +282,17 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/(\d+(?:\.\d+)?)\s*(bbs?)\b/g, '$1 bb');
   s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1 / $2');
   // "Abre para 900, não, para 1100", "subo a 1000, perdón, a 1100": the amount said last stands.
-  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
+  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|bueno|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
   const sub: [RegExp, string | ((m: string) => string)][] = [
     // "O resto foge": the rest fold, it isn't "o resto" as in all-in.
     [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
     [/\ball[\s-]*ins?\b|\bol[\s-]*in\b|\ba tudo\b|\bo resto\b/g, ' allin '],
+    // es-MX: «me voy con todo», «se va con todo»; «se la pago», «me la paga», «le subo»: the
+    // pronouns only say against whom.
+    [/\b(?:me )?(voy|fui) con todo\b|\b(?:se )?(va|fue) con todo\b/g, (m: string) => ` ${m.split(' ').find((x) => ['voy', 'fui', 'va', 'fue'].includes(x))} allin `],
+    [/\bse (?:la|lo) (?=\p{L})/gu, ' '],
+    [/\bme (?:la|lo) (?=\p{L})/gu, ' me '],
+    [/\ble (?=\p{L})/gu, ' '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
     // "PLO5", "Omaha de 5 cartas", "Omaha Hi-Lo": not dealt by the app, kept as PLO with a note.
     [/\bplo5\b|\b(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)(?: de)? (?:5|five|cinco)[\s-]*(?:cartas|card|cards)\b|\b(?:5|five|cinco)[\s-]*(?:card|cards|cartas)[\s-]*(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)\b|\b(?:plo|omaha)[\s-]*(?:hi[\s-]*lo|high[\s-]*low|o8|8 or better)\b/g, ' plo plox '],
@@ -314,7 +320,8 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:middle|mid)\s*position\b|\bposicao (?:do )?meio\b|\bposicion media\b/g, ' mp '],
     [/\b(?:lo|low)[\s-]*jack\b|\blojack\b/g, ' lj '],
     [/\b(?:hi|high)[\s-]*jack\b|\bhijack\b/g, ' hj '],
-    [/\bcut[\s-]*off\b|\bcutoff\b/g, ' co '],
+    [/\bcut[\s-]*off\b|\bcutoff\b|\b(?<=(?:el|en|del) )corte\b/g, ' co '],
+    [/\bprimera posicion\b|\bprimeira posicao\b/g, ' utg '],
     [/\bbig[\s-]*blind\b|\bbigblind\b|\bbig blinde\b|\bciega grande\b/g, ' bb '],
     // "La ciega pasa": a blind on its own is the big blind.
     [/\bciega\b(?! (?:pequena|chica|grande))/g, ' bb '],
@@ -331,6 +338,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:tres|three) (?:quartos|quarters|cuartos)(?: do| of the| del)?(?: pote| pot| bote)?\b/g, ' %75 pote '],
     [/\b(?:um|one|a|un) (?:quarto|quarter|cuarto)(?: do| of the| del)?(?: pote| pot| bote)?\b/g, ' %25 pote '],
     [/\b(\d+(?:\.\d+)?) (?:%|por cento|percent|por ciento)(?: do| of the| del)?(?: pote| pot| bote)?/g, ' %$1 pote '],
+    [/\bse (?:retiran|tiran) (los|las) (dos|tres)\b/g, ' $1 $2 foldam '],
     [/\bse retiran\b|\bse tiran\b/g, ' foldam '],
     // "Lo veo", "yo veo." is a call; "veo que apuesta" is only seeing.
     [/\b(?:lo|la|te|yo lo|yo la) veo\b|\bveo(?=\s*(?:[.,;!?]|$))/g, ' pago '],
@@ -338,7 +346,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(\d+)[\s-]*max\b/g, ' $1 max '],
     // "Toda a gente desiste" is pt-PT for everyone; "ninguém paga", "nobody calls": the rest fold.
     [/\btoda a gente\b/g, ' todos '],
-    [/\b(?:ninguem|nadie|nobody|no one|noone) (?:paga|pagou|iguala|call|calls|called|quis|quiere|quiso|wants)\b/g, ' foldall '],
+    [/\b(?:ninguem|nadie|nobody|no one|noone) (?:me |te |la |lo )?(?:paga|pagou|iguala|call|calls|called|quis|quiere|quiso|wants)\b/g, ' foldall '],
     // "Passamos ao flop", "pasamos al turn": only the street changes.
     [/\b(?:pasamos|passamos|vamos)(?: (?:a|ao|al|pro|pra|para o|para el|to the|to))? (?=flop|turn|river|rio\b)/g, ' , '],
     [/\b(flop|turn|river) ?[.,:;]? ?(?:o |el |the )?\1\b/g, ' $1 '],

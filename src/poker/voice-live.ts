@@ -23,18 +23,18 @@ export type LiveChange =
   | { k: 'note'; text: string };
 
 const LEVEL = new Set(['nivel', 'level', 'lvl']);
-const UP = new Set(['sobe', 'subiu', 'subir', 'up', 'sube', 'subio', 'proximo', 'next', 'seguinte', 'siguiente', 'novo', 'nuevo', 'new']);
+const UP = new Set(['sobe', 'subiu', 'subir', 'up', 'sube', 'subio', 'subieron', 'subiram', 'proximo', 'next', 'seguinte', 'siguiente', 'novo', 'nuevo', 'new', 'cambio', 'mudou']);
 const DOWN = new Set(['desce', 'desceu', 'down', 'baja', 'bajo', 'anterior', 'previous', 'back']);
 const BLINDS = new Set(['blinds', 'blind', 'ciegas', 'estrutura']);
 const ANTE = new Set(['ante', 'antes', 'bba']);
 const STACK = new Set(['stack', 'fichas', 'chips', 'pilha']);
 /** "Tenho 45 mil", "estou com 45 mil", "I have 45k", "tengo 45 mil". */
-const HAVE = new Set(['tenho', 'tinha', 'tengo', 'tenia', 'have', 'had', 'got', 'com', 'con', 'at', 'on']);
+const HAVE = new Set(['tenho', 'tinha', 'tengo', 'tenia', 'traigo', 'have', 'had', 'got', 'com', 'con', 'at', 'on']);
 const REBUY = new Set(['rebuy', 'rebuys', 'recompra', 'recompro', 'recomprei', 'recompre', 'reentry', 'reentrada', 'reentro', 'reentrei', 'reentre', 'reentrar']);
 const PAUSE = new Set(['pausa', 'intervalo', 'break', 'descanso', 'jantar', 'cena', 'dinner']);
 // "Não há pausa", "sin rebuy", "I didn't rebuy": the word is there, the change isn't.
 const NEG = new Set(['nao', 'sem', 'nem', 'sin', 'ni', 'not', 'without', 'didnt', 'dont', 'havent', 'never', 'nunca']);
-const NO_VERB = new Set(['hay', 'hubo', 'hice', 'fiz', 'tengo', 'tenho', 'vou', 'voy', 'more']);
+const NO_VERB = new Set(['hay', 'hubo', 'hice', 'fiz', 'tengo', 'tenho', 'vou', 'voy', 'me', 'more']);
 function negated(w: string[], i: number): boolean {
   for (let j = Math.max(0, i - 3); j < i; j++) {
     if (NEG.has(w[j])) return true;
@@ -120,6 +120,11 @@ export function liveChanges(text: string): LiveChange[] {
       else if (near.some((y) => y && DOWN.has(y))) out.push({ k: 'levelStep', dir: -1 });
       continue;
     }
+    // "Ya subieron las ciegas", "the blinds went up": the next level.
+    if (BLINDS.has(x) && !numAfter(i) && [w[i - 3], w[i - 2], w[i - 1], w[i + 1], w[i + 2]].some((y) => y && UP.has(y))) {
+      out.push({ k: 'levelStep', dir: 1 });
+      continue;
+    }
     if (BLINDS.has(x) || nums.some((s) => s.start === i && w[s.next] === '/')) {
       // "Blinds 1000/2000 ante 2000", "2000 4000 ante 4000".
       let a = BLINDS.has(x) ? numAfter(i) : nums.find((s) => s.start === i && !s.used);
@@ -155,6 +160,13 @@ export function liveChanges(text: string): LiveChange[] {
     if (LEFT.has(x)) {
       // "Restam 45", "45 left", "quedan 45 jugadores".
       const s = numAfter(i) ?? numBefore(i) ?? (PLAYERS.has(w[i - 1] ?? '') ? numBefore(i - 1) : undefined);
+      // "Somos 130 inscritos": the field, not who's left.
+      if (s && ENTRIES.has(w[s.next] ?? '')) continue;
+      // "Me quedan 18 mil": hero's own chips.
+      if (s && w[i - 1] === 'me') {
+        stackFrom(s);
+        continue;
+      }
       const v = take(s);
       if (v) out.push({ k: 'left', v: Math.round(v) });
       continue;
