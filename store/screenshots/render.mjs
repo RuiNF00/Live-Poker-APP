@@ -20,7 +20,7 @@ const BG = '#0C1311', ACCENT = '#FF6A3D';
 
 const browser = await chromium.launch({ executablePath: exe });
 
-async function capture(locale) {
+async function capture(locale, key) {
   const ctx = await browser.newContext({ viewport: { width: 440, height: 956 }, deviceScaleFactor: 3, locale });
   await ctx.addInitScript((s) => {
     // One-time coach-mark tours (rl.coach.<screen>.v1) would cover their screens: report every one as seen.
@@ -57,16 +57,24 @@ async function capture(locale) {
       await page.evaluate((txt) => {
         for (const el of document.querySelectorAll('div')) {
           if (el.childElementCount !== 0 || el.textContent.trim() !== txt) continue;
-          (el.closest('[role="button"],[tabindex]') ?? el).style.display = 'none';
+          // A plain chip is a one-child pill around the text: hide the pill, not just the label.
+          (el.closest('[role="button"],[tabindex]') ?? (el.parentElement?.childElementCount === 1 ? el.parentElement : el)).style.display = 'none';
         }
       }, txt);
     }
-    // Text to cut out of a line without hiding the rest (e.g. a share domain that isn't decided yet).
+    // Text to cut out of a line without hiding the rest (e.g. a share domain); a [from, to] pair rewrites it instead.
     for (const txt of f.strip ?? []) {
-      await page.evaluate((txt) => {
+      await page.evaluate((entry) => {
+        const [txt, to] = Array.isArray(entry) ? entry : [entry, ''];
         const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes(txt)) n.nodeValue = n.nodeValue.replace(txt, '');
+        for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes(txt)) n.nodeValue = n.nodeValue.replace(txt, to);
       }, txt);
+    }
+    // Example text inside inputs (placeholders) that must not appear in store art: swap it for the frame's own.
+    for (const [txt, by] of Object.entries(f.placeholder ?? {})) {
+      await page.evaluate(([txt, rep]) => {
+        for (const el of document.querySelectorAll('input,textarea')) if (el.placeholder?.includes(txt)) el.placeholder = rep;
+      }, [txt, by[key] ?? by.en]);
     }
     shots.push((await page.screenshot()).toString('base64'));
   }
@@ -92,7 +100,7 @@ h1 span{color:${ACCENT}}
 }
 
 for (const [locale, key] of [['pt-PT', 'pt'], ['en-US', 'en'], ['pt-BR', 'pt-BR'], ['es-ES', 'es']]) {
-  const shots = await capture(locale);
+  const shots = await capture(locale, key);
   for (const t of TARGETS) {
     const dir = path.join(outDir, t.store, key);
     fs.mkdirSync(dir, { recursive: true });

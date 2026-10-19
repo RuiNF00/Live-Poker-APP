@@ -12,7 +12,7 @@ export const hands = [
   base({ id: 'h1', t: now - 20*60000, game: g('$25K High Roller', 1000, 2000, 'bubble', 14, 58),
     players: [P('Hero',64000,['Ah','Qh']),P('',51000),P('Boné azul',120000,['Kc','Kd']),P('',38000),P('',72000),P('',45000),P('Reg alemão',88000),P('',30000),P('',96000)],
     button: 0, hero: 0, actions: [{p:3,kind:'fold'},{p:4,kind:'fold'},{p:5,kind:'fold'},{p:6,kind:'raise',to:4400},{p:7,kind:'fold'},{p:8,kind:'fold'},{p:0,kind:'raise',to:12000},{p:1,kind:'fold'},{p:2,kind:'raise',to:30000},{p:6,kind:'fold'},{p:0,kind:'raise',to:64000},{p:2,kind:'call'}],
-    board: ['Qd','8h','3h','2s','Jh'], tags: ['Bolha','Pote grande','Dúvida'], notes: 'Bolha a 58 com 54 pagos. O boné azul só tinha 3-betado uma vez em 3 horas. Fold era melhor?' }),
+    board: ['Qd','8h','3h','2s','Jh'], tags: ['Bolha','Pote grande','Dúvida'], notes: 'Bolha a 58 com 54 pagos. O boné azul só tinha entrado em duas mãos em 3 horas. Fold era melhor?' }),
   base({ id: 'h2', t: now - 55*60000, game: g('$25K High Roller', 800, 1600, 'mid', 12, 112),
     players: [P('',40000),P('Hero',71000,['7s','7d']),P('',52000),P('Fish casaco',33000,['As','9c']),P('',61000),P('',44000)],
     button: 0, hero: 1, actions: [{p:3,kind:'raise',to:3500},{p:4,kind:'fold'},{p:5,kind:'fold'},{p:0,kind:'fold'},{p:1,kind:'call'},{p:2,kind:'fold'},{p:1,kind:'check'},{p:3,kind:'bet',to:4000},{p:1,kind:'call'},{p:1,kind:'check'},{p:3,kind:'check'},{p:1,kind:'bet',to:20000},{p:3,kind:'call'}],
@@ -20,7 +20,7 @@ export const hands = [
   base({ id: 'h3', t: now - 2*3600000, game: g('$25K High Roller', 600, 1200, 'mid', 10, 160),
     players: [P('Hero',48000,['Kh','Jh']),P('',36000),P('Reg alemão',80000),P('',29000),P('',55000),P('',41000)],
     button: 0, hero: 0, actions: [{p:3,kind:'fold'},{p:4,kind:'fold'},{p:5,kind:'fold'},{p:0,kind:'raise',to:2600},{p:1,kind:'fold'},{p:2,kind:'call'},{p:2,kind:'check'},{p:0,kind:'bet',to:3000},{p:2,kind:'call'},{p:2,kind:'check'},{p:0,kind:'bet',to:8000},{p:2,kind:'call'},{p:2,kind:'check'},{p:0,kind:'bet',to:20000},{p:2,kind:'fold'}],
-    board: ['Th','9h','2c','5s','3d'], tags: ['Bluff','C-bet'], notes: 'Barrel em três ruas, ele largou.' }),
+    board: ['Th','9h','2c','5s','3d'], tags: ['Bluff','Três ruas'], notes: 'Barrel em três ruas, ele largou.' }),
   base({ id: 'h4', t: now - DAY - 3600000, game: { kind: 'cash', name: 'Cash 25/50', sb: 25, bb: 50, ante: 0, anteType: 'none', currency: '$' },
     players: [P('',520),P('Hero',610,['Qs','Qc']),P('Calling station',900,['Jd','Td']),P('',480),P('',300),P('',700)],
     button: 0, hero: 1, actions: [{p:3,kind:'fold'},{p:4,kind:'raise',to:125},{p:5,kind:'fold'},{p:0,kind:'fold'},{p:1,kind:'raise',to:400},{p:2,kind:'call'},{p:4,kind:'fold'},{p:1,kind:'bet',to:210},{p:2,kind:'call'}],
@@ -42,7 +42,7 @@ sess.unshift({ id:'live', kind:'mtt', name:'$25K High Roller', venue:'Nassau', c
   roster:['Hero','','Boné azul','','','','Reg alemão','',''], notes:'' });
 export const sessions = sess;
 export const players = [
-  { id:'p1', name:'Boné azul', look:'Boné azul, mesa 12', tags:['Tight','Nit'], notes:'Só 3-beta com premiums.', createdAt: now-DAY, updatedAt: now },
+  { id:'p1', name:'Boné azul', look:'Boné azul, mesa 12', tags:['Tight','Nit'], notes:'Só entra com premiums.', createdAt: now-DAY, updatedAt: now },
   { id:'p2', name:'Reg alemão', look:'Óculos, hoodie preto', tags:['Reg','Agressivo'], notes:'Abre muito do CO e BTN.', createdAt: now-DAY, updatedAt: now },
   { id:'p3', name:'Fish casaco', look:'Casaco de cabedal', tags:['Fish','Calling station'], notes:'Paga até ao river com qualquer par.', createdAt: now-DAY, updatedAt: now },
 ];

@@ -32,8 +32,8 @@ Nota: no período 5 o pt-BR é o lançamento no Brasil e no período 6 o es é o
 **PT-PT** (148)
 > Novo: regista uma mão ao vivo em 11 toques entre níveis, revê-a rua a rua e partilha um link que qualquer pessoa abre. Grátis: 3 mãos novas por dia.
 
-**pt-BR** (155)
-> Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e compartilhe um link que qualquer pessoa abre. Grátis: 3 mãos por dia.
+**pt-BR** (161)
+> Novo: registre uma mão ao vivo em 11 toques entre os níveis, reveja street a street e compartilhe um link que qualquer pessoa abre. Grátis: 3 mãos novas por dia.
 
 **es** (154)
 > Nuevo: registra una mano en vivo en 11 toques entre niveles, repásala calle a calle y comparte un link que cualquiera abre. Gratis: 3 manos nuevas al día.
@@ -47,8 +47,8 @@ Nota: no período 5 o pt-BR é o lançamento no Brasil e no período 6 o es é o
 **PT-PT** (162)
 > Festivais de dezembro nas Bahamas e em Las Vegas: planeia os torneios com a tua banca, recebe lembretes de inscrição tardia e regista uma mão típica em 11 toques.
 
-**pt-BR** (164)
-> Festivais de dezembro nas Bahamas e em Las Vegas: planeje os torneios com a sua banca, receba lembretes de late registration e registre uma mão típica em 11 toques.
+**pt-BR** (155)
+> Festivais de dezembro nas Bahamas e em Las Vegas: planeje os torneios com a sua banca, receba lembretes de late reg e registre uma mão típica em 11 toques.
 
 **es** (153)
 > Festivales de diciembre en Bahamas y Las Vegas: planifica tus torneos con tu bankroll, recibe avisos de late reg y registra una mano típica en 11 toques.
@@ -107,8 +107,8 @@ Nota: no período 5 o pt-BR é o lançamento no Brasil e no período 6 o es é o
 **PT-PT** (145)
 > Os teus backers deixam de perguntar o stack: regista a ação vendida e eles seguem uma página só de leitura. Nenhum dinheiro passa pela Sweatbook.
 
-**pt-BR** (149)
-> Seus backers param de perguntar o stack: registre a ação vendida e eles acompanham em uma página só de leitura. Nenhum dinheiro passa pela Sweatbook.
+**pt-BR** (152)
+> Seus backers param de perguntar pelo stack: registre a ação vendida e eles acompanham em uma página só de leitura. Nenhum dinheiro passa pelo Sweatbook.
 
 **es** (164)
 > Temporada de festivales: registra una mano típica en 11 toques, repásala en el replayer y compártela con un link que cualquiera abre. Gratis: 3 manos nuevas al día.
