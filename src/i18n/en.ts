@@ -3509,6 +3509,17 @@ const en: Record<string, string> = {
   'Enquanto ainda te lembras de tudo.': 'While you still remember everything.',
   'Já joguei': "I've played",
   'Já jogaste? Regista a última sessão': 'Already played? Log your last session',
+  'Nesta mesa': 'At this table',
+  'Na última sessão': 'Last session',
+  'Visto a {date}': 'Seen {date}',
+  'Que tipo de jogador?': 'What kind of player?',
+  'Tendências': 'Tendencies',
+  'Quem é': 'Who they are',
+  'Escreve um nome ou alcunha': 'Type a name or nickname',
+  'Joga muitas mãos e paga demais': 'Plays lots of hands and calls too much',
+  'Joga bem e com regularidade': 'Plays well and plays often',
+  'Só entra com mãos fortes': 'Only plays strong hands',
+  'Abre muito e pressiona': 'Opens a lot and keeps the pressure on',
 };
 
 export default en;

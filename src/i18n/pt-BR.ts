@@ -1822,6 +1822,8 @@ const ptBR: Record<string, string> = {
   '{n} mãos para rever': '{n} mãos para revisar',
   'Enquanto ainda te lembras de tudo.': 'Enquanto você ainda se lembra de tudo.',
   'Já jogaste? Regista a última sessão': 'Já jogou? Registre a última sessão',
+  'Visto a {date}': 'Visto em {date}',
+  'Escreve um nome ou alcunha': 'Escreva um nome ou apelido',
 };
 
 export default ptBR;
