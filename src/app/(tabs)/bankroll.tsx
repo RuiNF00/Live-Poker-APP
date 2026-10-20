@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
@@ -88,6 +88,17 @@ function BankrollTab() {
   const [custom, setCustom] = useState<DateRange>({});
   const [pickedStakes, setStakes] = useState<string[]>([]);
   const [sheet, setSheet] = useState<SheetState>(null);
+  // «Já joguei» on Resumo lands here with the past-session form open.
+  // Read during render (not in an effect), once per arrival; the param is then cleared so the next tap opens it again.
+  const { add } = useLocalSearchParams<{ add?: string }>();
+  const [addSeen, setAddSeen] = useState<string | undefined>(undefined);
+  if (add !== addSeen) {
+    setAddSeen(add);
+    if (add === 'session') setSheet({ type: 'session', s: 'new' });
+  }
+  useEffect(() => {
+    if (add) router.setParams({ add: undefined });
+  }, [add]);
   const locked = !isPro && !FREE.bankrollFilters;
 
   // Apagar acts in one tap: the session leaves every total at once and "Desfazer" stays a few

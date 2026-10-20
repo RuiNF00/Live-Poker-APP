@@ -73,7 +73,8 @@ export default function TabsLayout() {
       )}
       tabBar={(props) => (
         <>
-          <SessionMiniBar hidden={props.state.routes[props.state.index]?.name === 'session'} />
+          {/* Hidden where the session already shows big: its own tab and Resumo's live card. */}
+          <SessionMiniBar hidden={['session', 'index'].includes(props.state.routes[props.state.index]?.name ?? '')} />
           <BottomTabBar {...props} />
         </>
       )}
