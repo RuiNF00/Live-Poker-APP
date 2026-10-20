@@ -135,7 +135,7 @@ export default function HomeScreen() {
       title={toReview === 1 ? t('1 mão para rever') : t('{n} mãos para rever', { n: toReview })}
       body={t('Enquanto ainda te lembras de tudo.')}
       action={t('Rever')}
-      onPress={() => router.push({ pathname: '/hand/[id]', params: { id: review[0].id } })}
+      onPress={() => router.push({ pathname: '/hand/[id]', params: { id: review[0].id, q: 'all' } })}
     />
   ) : news.item ? (
     <WhatsNewCard item={news.item} onDismiss={news.dismiss} />

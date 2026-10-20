@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -59,6 +59,17 @@ export default function HandsScreen() {
   const { paywall, isPro } = usePro();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
+  // The Sunday notice (sweatbook://hands?review=1) opens the list on "Por rever".
+  const { review: openReview } = useLocalSearchParams<{ review?: string }>();
+  const [opened, setOpened] = useState(false);
+  if (!!openReview !== opened) {
+    setOpened(!!openReview);
+    if (openReview) setTag(TO_REVIEW);
+  }
+  // Cleared once read, so the next notice opens it again.
+  useEffect(() => {
+    if (openReview) router.setParams({ review: undefined });
+  }, [openReview]);
   const [filter, setFilter] = useState<HandFilter>(NO_FILTER);
   const [filtering, setFiltering] = useState(false);
   const coach = useCoach();
@@ -147,8 +158,8 @@ export default function HandsScreen() {
   const [tagging, setTagging] = useState(false);
 
   const renderItem = useCallback(
-    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} coach={unread[item.id] ?? 0} />,
-    [settings.inBB, picking, picked, togglePick, unread],
+    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} coach={unread[item.id] ?? 0} queue={tag === TO_REVIEW} />,
+    [settings.inBB, picking, picked, togglePick, unread, tag],
   );
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);

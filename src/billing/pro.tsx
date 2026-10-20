@@ -28,6 +28,7 @@ import { shortDate } from '@/poker/format';
 import { noteReviewBlocker, noteVisibleError } from '@/lib/review';
 import { useOnline } from '@/lib/sync';
 import { useStore } from '@/store/store';
+import { computeStreak, streakActivity } from '@/store/streak';
 
 /**
  * An invite discount, said once with the way to use it: received, never won. Nothing for a
@@ -224,7 +225,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
 
   // Trial and come-back notifications follow the data: re-planned when it
   // changes and each time the app comes back to the front.
-  const { hands, sessions, activeSession, settings } = useStore();
+  const { hands, sessions, activeSession, settings, players } = useStore();
   // «Lembretes» switched off or on in Settings: the come-back reminder already planned follows it.
   const tipsOn = settings.notify?.tips !== false;
   useEffect(() => setLiveSession(!!activeSession), [activeSession]);
@@ -264,10 +265,12 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const annualPrice = plans.find((p) => p.id === 'annual')?.priceString ?? '';
   useEffect(() => {
     const timer = setTimeout(() => {
-      void syncNudges({ now: Date.now(), isPro, annualPrice, hands, sessions, sessionActive: !!activeSession });
+      const now = Date.now();
+      const streakWeeks = computeStreak(streakActivity(hands, sessions, players), settings.streakPauses ?? [], now).weeks;
+      void syncNudges({ now, isPro, annualPrice, hands, sessions, sessionActive: !!activeSession, streakWeeks });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession, tipsOn]);
+  }, [nudgeTick, isPro, annualPrice, hands, sessions, players, settings.streakPauses, activeSession, tipsOn]);
 
   const value = useMemo(
     () => ({ isPro, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),

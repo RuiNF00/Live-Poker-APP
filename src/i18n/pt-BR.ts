@@ -1381,7 +1381,6 @@ const ptBR: Record<string, string> = {
   'Quando o coach comenta as tuas mãos': 'Quando o coach comenta suas mãos',
   'No dia 1, se jogaste nesse mês': 'No dia 1, se você jogou naquele mês',
   'Lembretes para registar': 'Lembretes para registrar',
-  'Se passares uns dias sem registar': 'Se passar uns dias sem registrar',
   'Notificações desligadas no telemóvel': 'Notificações desativadas no celular',
   'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Ative nas configurações do sistema para receber os avisos que escolher aqui.',
   'Abrir definições': 'Abrir configurações',
@@ -1848,6 +1847,20 @@ const ptBR: Record<string, string> = {
   'O organizador ainda não publicou quando fecha o late reg. Marca a hora no plano quando a souberes.': 'O organizador ainda não publicou quando fecha o late reg. Marque o horário no plano quando souber.',
   'Começas com {stack} fichas e os blinds sobem a cada {min} min.': 'Você começa com {stack} fichas e os blinds sobem a cada {min} min.',
   'No plano: {name}': 'No plano: {name}',
+  'Marcaste 1 mão. Rever agora?': 'Você marcou 1 mão. Revisar agora?',
+  'Marcaste {n} mãos. Rever agora?': 'Você marcou {n} mãos. Revisar agora?',
+  'Enquanto ainda te lembras de tudo. As que ficarem esperam em «Por rever».': 'Enquanto você ainda lembra de tudo. As que ficarem esperam em «Para revisar».',
+  'Tens 1 mão para rever: toca para começar.': 'Você tem 1 mão para revisar: toque para começar.',
+  'Tens {n} mãos para rever: toca para começar.': 'Você tem {n} mãos para revisar: toque para começar.',
+  '{n} semanas seguidas a registar.': '{n} semanas seguidas registrando.',
+  'Toca para veres as tuas mãos.': 'Toque para ver suas mãos.',
+  'A tua semana no póquer': 'Sua semana no pôquer',
+  'A tua semana ao domingo, e se passares uns dias sem registar': 'Sua semana no domingo, e se você passar uns dias sem registrar',
+  'Tens notas sobre 1 regular daqui': 'Você tem notas sobre 1 regular daqui',
+  'Tens notas sobre {n} regulares daqui': 'Você tem notas sobre {n} regulares daqui',
+  'Vê quem são e o que já sabes de cada um.': 'Veja quem são e o que você já sabe de cada um.',
+  'Já não tens mãos para rever.': 'Você não tem mais mãos para revisar.',
+  'Revistas todas as mãos marcadas nesta sessão.': 'Você revisou todas as mãos marcadas nesta sessão.',
 };
 
 export default ptBR;

@@ -5,7 +5,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { ListGroup, Row, SheetHeader, T, tap, ToggleItem, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { useStore } from '@/store/store';
-import { computeStreak, FREEZE_EVERY, type WeekState } from '@/store/streak';
+import { computeStreak, FREEZE_EVERY, streakActivity, type WeekState } from '@/store/streak';
 import { C, S } from '@/theme';
 
 const DOT: Record<WeekState, string> = { logged: C.textDim, frozen: C.info, paused: C.borderStrong, empty: C.surface3 };
@@ -20,8 +20,7 @@ export function StreakStat() {
   // Read once per mount: the home tab remounts often enough for a weekly count.
   const [now] = useState(() => Date.now());
   const s = useMemo(() => {
-    const at = [...hands.map((h) => h.createdAt), ...sessions.filter((x) => x.notes.trim()).map((x) => x.startedAt), ...players.map((p) => p.updatedAt)];
-    return computeStreak(at, settings.streakPauses ?? [], now);
+    return computeStreak(streakActivity(hands, sessions, players), settings.streakPauses ?? [], now);
   }, [hands, sessions, players, settings.streakPauses, now]);
 
   const title = s.weeks === 1 ? t('1 semana seguida') : t('{n} semanas seguidas', { n: s.weeks });

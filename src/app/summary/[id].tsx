@@ -11,6 +11,7 @@ import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, replay } from '@/poker/engine';
 import { bbs, duration, money, plus } from '@/poker/format';
+import { reviewQueue } from '@/poker/review';
 import type { Hand } from '@/poker/types';
 import { unfinished } from '@/poker/unfinished';
 import { playedMs, profit } from '@/store/session-math';
@@ -39,6 +40,8 @@ export default function SessionSummary() {
   const mine = useMemo(() => hands.filter((h) => h.sessionId === id), [hands, id]);
   const { biggest, best } = useMemo(() => standouts(mine), [mine]);
   const left = useMemo(() => unfinished(mine), [mine]);
+  // Marked at the table ("Rever"): still fresh, the moment to look at them again.
+  const toReview = useMemo(() => reviewQueue(mine), [mine]);
   // Off when screenshotting at the table: no money on screen.
   const [hideMoney, setHideMoney] = useState(false);
 
@@ -109,6 +112,16 @@ export default function SessionSummary() {
           title={left.length === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: left.length })}
           action={t('Acabar')}
           onPress={() => router.push({ pathname: '/hand/new', params: { edit: left[0].id } })}
+        />
+      ) : null}
+
+      {toReview.length > 0 ? (
+        <Banner
+          icon="school-outline"
+          title={toReview.length === 1 ? t('Marcaste 1 mão. Rever agora?') : t('Marcaste {n} mãos. Rever agora?', { n: toReview.length })}
+          body={t('Enquanto ainda te lembras de tudo. As que ficarem esperam em «Por rever».')}
+          action={t('Rever')}
+          onPress={() => router.push({ pathname: '/hand/[id]', params: { id: toReview[0].id, q: s.id } })}
         />
       ) : null}
 

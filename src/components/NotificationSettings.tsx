@@ -25,7 +25,7 @@ const rows = (): { kind: NotifyKind; title: string; subtitle: string; icon: Icon
   { kind: 'coach', title: t('Coach'), subtitle: t('Quando o coach comenta as tuas mãos'), icon: 'school-outline' },
   { kind: 'comments', title: t('Comentários nas tuas mãos'), subtitle: t('Quando alguém comenta uma mão que partilhaste'), icon: 'chatbubbles-outline' },
   { kind: 'recap', title: t('Resumo do mês'), subtitle: t('No dia 1, se jogaste nesse mês'), icon: 'stats-chart-outline' },
-  { kind: 'tips', title: t('Lembretes para registar'), subtitle: t('Se passares uns dias sem registar'), icon: 'create-outline' },
+  { kind: 'tips', title: t('Lembretes para registar'), subtitle: t('A tua semana ao domingo, e se passares uns dias sem registar'), icon: 'create-outline' },
 ];
 
 /** null on web or while checking; false when the system said no. */

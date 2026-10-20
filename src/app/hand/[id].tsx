@@ -10,6 +10,7 @@ import { VoiceNotePlayer } from '@/components/audio';
 import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
 import { sameTable } from '@/poker/factory';
+import { reviewQueue } from '@/poker/review';
 import { sampleHand } from '@/poker/sample';
 import { unfinished } from '@/poker/unfinished';
 import { HandHeader } from '@/components/HandHeader';
@@ -61,7 +62,8 @@ export default function HandScreen() {
   const [termsSheet, acceptUgcTerms] = useUgcTerms();
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
   // `f`: this hand was just finished in the editor; the next unfinished one is offered.
-  const { id, c: fresh, f: justFinished } = useLocalSearchParams<{ id: string; c?: string; f?: string }>();
+  // `q`: opened from a review queue (a session id, or "all"); once reviewed, the next one is offered.
+  const { id, c: fresh, f: justFinished, q: queueOf } = useLocalSearchParams<{ id: string; c?: string; f?: string; q?: string }>();
   const { hands, saveHand, deleteHand, settings, setSettings, activeSession } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
@@ -73,6 +75,11 @@ export default function HandScreen() {
     const left = unfinished(hands).filter((h) => h.id !== id);
     return left.length ? { n: left.length, id: left[0].id } : null;
   }, [justFinished, hands, id]);
+  const reviewNext = useMemo(() => {
+    if (!queueOf) return null;
+    const queue = reviewQueue(hands, queueOf === 'all' ? undefined : queueOf).filter((h) => h.id !== id);
+    return { left: queue.length, next: queue[0] };
+  }, [queueOf, hands, id]);
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   // Shown at the top of the link; only before the link exists.
@@ -479,7 +486,14 @@ ${link}`;
         <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
-        <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />
+        <ReviewCard
+          key={hand.id}
+          hand={hand}
+          onChange={saveHand}
+          left={reviewNext?.left}
+          inQueue={queueOf ? (queueOf === 'all' ? 'all' : 'session') : undefined}
+          onNext={reviewNext?.next ? () => router.replace({ pathname: '/hand/[id]', params: { id: reviewNext.next!.id, q: queueOf } }) : undefined}
+        />
 
 
         {hand.shareId ? (

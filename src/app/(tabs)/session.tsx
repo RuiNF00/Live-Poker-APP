@@ -15,6 +15,7 @@ import { useLockScreenUp } from '@/components/AppLock';
 import { useAfterFirstFrame } from '@/components/Deferred';
 import { useNow } from '@/components/useNow';
 import { StopLossBanner } from '@/components/BankrollRules';
+import { RegularsHere } from '@/components/RegularsHere';
 import { LineChart } from '@/components/LineChart';
 import { blankSession, firstSession, SessionForm } from '@/components/SessionForm';
 import { canReadReceipts } from '@/lib/receipt-ocr';
@@ -525,6 +526,7 @@ function Live({ s }: { s: Session }) {
         </Card>
 
         <StopLossBanner s={s} />
+        <RegularsHere s={s} />
 
         <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
           <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
