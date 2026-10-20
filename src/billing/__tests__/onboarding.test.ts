@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { festivalPicks, firstAction, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
+import { festivalPicks, firstAction, fourWeeks, GOALS, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
 
 test('plan follows what they play and want', () => {
   const p = planFor({ goals: ['results', 'backers'], plays: 'mtt3', volume: 'lots' });
@@ -47,4 +47,16 @@ test('the plan ends on a first action that fits the answers, never staking', () 
   assert.equal(firstAction({ goals: ['results', 'discuss'], plays: 'mtt1', volume: null }), 'festival');
   assert.equal(firstAction({ goals: ['backers'], plays: 'cash3', volume: null }), 'past');
   assert.equal(firstAction({ goals: [], plays: null, volume: null }), 'past');
+});
+
+test("the plan's one number comes from the pace they gave, never invented", () => {
+  assert.equal(fourWeeks('few'), 4);
+  assert.equal(fourWeeks('some'), 8);
+  assert.equal(fourWeeks('lots'), 12);
+  assert.equal(fourWeeks(null), null);
+});
+
+test('every goal says what the app does with it, and staking says it is Pro', () => {
+  for (const g of GOALS) assert.ok(g.sub.length > 0, g.key);
+  assert.match(GOALS.find((g) => g.key === 'backers')!.sub, /Pro/);
 });

@@ -44,6 +44,7 @@ export function Replayer({
   initialInBB = true,
   autoPlay = false,
   quiz = false,
+  playToQuiz = false,
   onVote,
   onStreet,
   seek,
@@ -65,6 +66,8 @@ export function Replayer({
   compact?: boolean;
   /** Stop before hero's last decision and ask "what do you do?". */
   quiz?: boolean;
+  /** With quiz and autoPlay: play from preflop up to hero's decision, then ask (first run). */
+  playToQuiz?: boolean;
   onVote?: (choice: string) => void;
   /** Called with the street on screen whenever it changes (comments mark "you are here"). */
   onStreet?: (street: Street) => void;
@@ -93,9 +96,10 @@ export function Replayer({
   const locked = quizAt > 0 && !answered;
   const last = locked ? quizAt - 1 : steps.length - 1;
   // A challenge opens straight on hero's decision; a saved hand opens on its result.
-  const start = locked || !autoPlay ? last : 0;
+  // The first run plays up to the decision instead: the question lands after the story so far.
+  const start = (locked && !playToQuiz) || !autoPlay ? last : 0;
   const [i, setI] = useState(start);
-  const [playing, setPlaying] = useState(autoPlay && !locked);
+  const [playing, setPlaying] = useState(autoPlay && (!locked || playToQuiz));
   const [inBB, setInBB] = useState(initialInBB);
   const [reveal, setReveal] = useState(false);
   const [speed, setSpeed] = useState(0);
@@ -120,7 +124,7 @@ export function Replayer({
 
   useEffect(() => {
     setI(start);
-    setPlaying(autoPlay && !locked);
+    setPlaying(autoPlay && (!locked || playToQuiz));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand, autoPlay]);
 
