@@ -3870,6 +3870,23 @@ const en: Record<string, string> = {
   'Mãos sem limite, e onde ganhas e onde perdes.': 'Unlimited hands, and where you win and where you lose.',
   'Mãos sem limite, e ROI e ITM por buy-in e festival.': 'Unlimited hands, and ROI and ITM by buy-in and festival.',
   'Com Plus, também': 'With Plus, also',
+  'Ainda dá para experimentar': 'Still time to try',
+  'Já viste': 'Opened',
+  'Experimenta enquanto tens Pro': 'Try these while you have Pro',
+  'O teste grátis vai até {date}': 'Your free trial runs until {date}',
+  'Junta um backer': 'Add a backer',
+  'O makeup e o saldo fazem-se sozinhos': 'Makeup and balance work themselves out',
+  'Vê o ROI por buy-in': 'See your ROI by buy-in',
+  'E o ITM por festival e jogo': 'And ITM by festival and game',
+  'Vê onde ganhas e onde perdes': 'See where you win and where you lose',
+  'Salas, stakes, dias e horas': 'Rooms, stakes, days and hours',
+  'Junta as tuas moedas': 'Put your currencies together',
+  'Tudo numa só, ao câmbio de cada dia': 'All in one, at each day\'s rate',
+  'Conta uma mão em voz alta': 'Tell a hand out loud',
+  'Toca no microfone ao registar a mão': 'Tap the microphone when logging the hand',
+  'Vê a tua variância': 'See your variance',
+  'Com o teu win rate, já preenchido': 'With your win rate already filled in',
+  'Guarda todas as mãos da sessão': 'Save every hand of the session',
 };
 
 export default en;

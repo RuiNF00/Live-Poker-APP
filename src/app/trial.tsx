@@ -13,6 +13,7 @@ import { scrubNote } from '@/billing/cancel';
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { OfflineBadge } from '@/components/NetStatus';
+import { TryRows, useTrialTries } from '@/components/TrialTries';
 import { Button, Card, Field, ListGroup, ListItem, Row, T, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -36,6 +37,7 @@ export default function TrialNotice() {
   const [reason, setReason] = useState<Reason | null>(null);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
+  const tries = useTrialTries();
   const until = end ? new Date(Number(end)).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : '';
 
   useEffect(() => {
@@ -84,6 +86,14 @@ export default function TrialNotice() {
             </ListGroup>
           </View>
         ) : reason === null ? (
+          <>
+          {tries && tries.keys.some((k) => !tries.done.includes(k)) ? (
+            // Pro still runs until the end date: what's left to try, picked for them, before the reasons.
+            <View style={{ gap: S.sm }}>
+              <T v="label">{t('Ainda dá para experimentar')}</T>
+              <TryRows state={tries} />
+            </View>
+          ) : null}
           <View style={{ gap: S.sm }}>
             <T v="h2">{t('O que te fez desligar?')}</T>
             <ListGroup>
@@ -92,6 +102,7 @@ export default function TrialNotice() {
               ))}
             </ListGroup>
           </View>
+          </>
         ) : (
           <Card tone="raised" style={{ gap: S.md }}>
             <Row gap={S.sm}>

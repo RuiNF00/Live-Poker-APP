@@ -20,6 +20,7 @@ import { SharedHandsCard } from '@/components/SharedHandsCard';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
 import { StreakStat } from '@/components/StreakStat';
 import { SwapSettleCard, useSwapSettleCard } from '@/components/swaps/SwapSettleReminder';
+import { TrialTries, useTrialTries } from '@/components/TrialTries';
 import { useNowAlways } from '@/components/useNow';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
 import { Amount, Banner, Button, Card, IconButton, Row, ScreenHeader, Section, T, tap, Wordmark } from '@/components/ui';
@@ -61,6 +62,8 @@ export default function HomeScreen() {
   const settle = useSwapSettleCard();
   const checklist = useStartChecklist();
   const moment = useProMoment();
+  // In the free trial: three Pro things picked for this player, so the days go on what Pro does for them.
+  const tries = useTrialTries();
   const chargeEnd = useChargeNotice();
   const coach = useCoach();
   const [now] = useState(() => Date.now());
@@ -137,6 +140,8 @@ export default function HomeScreen() {
       action={t('Rever')}
       onPress={() => router.push({ pathname: '/hand/[id]', params: { id: review[0].id, q: 'all' } })}
     />
+  ) : tries?.show ? (
+    <TrialTries state={tries} />
   ) : news.item ? (
     <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
   ) : suggest.show ? (

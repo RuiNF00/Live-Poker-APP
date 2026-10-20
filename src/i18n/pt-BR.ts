@@ -2083,6 +2083,20 @@ const ptBR: Record<string, string> = {
   'Mãos sem limite, e ROI e ITM por buy-in e festival.': 'Mãos sem limite, e ROI e ITM por buy-in e festival.',
   'Um ano é muito?': 'Um ano é muito?',
   'Cancelas': 'Você cancela',
+  'Experimenta enquanto tens Pro': 'Experimente enquanto tem Pro',
+  'Vê onde ganhas e onde perdes': 'Veja onde você ganha e onde perde',
+  'Junta as tuas moedas': 'Junte suas moedas',
+  'Toca no microfone ao registar a mão': 'Toque no microfone ao registrar a mão',
+  'Vê a tua variância': 'Veja sua variância',
+  'Com o teu win rate, já preenchido': 'Com seu win rate, já preenchido',
+  'Guarda todas as mãos da sessão': 'Salve todas as mãos da sessão',
+  'Junta um backer': 'Adicione um backer',
+  'Vê o ROI por buy-in': 'Veja o ROI por buy-in',
+  'O teste grátis vai até {date}': 'O teste grátis vai até {date}',
+  'Ainda dá para experimentar': 'Ainda dá para experimentar',
+  'Já viste': 'Você já viu',
+  'Conta uma mão em voz alta': 'Conte uma mão em voz alta',
+  'O makeup e o saldo fazem-se sozinhos': 'O makeup e o saldo se calculam sozinhos',
 };
 
 export default ptBR;
