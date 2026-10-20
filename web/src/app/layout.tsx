@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { brand } from '@/config/brand';
 import { pickLocale } from '@/lib/i18n';
+import { appStoreBanner } from '@/lib/storeLinks';
 import { PAGE_LANG_HEADER, pageLangFrom } from '@/lib/page-lang';
 import localFont from 'next/font/local';
 import './globals.css';
@@ -33,6 +34,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(brand.siteUrl),
   title: { default: brand.name, template: `%s · ${brand.name}` },
   description: brand.tagline.pt,
+  itunes: appStoreBanner(),
 };
 
 export const viewport: Viewport = {

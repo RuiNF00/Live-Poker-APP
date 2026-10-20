@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+
 import { brand } from '@/config/brand';
 
 export type Utm = Partial<Record<'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_content', string>>;
@@ -30,4 +32,14 @@ function appStoreUrl(utm: Utm): string {
   if (brand.appStoreProviderToken) u.searchParams.set('pt', brand.appStoreProviderToken);
   u.searchParams.set('mt', '8');
   return u.toString();
+}
+
+/**
+ * Safari's App Store banner (`apple-itunes-app`), on every page from the root layout. The app id
+ * comes from NEXT_PUBLIC_APP_STORE_URL, so the banner appears the day the store buttons do.
+ * Installed users go straight to the app through the universal link, so no app-argument.
+ */
+export function appStoreBanner(url: string = brand.appStoreUrl): Metadata['itunes'] {
+  const id = /\/id(\d+)/.exec(url)?.[1];
+  return id ? { appId: id } : null;
 }
