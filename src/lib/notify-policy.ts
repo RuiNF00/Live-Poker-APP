@@ -6,7 +6,7 @@
 
 import type { Settings } from '@/store/types';
 
-export type NotifyKind = 'levels' | 'festival' | 'money' | 'coach' | 'comments' | 'recap' | 'billing' | 'tips';
+export type NotifyKind = 'levels' | 'festival' | 'money' | 'coach' | 'comments' | 'recap' | 'billing' | 'week' | 'tips';
 
 export interface KindInfo {
   kind: NotifyKind;
@@ -19,18 +19,24 @@ export interface KindInfo {
   private?: boolean;
   /** The player asked for it at this time: no quiet hours, never held. */
   requested?: boolean;
+  /**
+   * iOS interruption level. Time-sensitive breaks through Focus, so only what the
+   * player set a time for; passive arrives without sound or lighting the screen.
+   */
+  interruption: 'timeSensitive' | 'active' | 'passive';
 }
 
 export const KINDS: readonly KindInfo[] = [
-  { kind: 'levels', channel: 'level-up', name: 'Níveis e intervalos', importance: 'high', requested: true },
-  { kind: 'festival', channel: 'festival', name: 'Torneios planeados', importance: 'high', requested: true },
-  { kind: 'money', channel: 'money', name: 'Swaps e staking', importance: 'default', private: true },
-  { kind: 'coach', channel: 'coach', name: 'Comentários do coach', importance: 'default' },
+  { kind: 'levels', channel: 'level-up', name: 'Níveis e intervalos', importance: 'high', requested: true, interruption: 'timeSensitive' },
+  { kind: 'festival', channel: 'festival', name: 'Torneios planeados', importance: 'high', requested: true, interruption: 'timeSensitive' },
+  { kind: 'money', channel: 'money', name: 'Swaps e staking', importance: 'default', private: true, interruption: 'active' },
+  { kind: 'coach', channel: 'coach', name: 'Comentários do coach', importance: 'default', interruption: 'active' },
   // A push from the server (lib/comment-push), which keeps the quiet hours itself.
-  { kind: 'comments', channel: 'comments', name: 'Comentários nas tuas mãos', importance: 'default' },
-  { kind: 'recap', channel: 'recap', name: 'Resumo do mês', importance: 'default' },
-  { kind: 'billing', channel: 'billing', name: 'Subscrição', importance: 'default' },
-  { kind: 'tips', channel: 'tips', name: 'Lembretes', importance: 'low' },
+  { kind: 'comments', channel: 'comments', name: 'Comentários nas tuas mãos', importance: 'default', interruption: 'active' },
+  { kind: 'recap', channel: 'recap', name: 'Resumo do mês', importance: 'default', interruption: 'active' },
+  { kind: 'billing', channel: 'billing', name: 'Subscrição', importance: 'default', interruption: 'active' },
+  { kind: 'week', channel: 'week', name: 'A tua semana', importance: 'low', interruption: 'passive' },
+  { kind: 'tips', channel: 'tips', name: 'Lembretes', importance: 'low', interruption: 'passive' },
 ];
 
 export const kindInfo = (k: NotifyKind): KindInfo => KINDS.find((x) => x.kind === k)!;
@@ -39,12 +45,14 @@ export const kindInfo = (k: NotifyKind): KindInfo => KINDS.find((x) => x.kind ==
 export const SESSION_CHANNEL = 'session-live';
 
 /** Kinds with a switch in Settings › Notificações. The notice before a charge has none: it protects the player. */
-export const SWITCHABLE: readonly NotifyKind[] = ['levels', 'festival', 'money', 'coach', 'comments', 'recap', 'tips'];
+export const SWITCHABLE: readonly NotifyKind[] = ['levels', 'festival', 'money', 'coach', 'comments', 'recap', 'week', 'tips'];
 
 /** Is this kind on in Settings? Everything is on until turned off; billing always is. */
 export function kindOn(s: Pick<Settings, 'notify' | 'monthRecap'>, k: NotifyKind): boolean {
   if (k === 'billing') return true;
   if (k === 'recap' && s.monthRecap === false) return false;
+  // New in the 1st update: whoever had turned "Lembretes" off doesn't get it either.
+  if (k === 'week' && s.notify?.week === undefined) return s.notify?.tips !== false;
   return s.notify?.[k] !== false;
 }
 
@@ -108,3 +116,22 @@ export const softAskAllowed = (lastNo: number | null, now = Date.now()) => lastN
  * permission and scheduled nothing: it is planned again. Null: not known yet.
  */
 export const becameAllowed = (was: boolean | null, now: boolean) => now && was === false;
+
+/** How many times the session summary may ask, and from which closed session the second time. */
+export const SUMMARY_ASKS_MAX = 2;
+export const SUMMARY_SECOND_ASK_FROM = 3;
+/** The summary asks only right after the session ends, not when opened again from the history. */
+export const SUMMARY_ASK_WITHIN = 15 * 60_000;
+
+/**
+ * Ask for notifications on the session summary? The first time right after the
+ * first saved session, with the Sunday notice as the example; once more from the
+ * third, if the first answer was "Agora não". Never with "A tua semana" switched
+ * off: the example would be a notice they turned off. The 30 days after "Agora
+ * não" and a refusal in the system are checked by the sheet (NotifySoftAsk).
+ */
+export function askOnSummary(p: { closed: number; asks: number; weekOn: boolean; endedAt?: number; now: number }): boolean {
+  if (!p.weekOn || !p.endedAt || p.now - p.endedAt > SUMMARY_ASK_WITHIN) return false;
+  if (p.asks <= 0) return p.closed >= 1;
+  return p.asks < SUMMARY_ASKS_MAX && p.closed >= SUMMARY_SECOND_ASK_FROM;
+}
