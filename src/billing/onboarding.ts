@@ -38,6 +38,16 @@ export const PLAYS: { key: Plays; group: 'Cash' | 'Torneios'; stakes: string; la
 /** Tournament player? Also reads answers saved before the ladder (mttLow, mttHigh). */
 export const isMtt = (p: string | null | undefined) => !!p && p.startsWith('mtt');
 
+/** The game a first past session opens on, from what they said they play: a cash player isn't handed a tournament form. */
+export function firstKind(saved: string | null): 'cash' | 'mtt' | null {
+  try {
+    const plays = saved ? (JSON.parse(saved) as { plays?: string | null }).plays : null;
+    return plays ? (isMtt(plays) ? 'mtt' : 'cash') : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Currencies offered on first run, with a name so "$" isn't ambiguous. `code` is what's stored. */
 export const FIRST_CURRENCIES: { code: string; sym: string; name: string }[] = [
   { code: '€', sym: '€', name: 'Euro' },
