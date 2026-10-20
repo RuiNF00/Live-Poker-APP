@@ -3881,6 +3881,19 @@ const es: Record<string, string> = {
   'Vê a tua variância': 'Mira tu varianza',
   'Com o teu win rate, já preenchido': 'Con tu win rate, ya rellenado',
   'Guarda todas as mãos da sessão': 'Guarda todas las manos de la sesión',
+  'Encontrámos isto nas tuas {n} sessões. Com Pro vês qual é e quanto.': 'Lo encontramos en tus {n} sesiones. Con Pro ves cuál es y cuánto.',
+  'Há uma sala onde perdes dinheiro.': 'Hay una sala donde pierdes dinero.',
+  'Há uma sala onde rendes claramente mais.': 'Hay una sala donde rindes claramente más.',
+  'Há uma stake onde perdes dinheiro.': 'Hay una stake donde pierdes dinero.',
+  'Há uma stake que rende mais do que as outras.': 'Hay una stake que rinde más que las demás.',
+  'Há um dia da semana em que perdes dinheiro.': 'Hay un día de la semana en que pierdes dinero.',
+  'Há um dia da semana que rende mais do que os outros.': 'Hay un día de la semana que rinde más que los demás.',
+  'A hora a que começas a sessão mexe no teu resultado.': 'La hora a la que empiezas la sesión cambia tu resultado.',
+  'A partir de certa hora de sessão, o teu resultado muda.': 'A partir de cierta hora de sesión, tu resultado cambia.',
+  'A sessão a seguir a uma má mexe no teu resultado.': 'La sesión después de una mala cambia tu resultado.',
+  'As horas que dormes mexem no teu resultado.': 'Las horas que duermes cambian tu resultado.',
+  'A tua energia antes de jogar mexe no teu resultado.': 'Tu energía antes de jugar cambia tu resultado.',
+  'O teu foco antes de jogar mexe no teu resultado.': 'Tu foco antes de jugar cambia tu resultado.',
 };
 
 export default es;

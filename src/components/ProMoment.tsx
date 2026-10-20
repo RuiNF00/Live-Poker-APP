@@ -1,11 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { bigWin, pickMoment, reviewAfterBust, viewed, type Moment } from '@/billing/moments';
+import { bigWin, pickMoment, reviewAfterBust, teaserMoment, viewed, type Moment } from '@/billing/moments';
 import { usePro } from '@/billing/pro';
+import { teasers } from '@/billing/teasers';
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { fetchViews } from '@/lib/share-api';
@@ -33,7 +34,10 @@ interface Saved {
  */
 export function useProMoment() {
   const { isPro, isPlus, paywall } = usePro();
-  const { hands, sessions } = useStore();
+  const { hands, sessions, defaultBankroll } = useStore();
+  // Without Pro (Plus included): what the insights already found, without the answer.
+  const found = useMemo(() => (isPro ? [] : teasers(sessions, defaultBankroll.currency)), [isPro, sessions, defaultBankroll.currency]);
+  const doneSessions = useMemo(() => sessions.filter((s) => s.endedAt && s.currency === defaultBankroll.currency).length, [sessions, defaultBankroll.currency]);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [now] = useState(() => Date.now());
 
@@ -69,8 +73,9 @@ export function useProMoment() {
   if (!saved) return null;
   // Reviewing after a bust helps everyone; the Pro offers only show on the free plan.
   const review = reviewAfterBust(sessions, hands, now);
-  // On Plus every hand is already saved: the «being viewed» one is about the free limit.
-  const m = pickMoment(isPro ? [review] : isPlus ? [bigWin(sessions, now), review] : [bigWin(sessions, now), review, viewed(saved.counts)], saved.dismissed);
+  // On Plus every hand is already saved: the «being viewed» one is about the free limit. Insights are Pro's, so Plus still gets the teaser.
+  const teaser = teaserMoment(found, doneSessions);
+  const m = pickMoment(isPro ? [review] : isPlus ? [bigWin(sessions, now), review, teaser] : [bigWin(sessions, now), review, teaser, viewed(saved.counts)], saved.dismissed);
   if (!m) return null;
 
   const dismiss = (x: Moment) => {
@@ -82,19 +87,21 @@ export function useProMoment() {
     tap();
     dismiss(m);
     if (m.kind === 'review') router.push({ pathname: '/hand/[id]', params: { id: m.firstHandId } });
-    else paywall(m.kind);
+    else paywall(m.kind === 'teaser' ? 'insights' : m.kind);
   };
   return { m, open, dismiss: () => dismiss(m) };
 }
 
 export function ProMoment({ state }: { state: NonNullable<ReturnType<typeof useProMoment>> }) {
   const { m, open, dismiss } = state;
-  const icon = m.kind === 'views' ? 'eye' : m.kind === 'review' ? 'play-circle' : 'trophy';
+  const icon = m.kind === 'views' ? 'eye' : m.kind === 'review' ? 'play-circle' : m.kind === 'teaser' ? 'bulb' : 'trophy';
   const title =
     m.kind === 'views'
       ? t('A tua mão foi vista {n} vezes', { n: m.views })
       : m.kind === 'review'
         ? t('Rever as mãos de hoje')
+        : m.kind === 'teaser'
+          ? t(m.text)
         : t('A tua melhor sessão: {amount}', { amount: '+' + money(m.profit, m.currency) });
   const body =
     m.kind === 'views'
@@ -103,6 +110,8 @@ export function ProMoment({ state }: { state: NonNullable<ReturnType<typeof useP
         ? m.hands === 1
           ? t('1 mão desta sessão, rua a rua, enquanto está fresca.')
           : t('{n} mãos desta sessão, rua a rua, enquanto estão frescas.', { n: m.hands })
+        : m.kind === 'teaser'
+          ? t('Encontrámos isto nas tuas {n} sessões. Com Pro vês qual é e quanto.', { n: m.sessions })
         : t('Vê em que salas, jogos e stakes ganhas mais.');
 
   return (

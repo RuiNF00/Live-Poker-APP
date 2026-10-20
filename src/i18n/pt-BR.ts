@@ -2097,6 +2097,19 @@ const ptBR: Record<string, string> = {
   'Já viste': 'Você já viu',
   'Conta uma mão em voz alta': 'Conte uma mão em voz alta',
   'O makeup e o saldo fazem-se sozinhos': 'O makeup e o saldo se calculam sozinhos',
+  'Encontrámos isto nas tuas {n} sessões. Com Pro vês qual é e quanto.': 'Encontramos isso nas suas {n} sessões. Com Pro você vê qual é e quanto.',
+  'Há uma sala onde rendes claramente mais.': 'Tem uma sala onde você rende claramente mais.',
+  'Há uma sala onde perdes dinheiro.': 'Tem uma sala onde você perde dinheiro.',
+  'Há uma stake onde perdes dinheiro.': 'Tem uma stake onde você perde dinheiro.',
+  'Há uma stake que rende mais do que as outras.': 'Tem uma stake que rende mais do que as outras.',
+  'Há um dia da semana em que perdes dinheiro.': 'Tem um dia da semana em que você perde dinheiro.',
+  'Há um dia da semana que rende mais do que os outros.': 'Tem um dia da semana que rende mais do que os outros.',
+  'A hora a que começas a sessão mexe no teu resultado.': 'A hora em que você começa a sessão muda seu resultado.',
+  'A partir de certa hora de sessão, o teu resultado muda.': 'A partir de certa hora de sessão, seu resultado muda.',
+  'A sessão a seguir a uma má mexe no teu resultado.': 'A sessão depois de uma ruim muda seu resultado.',
+  'As horas que dormes mexem no teu resultado.': 'As horas que você dorme mudam seu resultado.',
+  'A tua energia antes de jogar mexe no teu resultado.': 'Sua energia antes de jogar muda seu resultado.',
+  'O teu foco antes de jogar mexe no teu resultado.': 'Seu foco antes de jogar muda seu resultado.',
 };
 
 export default ptBR;

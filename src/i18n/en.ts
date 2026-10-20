@@ -3887,6 +3887,19 @@ const en: Record<string, string> = {
   'Vê a tua variância': 'See your variance',
   'Com o teu win rate, já preenchido': 'With your win rate already filled in',
   'Guarda todas as mãos da sessão': 'Save every hand of the session',
+  'Encontrámos isto nas tuas {n} sessões. Com Pro vês qual é e quanto.': 'We found this in your {n} sessions. With Pro you see which and how much.',
+  'Há uma sala onde perdes dinheiro.': 'There\'s a room where you lose money.',
+  'Há uma sala onde rendes claramente mais.': 'There\'s a room where you clearly win more.',
+  'Há uma stake onde perdes dinheiro.': 'There\'s a stake where you lose money.',
+  'Há uma stake que rende mais do que as outras.': 'There\'s a stake that pays more than the others.',
+  'Há um dia da semana em que perdes dinheiro.': 'There\'s a day of the week when you lose money.',
+  'Há um dia da semana que rende mais do que os outros.': 'There\'s a day of the week that pays more than the others.',
+  'A hora a que começas a sessão mexe no teu resultado.': 'The time you start a session changes your result.',
+  'A partir de certa hora de sessão, o teu resultado muda.': 'After a certain number of hours, your result changes.',
+  'A sessão a seguir a uma má mexe no teu resultado.': 'The session after a bad one changes your result.',
+  'As horas que dormes mexem no teu resultado.': 'How much you sleep changes your result.',
+  'A tua energia antes de jogar mexe no teu resultado.': 'Your energy before playing changes your result.',
+  'O teu foco antes de jogar mexe no teu resultado.': 'Your focus before playing changes your result.',
 };
 
 export default en;

@@ -66,6 +66,8 @@ test('on 760-900 pt screens the paywall keeps both plans above the footer', () =
   // On Plus's tab the notebook lists only what Plus unlocks, and the Pro headline stays on Pro's tab.
   assert.match(p, /\.filter\(\(f\) => view === 'pro' \|\| unlocks\('plus', f\.key\)\)/);
   assert.match(p, /result && view === 'pro' && PROFILE_REASONS\.includes\(reason\)/);
+  // The teaser line is about insights, which Plus doesn't open: Pro's tab only.
+  assert.match(p, /teaser=\{teaser && view === 'pro' \? t\(teaser\.text\) : undefined\}/);
 });
 
 test('restoring the one-time Pro on the paywall unlocks like a subscription', () => {

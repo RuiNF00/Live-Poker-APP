@@ -14,7 +14,8 @@ export const WIN_DAYS = 3;
 export type Moment =
   | { kind: 'views'; key: string; handId: string; views: number }
   | { kind: 'bigWin'; key: string; sessionId: string; profit: number; currency: string }
-  | { kind: 'review'; key: string; sessionId: string; hands: number; firstHandId: string };
+  | { kind: 'review'; key: string; sessionId: string; hands: number; firstHandId: string }
+  | { kind: 'teaser'; key: string; text: string; sessions: number };
 
 /**
  * The most recent finished session, if it's a win and the best so far in its
@@ -53,6 +54,15 @@ export function viewed(counts: { handId: string; views: number }[]): Moment | nu
   // A new key at every doubling, so 10 → 20 → 40 views can each be news once.
   const step = VIEWS_MIN * 2 ** Math.floor(Math.log2(top.views / VIEWS_MIN));
   return { kind: 'views', key: `views:${top.handId}:${step}`, handId: top.handId, views: top.views };
+}
+
+/**
+ * A finding Pro would show, named without its answer (teasers.ts): the strongest one,
+ * once per finding and direction, so a new pattern can be news again later.
+ */
+export function teaserMoment(found: { id: string; tone: string; text: string }[], sessions: number): Moment | null {
+  const top = found[0];
+  return top ? { kind: 'teaser', key: `teaser:${top.id}:${top.tone}`, text: top.text, sessions } : null;
 }
 
 /** The moment to show: a fresh win first, then views; never one already dismissed. */

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, offer
 import { invitePct } from '@/billing/disclosure';
 import { ONBOARDING_KEY, proHeadline, type Answers } from '@/billing/onboarding';
 import { chargeNoticeAt } from '@/billing/nudges';
+import { teasers } from '@/billing/teasers';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, inviteOfferPrice, LIVE } from '@/billing/purchases';
 import { deferTrial } from '@/billing/trial-moments';
@@ -58,7 +59,7 @@ export default function Paywall() {
   };
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, tier, isPlus, paywallConfig, takeResume, refreshNudges } = usePro();
-  const { hands, sessions } = useStore();
+  const { hands, sessions, defaultBankroll } = useStore();
   const [sel, setSel] = useState<'annual' | 'monthly'>('annual');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
   // Plus or Pro: the cheapest tier that unlocks what was tapped comes first. The trial offers open on
@@ -94,6 +95,8 @@ export default function Paywall() {
   const base = profile ? { title: t(profile.title), body: t(profile.body) } : (PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic);
   const copy = { ...base, ...paywallConfig.copy[reason] };
   const [exitAsk, setExitAsk] = useState(false);
+  // The strongest thing Pro would show them, without the answer (teasers.ts). Result layout, Pro's tab: Plus doesn't open insights.
+  const teaser = useMemo(() => (result ? teasers(sessions, defaultBankroll.currency)[0] : undefined), [result, sessions, defaultBankroll.currency]);
 
   const monthly = plans.find((p) => p.id === TIER_PLANS[view].monthly);
   const annual = plans.find((p) => p.id === TIER_PLANS[view].annual);
@@ -337,6 +340,7 @@ export default function Paywall() {
               .filter((f) => view === 'pro' || unlocks('plus', f.key))
               .slice(0, medium ? 0 : 3)}
             compact={medium}
+            teaser={teaser && view === 'pro' ? t(teaser.text) : undefined}
           />
         ) : null}
 
@@ -623,7 +627,7 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
  * (never money: this screen can be open at the table), and the Pro feature this paywall is about.
  * Nothing logged yet: the three Pro rows instead, so the card never shows zeros.
  */
-function Notebook({ hands, sessions, tier, pro, compact }: { hands: number; sessions: { endedAt?: number; startedAt: number }[]; tier: PaidTier; pro: { key: string; icon: string; title: string; body: string }[]; compact: boolean }) {
+function Notebook({ hands, sessions, tier, pro, compact, teaser }: { hands: number; sessions: { endedAt?: number; startedAt: number }[]; tier: PaidTier; pro: { key: string; icon: string; title: string; body: string }[]; compact: boolean; teaser?: string }) {
   const done = sessions.filter((s) => s.endedAt);
   const hours = Math.round(done.reduce((a, s) => a + playedMs(s as Parameters<typeof playedMs>[0]), 0) / 3_600_000);
   const stats = [
@@ -662,6 +666,15 @@ function Notebook({ hands, sessions, tier, pro, compact }: { hands: number; sess
           </View>
         ))}
       </Row>
+      {teaser ? (
+        // A finding from their own sessions, without the answer: the most concrete reason to look.
+        <Row gap={S.sm}>
+          <Ionicons name="lock-closed" size={14} color={C.accent} />
+          <T v="small" color={C.text} style={{ flex: 1 }}>
+            {teaser}
+          </T>
+        </Row>
+      ) : null}
       {pro.length ? (
         <>
           <View style={{ height: 1, backgroundColor: C.border }} />

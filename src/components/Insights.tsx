@@ -5,6 +5,9 @@
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 
+import Ionicons from '@expo/vector-icons/Ionicons';
+
+import { teaserText } from '@/billing/teasers';
 import { ProBlur, useLocked } from '@/components/ProGate';
 import { locale, t } from '@/i18n';
 import { money } from '@/poker/format';
@@ -51,6 +54,17 @@ export function Insights({ list, cur, hidden, result, mind }: { list: Session[];
         <ProBlur feature="insights" locked title={all.length === 1 ? t('Encontrámos 1 padrão nas tuas sessões') : t('Encontrámos {n} padrões nas tuas sessões', { n: all.length })}>
           <InsightCard x={all[0]} fmt={fmt} />
         </ProBlur>
+        {/* What each finding is about, without the answer: the names and amounts stay behind Pro. */}
+        <View style={{ gap: S.sm, paddingTop: S.sm }}>
+          {all.slice(0, 3).map((x) => (
+            <Row key={x.id} gap={S.sm}>
+              <Ionicons name="lock-closed" size={14} color={C.accent} />
+              <T v="small" color={C.text} style={{ flex: 1 }}>
+                {t(teaserText(x))}
+              </T>
+            </Row>
+          ))}
+        </View>
       </Section>
     );
   }
