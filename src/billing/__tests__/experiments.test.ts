@@ -28,3 +28,7 @@ test('the table follows the free limits', () => {
   assert.equal(rows[0].free, String(FREE.handsPerDay));
   assert.ok(rows.every((r) => r.pro !== false));
 });
+
+test('the result layout is a known variant', () => {
+  assert.equal(parsePaywallConfig('result_test', { layout: 'result' }, 'pt').layout, 'result');
+});

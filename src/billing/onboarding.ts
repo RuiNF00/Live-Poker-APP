@@ -123,6 +123,25 @@ export function firstAction(a: Answers): FirstAction {
   return 'past';
 }
 
+/**
+ * The "result" paywall's headline for a profile: what their notebook becomes with Pro.
+ * Portuguese keys; show with t(). Null without answers, so the trigger's own headline stays.
+ */
+export function proHeadline(a: Answers | null | undefined): { title: string; body: string } | null {
+  if (!a || (!a.plays && !a.goals?.length)) return null;
+  const mtt = isMtt(a.plays);
+  const title = mtt ? 'Os teus torneios, todos à vista' : a.plays ? 'O teu cash, todo à vista' : 'O teu póquer live, todo à vista';
+  const goals = a.goals ?? [];
+  const body = goals.includes('backers')
+    ? 'Mãos sem limite, e backers e makeup sempre certos.'
+    : goals.includes('leaks')
+      ? 'Mãos sem limite, e onde ganhas e onde perdes.'
+      : mtt
+        ? 'Mãos sem limite, e ROI e ITM por buy-in e festival.'
+        : 'Mãos sem limite, e em que sala e stake ganhas mais.';
+  return { title, body };
+}
+
 export type StartStep = 'hand' | 'session' | 'bankroll' | 'festival' | 'share';
 
 /** The first-week checklist on the hands list. Portuguese keys; show with t(). */

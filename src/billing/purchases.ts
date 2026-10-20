@@ -147,7 +147,8 @@ async function loadPlans(): Promise<StorePlan[] | null> {
  * Experiments running, `current` is the offering the player was put in.
  */
 export async function getPaywallConfig(): Promise<PaywallConfig> {
-  if (!LIVE) return DEFAULT_PAYWALL;
+  // Demo store (dev and test builds): EXPO_PUBLIC_PAYWALL_LAYOUT shows a variant before it runs as an experiment.
+  if (!LIVE) return process.env.EXPO_PUBLIC_PAYWALL_LAYOUT ? parsePaywallConfig('demo', { layout: process.env.EXPO_PUBLIC_PAYWALL_LAYOUT }, 'pt') : DEFAULT_PAYWALL;
   try {
     const cur = (await (await rc()).getOfferings()).current;
     return cur ? parsePaywallConfig(cur.identifier, cur.metadata, variant === 'pt-PT' ? 'pt' : variant) : DEFAULT_PAYWALL;

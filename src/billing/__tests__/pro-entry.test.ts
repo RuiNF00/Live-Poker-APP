@@ -57,10 +57,12 @@ test('a lifetime owner is never told they will lose Pro in the cancel flow', () 
 test('on 760-900 pt screens the paywall keeps both plans above the footer', () => {
   const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
   assert.match(p, /const medium = !compact && win\.height < 900;/);
-  assert.match(p, /\{compact \|\| medium \? null : \(/);
+  assert.match(p, /\{compact \|\| medium \|\| result \? null : \(/);
   assert.match(p, /featuresFor\(reason\)\.slice\(0, medium \? 1 : undefined\)/);
   assert.match(p, /table && !compact && !medium \? <FreeVsPro/);
-  assert.match(p, /reason !== 'welcome' && !medium \? <Pill/);
+  assert.match(p, /reason !== 'welcome' && !medium && !result \? <Pill/);
+  // The result layout: the notebook card goes on short screens and keeps only its counts at 760-900.
+  assert.match(p, /result && !compact \? <Notebook .*slice\(0, medium \? 0 : 3\)\} compact=\{medium\} \/>/);
 });
 
 test('restoring the one-time Pro on the paywall unlocks like a subscription', () => {

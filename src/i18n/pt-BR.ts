@@ -2072,6 +2072,17 @@ const ptBR: Record<string, string> = {
   'Ao domingo, a tua semana': 'No domingo, sua semana',
   'Dizemos-te o que registaste nessa semana e quantas mãos tens para rever. Sem valores e sem publicidade. Cada aviso desliga-se nas Definições da Sweatbook.': 'Contamos o que você registrou naquela semana e quantas mãos tem para revisar. Sem valores e sem publicidade. Cada aviso pode ser desligado nas Configurações do Sweatbook.',
   'Toca para as ligar nas definições do telemóvel. A app funciona igual sem elas.': 'Toque para ativá-las nos ajustes do celular. O app funciona igual sem elas.',
+  'O teu caderno': 'Seu caderno',
+  'Avisamos-te': 'Avisamos você',
+  'Há o mensal: {price} por mês, e cancelas quando quiseres.': 'Tem o mensal: {price} por mês, e você cancela quando quiser.',
+  'Os teus torneios, todos à vista': 'Todos os seus torneios, à vista',
+  'O teu cash, todo à vista': 'Todo o seu cash, à vista',
+  'O teu póquer live, todo à vista': 'Todo o seu poker ao vivo, à vista',
+  'Mãos sem limite, e onde ganhas e onde perdes.': 'Mãos sem limite, e onde você ganha e onde perde.',
+  'Mãos sem limite, e backers e makeup sempre certos.': 'Mãos sem limite, e backers e makeup sempre certos.',
+  'Mãos sem limite, e ROI e ITM por buy-in e festival.': 'Mãos sem limite, e ROI e ITM por buy-in e festival.',
+  'Um ano é muito?': 'Um ano é muito?',
+  'Cancelas': 'Você cancela',
 };
 
 export default ptBR;

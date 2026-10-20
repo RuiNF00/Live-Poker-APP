@@ -1,24 +1,32 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Modal, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
 import { invitePct } from '@/billing/disclosure';
+import { ONBOARDING_KEY, proHeadline, type Answers } from '@/billing/onboarding';
 import { chargeNoticeAt } from '@/billing/nudges';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, inviteOfferPrice, LIVE } from '@/billing/purchases';
 import { deferTrial } from '@/billing/trial-moments';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
-import { Button, IconButton, Pill, Row, Segmented, T, tap, type IconName } from '@/components/ui';
+import { Button, IconButton, Pill, Row, Segmented, T, tap, useSheetPad, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
 import { savedInviteOffer, type InviteOffer } from '@/lib/referrals';
+import { playedMs } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
+
+/** The "monthly instead?" sheet on the way out of the result paywall shows once per install. */
+const EXIT_KEY = 'rl.paywall.exit.v1';
+/** Triggers where the headline is about Pro as a whole, so the result layout can speak to the player's profile instead. */
+const PROFILE_REASONS: PaywallReason[] = ['generic', 'plan', 'welcome', 'sessionStart'];
 
 const trialEnd = (days: number) => new Date(Date.now() + days * 86_400_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -50,7 +58,7 @@ export default function Paywall() {
   };
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
   const { plans, plansFailed, reloadPlans, purchase, restore, tier, isPlus, paywallConfig, takeResume, refreshNudges } = usePro();
-  const { hands } = useStore();
+  const { hands, sessions } = useStore();
   const [sel, setSel] = useState<'annual' | 'monthly'>('annual');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
   // Plus or Pro: the cheapest tier that unlocks what was tapped comes first. The trial offers open on
@@ -71,8 +79,20 @@ export default function Paywall() {
   }, [isPlus, tier]);
   const [sheet, ask] = useNotifySoftAsk();
   // The offering can replace the headline for an A/B test; the offer itself never changes.
-  const copy = { ...(PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic), ...paywallConfig.copy[reason] };
   const table = paywallConfig.layout === 'table';
+  const result = paywallConfig.layout === 'result';
+  // The result layout speaks to the player's profile (onboarding answers) when the trigger is Pro as a whole.
+  const [answers, setAnswers] = useState<Answers | null>(null);
+  useEffect(() => {
+    if (!result) return;
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => setAnswers(v ? (JSON.parse(v) as Answers) : null))
+      .catch(() => {});
+  }, [result]);
+  const profile = result && PROFILE_REASONS.includes(reason) ? proHeadline(answers) : null;
+  const base = profile ? { title: t(profile.title), body: t(profile.body) } : (PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic);
+  const copy = { ...base, ...paywallConfig.copy[reason] };
+  const [exitAsk, setExitAsk] = useState(false);
 
   const monthly = plans.find((p) => p.id === TIER_PLANS[view].monthly);
   const annual = plans.find((p) => p.id === TIER_PLANS[view].annual);
@@ -108,7 +128,22 @@ export default function Paywall() {
     close();
   };
   const dismiss = () => {
-    track('paywall_closed', { reason, plan, tier: view, offering: paywallConfig.offering, layout: paywallConfig.layout });
+    // Result layout, once per install: someone leaving the year gets the month offered, never a discount.
+    if (result && sel === 'annual' && monthly && annual && !exitAsk) {
+      void AsyncStorage.getItem(EXIT_KEY)
+        .then((seen) => {
+          if (seen) return leave();
+          void AsyncStorage.setItem(EXIT_KEY, String(Date.now())).catch(() => {});
+          setExitAsk(true);
+        })
+        .catch(() => leave());
+      return;
+    }
+    leave();
+  };
+  const leave = (exit?: 'monthly' | 'closed') => {
+    setExitAsk(false);
+    track('paywall_closed', { reason, plan, tier: view, offering: paywallConfig.offering, layout: paywallConfig.layout, ...(exit ? { exit } : {}) });
     takeResume();
     close();
   };
@@ -195,7 +230,11 @@ export default function Paywall() {
       {short ? <LegalLinks /> : <LegalLinks>{restoreLink}</LegalLinks>}
     </>
   );
-  const shieldLine = compact ? null : (
+  const shieldLine = compact ? null : result ? (
+    <T v="small" color={C.text} style={{ textAlign: 'center' }}>
+      {t('Sem compromisso. Cancela quando quiseres.')}
+    </T>
+  ) : (
     <Row gap={6} style={{ justifyContent: 'center' }}>
       <Ionicons name="shield-checkmark" size={14} color={C.good} />
       <T v="small" color={C.text}>
@@ -250,7 +289,7 @@ export default function Paywall() {
       ) : null}
       {short ? null : shieldLine}
       {disclosure}
-      {short ? null : extras}
+      {short || result ? null : extras}
     </View>
   );
 
@@ -262,14 +301,14 @@ export default function Paywall() {
         <IconButton name="close" label={t('Fechar')} onPress={dismiss} />
 
         <View style={{ gap: short ? S.sm : S.md }}>
-          {compact || medium ? null : (
+          {compact || medium || result ? null : (
             <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
               <Ionicons name="flash" size={28} color={C.accentInk} />
             </View>
           )}
           <T v={compact ? 'h1' : 'title'}>{copy.title}</T>
           <T v="callout">{copy.body}</T>
-          {hands.length >= 3 && reason !== 'welcome' && !medium ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
+          {hands.length >= 3 && reason !== 'welcome' && !medium && !result ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
 
         {tabs ? (
@@ -288,8 +327,11 @@ export default function Paywall() {
 
         {table && !compact && !medium ? <FreeVsPro /> : null}
 
+        {/* Short screens (SE, large text) keep the strip and both plans above the footer: the notebook card goes. */}
+        {result && !compact ? <Notebook hands={hands.length} sessions={sessions} pro={featuresFor(reason).map((f) => f.feature).slice(0, medium ? 0 : 3)} compact={medium} /> : null}
+
         {/* Small phones skip the feature list so both plans fit above the footer. */}
-        <View style={{ gap: S.sm, display: compact || table ? 'none' : 'flex' }}>
+        <View style={{ gap: S.sm, display: compact || table || result ? 'none' : 'flex' }}>
           {featuresFor(reason).slice(0, medium ? 1 : undefined).map(({ feature: f, highlight }) => (
             <Row key={f.key} gap={S.md} style={{ minHeight: 40 }}>
               <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: highlight ? C.accent : C.surface2, alignItems: 'center', justifyContent: 'center' }}>
@@ -322,6 +364,7 @@ export default function Paywall() {
           <View onLayout={(e) => measure('plans', e.nativeEvent.layout.y + e.nativeEvent.layout.height)} style={{ gap: short ? S.sm : S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">{viewName}</T>
+            {result && trial ? <TrialStrip days={trial} /> : null}
             {inviteOffer && view === 'pro' ? (
               <Pressable
                 accessibilityRole="button"
@@ -344,21 +387,36 @@ export default function Paywall() {
                 title={t('Anual')}
                 big={annual.priceString}
                 unit={t('/ano')}
-                line={t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })}
+                line={
+                  t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) }) +
+                  // Compact rows show one tag: the saving joins the line instead.
+                  (result && saving !== null && saving > 0 ? ' · −' + saving + '%' : '')
+                }
                 tags={[annual.trialDays ? t('{days} dias grátis', { days: annual.trialDays }) : null, saving !== null && saving > 0 ? '−' + saving + '%' : null]}
-                compact={compact}
+                compact={compact || result}
               />
             ) : null}
-            {monthly ? <PlanCard name={viewName} active={plan === monthly.id} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} compact={compact} /> : null}
-            {trial ? <TrialSteps days={trial} after={after} /> : null}
+            {monthly ? <PlanCard name={viewName} active={plan === monthly.id} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} compact={compact || result} /> : null}
+            {trial && !result ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
         {inline ? footer : null}
-        {short ? <View style={{ gap: S.sm }}>{extras}</View> : null}
+        {short || result ? <View style={{ gap: S.sm }}>{extras}</View> : null}
       </ScrollView>
 
       {inline ? null : footer}
       {sheet}
+      {exitAsk && monthly ? (
+        <ExitSheet
+          monthly={monthly.priceString}
+          onMonthly={() => {
+            setExitAsk(false);
+            setSel('monthly');
+            track('paywall_closed', { reason, plan: 'monthly', offering: paywallConfig.offering, layout: paywallConfig.layout, exit: 'monthly' });
+          }}
+          onClose={() => leave('closed')}
+        />
+      ) : null}
     </View>
   );
 }
@@ -547,6 +605,115 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
         </Row>
       ))}
     </View>
+  );
+}
+
+/**
+ * The result layout's first card: what the player has already put in the notebook, in counts
+ * (never money: this screen can be open at the table), and the Pro feature this paywall is about.
+ * Nothing logged yet: the three Pro rows instead, so the card never shows zeros.
+ */
+function Notebook({ hands, sessions, pro, compact }: { hands: number; sessions: { endedAt?: number; startedAt: number }[]; pro: { key: string; icon: string; title: string; body: string }[]; compact: boolean }) {
+  const done = sessions.filter((s) => s.endedAt);
+  const hours = Math.round(done.reduce((a, s) => a + playedMs(s as Parameters<typeof playedMs>[0]), 0) / 3_600_000);
+  const stats = [
+    { n: done.length, label: done.length === 1 ? t('sessão') : t('sessões') },
+    { n: hands, label: hands === 1 ? t('mão') : t('mãos') },
+    { n: hours, label: hours === 1 ? t('hora') : t('horas') },
+  ];
+  const rows = (
+    <View style={{ gap: S.sm }}>
+      {pro.map((f, i) => (
+        <Row key={f.key} gap={S.sm}>
+          <Ionicons name={f.icon as IconName} size={16} color={i === 0 ? C.accent : C.textDim} />
+          <T v="small" color={C.text} style={{ flex: 1 }}>
+            {f.title}
+            <T v="small">{' · ' + f.body}</T>
+          </T>
+        </Row>
+      ))}
+    </View>
+  );
+  // Nothing logged yet: just what Pro adds, never a row of zeros.
+  if (!done.length && !hands) return <View style={{ paddingVertical: S.xs }}>{rows}</View>;
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${t('O teu caderno')}: ${stats.map((x) => `${x.n} ${x.label}`).join(', ')}`}
+      style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: compact ? S.md : S.lg, gap: S.md }}>
+      {compact ? null : <T v="label">{t('O teu caderno')}</T>}
+      <Row gap={S.md}>
+        {stats.map((x) => (
+          <View key={x.label} style={{ flex: 1, gap: 2 }}>
+            <T v={compact ? 'mono' : 'monoL'} numberOfLines={1} adjustsFontSizeToFit>
+              {String(x.n)}
+            </T>
+            <T v="small">{x.label}</T>
+          </View>
+        ))}
+      </Row>
+      {pro.length ? (
+        <>
+          <View style={{ height: 1, backgroundColor: C.border }} />
+          <T v="label">{t('Com Pro, também')}</T>
+          {rows}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+/** The trial in one strip above the plans: today free, the warning day, the first charge. Real dates, as in TrialSteps. */
+function TrialStrip({ days }: { days: number }) {
+  const [now] = useState(() => Date.now());
+  const end = now + days * 86_400_000;
+  const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  const steps: { icon: IconName; when: string; what: string }[] = [
+    { icon: 'lock-open', when: t('Hoje'), what: t('Grátis') },
+    days >= 3 ? { icon: 'notifications-outline', when: day(chargeNoticeAt(end)), what: t('Avisamos-te') } : { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancelas') },
+    { icon: 'card-outline', when: day(end), what: t('Começa a cobrança') },
+  ];
+  return (
+    <Row
+      gap={0}
+      accessible
+      accessibilityLabel={steps.map((s) => `${s.when}: ${s.what}`).join('. ')}
+      style={{ borderRadius: R.md, backgroundColor: C.surface2, paddingVertical: S.sm, alignItems: 'flex-start' }}>
+      {steps.map((s, i) => (
+        <View key={s.when} style={{ flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 }}>
+          <Ionicons name={s.icon} size={16} color={i === 0 ? C.accent : C.textDim} />
+          <T v="h3" style={{ textAlign: 'center' }}>
+            {s.when}
+          </T>
+          <T v="tiny" style={{ textAlign: 'center' }}>
+            {s.what}
+          </T>
+        </View>
+      ))}
+    </Row>
+  );
+}
+
+/** Leaving the year: the month, once, as the plain alternative. No discount and no timer (Mobbin notes, what to avoid). */
+function ExitSheet({ monthly, onMonthly, onClose }: { monthly: string; onMonthly: () => void; onClose: () => void }) {
+  const pad = useSheetPad(S.xxl);
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable accessible={false} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+        <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={onClose} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: pad, gap: S.lg }}>
+          <View style={{ gap: S.sm }}>
+            <T v="h1">{t('Um ano é muito?')}</T>
+            <T v="body" style={{ color: C.textDim }}>
+              {t('Há o mensal: {price} por mês, e cancelas quando quiseres.', { price: monthly })}
+            </T>
+          </View>
+          <View style={{ gap: S.sm }}>
+            <Button title={t('Ver o mensal')} iconRight="chevron-forward" onPress={onMonthly} />
+            <Button title={t('Agora não')} kind="ghost" onPress={onClose} />
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 

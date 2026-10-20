@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { festivalPicks, firstAction, firstKind, fourWeeks, GOALS, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
+import { festivalPicks, firstAction, firstKind, fourWeeks, GOALS, isMtt, planFor, PLAYS, proHeadline, startProgress, startSteps } from '../onboarding';
 
 test('plan follows what they play and want', () => {
   const p = planFor({ goals: ['results', 'backers'], plays: 'mtt3', volume: 'lots' });
@@ -67,4 +67,13 @@ test('a first past session opens on the game they said they play', () => {
   assert.equal(firstKind('{}'), null);
   assert.equal(firstKind(null), null);
   assert.equal(firstKind('not json'), null);
+});
+
+test('result paywall headline follows the profile, and stays out without answers', () => {
+  assert.equal(proHeadline(null), null);
+  assert.equal(proHeadline({ goals: [], plays: null, volume: null }), null);
+  assert.equal(proHeadline({ goals: ['backers'], plays: 'mtt2', volume: null })?.title, 'Os teus torneios, todos à vista');
+  assert.match(proHeadline({ goals: ['backers'], plays: 'mtt2', volume: null })!.body, /backers/);
+  assert.equal(proHeadline({ goals: ['leaks'], plays: 'cash2', volume: 'some' })?.title, 'O teu cash, todo à vista');
+  assert.equal(proHeadline({ goals: ['results'], plays: null, volume: null })?.title, 'O teu póquer live, todo à vista');
 });

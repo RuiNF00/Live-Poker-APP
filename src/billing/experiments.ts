@@ -5,9 +5,13 @@
 
 import type { PaywallReason } from './plans';
 
-/** 'list': features then plans (the default). 'table': a Free vs Pro table then plans. */
-export type PaywallLayout = 'list' | 'table';
-export const LAYOUTS: PaywallLayout[] = ['list', 'table'];
+/**
+ * 'list': features then plans (the default). 'table': a Free vs Pro table then plans.
+ * 'result': the player's own notebook first, a headline from the onboarding answers, the
+ * trial as a strip above two compact plans, and one "monthly instead?" sheet on the way out.
+ */
+export type PaywallLayout = 'list' | 'table' | 'result';
+export const LAYOUTS: PaywallLayout[] = ['list', 'table', 'result'];
 
 export interface PaywallConfig {
   /** RevenueCat offering id, sent with paywall events so results split by variant. */
