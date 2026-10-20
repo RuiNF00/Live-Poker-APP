@@ -9,6 +9,7 @@ import type { Festival } from '@/poker/festivals';
 import { planReminders, type FestivalPlan } from '@/store/festival-plan';
 
 import { notifications, setup } from './lock-screen/reminder';
+import { kindInfo } from './notify-policy';
 
 const CHANNEL = 'festival';
 
@@ -41,7 +42,7 @@ export async function syncFestivalReminders(f: Festival, plan: FestivalPlan, on 
     for (const r of planReminders(f, plan, now).slice(0, 40)) {
       await n.scheduleNotificationAsync({
         identifier: r.id,
-        content: { title: r.title, body: r.body, data: { url: r.url }, sound: true },
+        content: { title: r.title, body: r.body, data: { url: r.url }, sound: true, interruptionLevel: kindInfo('festival').interruption },
         trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: r.at, channelId: CHANNEL },
       });
     }

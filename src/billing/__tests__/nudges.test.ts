@@ -83,7 +83,7 @@ test('in-app charge notice: same window as the notification, only without notifi
 });
 
 test('only the notice before a charge is billing (always on); the rest are switchable tips', () => {
-  assert.deepEqual(NUDGE_KIND, { 'trial-end': 'billing', comeback: 'tips', week: 'tips' });
+  assert.deepEqual(NUDGE_KIND, { 'trial-end': 'billing', comeback: 'tips', week: 'week' });
 });
 
 // The week's notice. Tuesday 13 Oct 2026, 20:00: that week's Sunday is the 18th.

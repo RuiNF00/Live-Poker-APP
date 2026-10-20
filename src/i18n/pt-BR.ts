@@ -1382,8 +1382,6 @@ const ptBR: Record<string, string> = {
   'No dia 1, se jogaste nesse mês': 'No dia 1, se você jogou naquele mês',
   'Lembretes para registar': 'Lembretes para registrar',
   'Notificações desligadas no telemóvel': 'Notificações desativadas no celular',
-  'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Ative nas configurações do sistema para receber os avisos que escolher aqui.',
-  'Abrir definições': 'Abrir configurações',
   'Aparecem no ecrã bloqueado.': 'Aparecem na tela de bloqueio.',
   'Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.': 'Só avisos que você pediu. Nada de publicidade. Você pode escolher quais nas Configurações do Sweatbook.',
   'Aviso antes de cobrar': 'Aviso antes da cobrança',
@@ -1855,12 +1853,17 @@ const ptBR: Record<string, string> = {
   '{n} semanas seguidas a registar.': '{n} semanas seguidas registrando.',
   'Toca para veres as tuas mãos.': 'Toque para ver suas mãos.',
   'A tua semana no póquer': 'Sua semana no pôquer',
-  'A tua semana ao domingo, e se passares uns dias sem registar': 'Sua semana no domingo, e se você passar uns dias sem registrar',
   'Tens notas sobre 1 regular daqui': 'Você tem notas sobre 1 regular daqui',
   'Tens notas sobre {n} regulares daqui': 'Você tem notas sobre {n} regulares daqui',
   'Vê quem são e o que já sabes de cada um.': 'Veja quem são e o que você já sabe de cada um.',
   'Já não tens mãos para rever.': 'Você não tem mais mãos para revisar.',
   'Revistas todas as mãos marcadas nesta sessão.': 'Você revisou todas as mãos marcadas nesta sessão.',
+  'A tua semana': 'Sua semana',
+  'Ao domingo, o que registaste e as mãos para rever': 'No domingo, o que você registrou e as mãos para revisar',
+  'Se passares uns dias sem registar': 'Se você passar uns dias sem registrar',
+  'Ao domingo, a tua semana': 'No domingo, sua semana',
+  'Dizemos-te o que registaste nessa semana e quantas mãos tens para rever. Sem valores e sem publicidade. Cada aviso desliga-se nas Definições da Sweatbook.': 'Contamos o que você registrou naquela semana e quantas mãos tem para revisar. Sem valores e sem publicidade. Cada aviso pode ser desligado nos Ajustes do Sweatbook.',
+  'Toca para as ligar nas definições do telemóvel. A app funciona igual sem elas.': 'Toque para ativá-las nos ajustes do celular. O app funciona igual sem elas.',
 };
 
 export default ptBR;

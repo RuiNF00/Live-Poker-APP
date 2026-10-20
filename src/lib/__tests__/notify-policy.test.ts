@@ -1,7 +1,21 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { becameAllowed, holdNow, kindOn, outOfQuiet, pickDaily, SOFT_ASK_COOLDOWN, softAskAllowed } from '../notify-policy';
+import {
+  askOnSummary,
+  becameAllowed,
+  holdNow,
+  kindInfo,
+  kindOn,
+  KINDS,
+  outOfQuiet,
+  pickDaily,
+  SOFT_ASK_COOLDOWN,
+  softAskAllowed,
+  SUMMARY_ASK_WITHIN,
+  SUMMARY_ASKS_MAX,
+  SUMMARY_SECOND_ASK_FROM,
+} from '../notify-policy';
 
 const at = (h: number, m = 0, day = 17) => new Date(2026, 9, day, h, m).getTime();
 
@@ -55,4 +69,45 @@ test('reminders are planned again only when notifications go from no to yes', ()
   assert.equal(becameAllowed(null, true), false);
   assert.equal(becameAllowed(false, false), false);
   assert.equal(becameAllowed(true, false), false);
+});
+
+test('interruption: only what the player set a time for breaks through Focus', () => {
+  assert.deepEqual(
+    KINDS.filter((k) => k.interruption === 'timeSensitive').map((k) => k.kind),
+    ['levels', 'festival'],
+  );
+  for (const k of KINDS) if (k.interruption === 'timeSensitive') assert.ok(k.requested, k.kind);
+});
+
+test('interruption: the Sunday week and the reminders arrive silently, nothing is critical', () => {
+  assert.equal(kindInfo('week').interruption, 'passive');
+  assert.equal(kindInfo('tips').interruption, 'passive');
+  for (const k of KINDS) assert.ok(['timeSensitive', 'active', 'passive'].includes(k.interruption), k.kind);
+});
+
+const ended = Date.parse('2026-10-20T20:00:00Z');
+const ask = { closed: 1, asks: 0, weekOn: true, endedAt: ended - 60_000, now: ended };
+
+test('askOnSummary: right after the first saved session', () => {
+  assert.equal(askOnSummary(ask), true);
+  assert.equal(askOnSummary({ ...ask, closed: 0 }), false);
+});
+
+test('askOnSummary: not on a summary opened again later, nor with «A tua semana» off', () => {
+  assert.equal(askOnSummary({ ...ask, endedAt: ended - SUMMARY_ASK_WITHIN - 1 }), false);
+  assert.equal(askOnSummary({ ...ask, endedAt: undefined }), false);
+  assert.equal(askOnSummary({ ...ask, weekOn: false }), false);
+});
+
+test('askOnSummary: a second time only from the third session, then never', () => {
+  assert.equal(askOnSummary({ ...ask, asks: 1, closed: 2 }), false);
+  assert.equal(askOnSummary({ ...ask, asks: 1, closed: SUMMARY_SECOND_ASK_FROM }), true);
+  assert.equal(askOnSummary({ ...ask, asks: SUMMARY_ASKS_MAX, closed: 30 }), false);
+});
+
+test('«A tua semana» starts as «Lembretes» was, then has its own switch', () => {
+  assert.equal(kindOn({}, 'week'), true);
+  assert.equal(kindOn({ notify: { tips: false } }, 'week'), false);
+  assert.equal(kindOn({ notify: { tips: false, week: true } }, 'week'), true);
+  assert.equal(kindOn({ notify: { week: false } }, 'tips'), true);
 });

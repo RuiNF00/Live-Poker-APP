@@ -728,8 +728,6 @@ const en: Record<string, string> = {
   'Lembretes para registar': 'Reminders to log',
   'Notificações': 'Notifications',
   'Notificações desligadas no telemóvel': 'Notifications are off on this phone',
-  'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Turn them on in system settings to get the notifications you choose here.',
-  'Abrir definições': 'Open settings',
   'Aviso antes de cobrar': 'Notice before you\'re charged',
   'Durante o teste grátis avisamos-te antes de cobrar.': 'During the free trial we tell you before you\'re charged.',
   'Mostrar valores nas notificações': 'Show amounts in notifications',
@@ -3574,7 +3572,6 @@ const en: Record<string, string> = {
   '{n} semanas seguidas a registar.': '{n} weeks in a row logging.',
   'Toca para veres as tuas mãos.': 'Tap to see your hands.',
   'A tua semana no póquer': 'Your week in poker',
-  'A tua semana ao domingo, e se passares uns dias sem registar': 'Your week on Sunday, and if a few days go by without logging',
   'Tens notas sobre 1 regular daqui': 'You have notes on 1 regular here',
   'Tens notas sobre {n} regulares daqui': 'You have notes on {n} regulars here',
   'Vê quem são e o que já sabes de cada um.': 'See who they are and what you know about each.',
@@ -3583,6 +3580,12 @@ const en: Record<string, string> = {
   'Próxima mão · faltam {n}': 'Next hand · {n} left',
   'Revistas todas as mãos marcadas nesta sessão.': 'You reviewed every hand marked this session.',
   'Já não tens mãos para rever.': 'No hands left to review.',
+  'A tua semana': 'Your week',
+  'Ao domingo, o que registaste e as mãos para rever': 'On Sunday, what you logged and the hands to review',
+  'Se passares uns dias sem registar': 'If a few days go by without logging',
+  'Ao domingo, a tua semana': 'Your week, on Sunday',
+  'Dizemos-te o que registaste nessa semana e quantas mãos tens para rever. Sem valores e sem publicidade. Cada aviso desliga-se nas Definições da Sweatbook.': "We tell you what you logged that week and how many hands you have to review. No amounts and no ads. Each notice can be turned off in Sweatbook's Settings.",
+  'Toca para as ligar nas definições do telemóvel. A app funciona igual sem elas.': "Tap to turn them on in the phone's settings. The app works the same without them.",
 };
 
 export default en;

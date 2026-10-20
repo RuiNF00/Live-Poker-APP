@@ -43,7 +43,7 @@ const WEEK_COMEBACK_GAP = 2 * DAY;
 
 export type NudgeId = 'trial-end' | 'comeback' | 'week';
 /** Notification kind (lib/notify-policy): only the notice before a charge is 'billing', which can't be switched off. */
-export const NUDGE_KIND: Record<NudgeId, 'billing' | 'tips'> = { 'trial-end': 'billing', comeback: 'tips', week: 'tips' };
+export const NUDGE_KIND: Record<NudgeId, 'billing' | 'week' | 'tips'> = { 'trial-end': 'billing', comeback: 'tips', week: 'week' };
 /**
  * Old ids, still cancelled so a reminder planned by an older version never fires.
  * 'trial-recap' went because notifications never sell Pro (design/notificacoes.md).

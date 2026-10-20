@@ -25,7 +25,8 @@ const rows = (): { kind: NotifyKind; title: string; subtitle: string; icon: Icon
   { kind: 'coach', title: t('Coach'), subtitle: t('Quando o coach comenta as tuas mãos'), icon: 'school-outline' },
   { kind: 'comments', title: t('Comentários nas tuas mãos'), subtitle: t('Quando alguém comenta uma mão que partilhaste'), icon: 'chatbubbles-outline' },
   { kind: 'recap', title: t('Resumo do mês'), subtitle: t('No dia 1, se jogaste nesse mês'), icon: 'stats-chart-outline' },
-  { kind: 'tips', title: t('Lembretes para registar'), subtitle: t('A tua semana ao domingo, e se passares uns dias sem registar'), icon: 'create-outline' },
+  { kind: 'week', title: t('A tua semana'), subtitle: t('Ao domingo, o que registaste e as mãos para rever'), icon: 'calendar-outline' },
+  { kind: 'tips', title: t('Lembretes para registar'), subtitle: t('Se passares uns dias sem registar'), icon: 'create-outline' },
 ];
 
 /** null on web or while checking; false when the system said no. */
@@ -69,8 +70,7 @@ export function NotificationSettings() {
             icon="notifications-off-outline"
             iconColor={C.warn}
             title={t('Notificações desligadas no telemóvel')}
-            subtitle={t('Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.')}
-            value={t('Abrir definições')}
+            subtitle={t('Toca para as ligar nas definições do telemóvel. A app funciona igual sem elas.')}
             onPress={() => Linking.openSettings().catch(() => {})}
           />
         </ListGroup>

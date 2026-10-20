@@ -2958,8 +2958,6 @@ const es: Record<string, string> = {
   'Lembretes para registar': 'Recordatorios para registrar',
   'Notificações': 'Notificaciones',
   'Notificações desligadas no telemóvel': 'Notificaciones desactivadas en el teléfono',
-  'Liga-as nas definições do sistema para receberes os avisos que escolheres aqui.': 'Actívalas en los ajustes del sistema para recibir los avisos que elijas aquí.',
-  'Abrir definições': 'Abrir ajustes',
   'Aviso antes de cobrar': 'Aviso antes del cobro',
   'Durante o teste grátis avisamos-te antes de cobrar.': 'Durante la prueba gratis te avisamos antes del cobro.',
   'Mostrar valores nas notificações': 'Mostrar importes en las notificaciones',
@@ -3568,7 +3566,6 @@ const es: Record<string, string> = {
   '{n} semanas seguidas a registar.': '{n} semanas seguidas registrando.',
   'Toca para veres as tuas mãos.': 'Toca para ver tus manos.',
   'A tua semana no póquer': 'Tu semana en el póker',
-  'A tua semana ao domingo, e se passares uns dias sem registar': 'Tu semana el domingo, y si pasan unos días sin registrar',
   'Tens notas sobre 1 regular daqui': 'Tienes notas sobre 1 regular de aquí',
   'Tens notas sobre {n} regulares daqui': 'Tienes notas sobre {n} regulares de aquí',
   'Vê quem são e o que já sabes de cada um.': 'Mira quiénes son y lo que ya sabes de cada uno.',
@@ -3577,6 +3574,12 @@ const es: Record<string, string> = {
   'Próxima mão · faltam {n}': 'Siguiente mano · quedan {n}',
   'Revistas todas as mãos marcadas nesta sessão.': 'Revisaste todas las manos marcadas en esta sesión.',
   'Já não tens mãos para rever.': 'Ya no tienes manos para revisar.',
+  'A tua semana': 'Tu semana',
+  'Ao domingo, o que registaste e as mãos para rever': 'El domingo, lo que registraste y las manos por revisar',
+  'Se passares uns dias sem registar': 'Si pasan unos días sin registrar',
+  'Ao domingo, a tua semana': 'El domingo, tu semana',
+  'Dizemos-te o que registaste nessa semana e quantas mãos tens para rever. Sem valores e sem publicidade. Cada aviso desliga-se nas Definições da Sweatbook.': 'Te contamos lo que registraste esa semana y cuántas manos tienes por revisar. Sin importes y sin publicidad. Cada aviso se desactiva en los Ajustes de Sweatbook.',
+  'Toca para as ligar nas definições do telemóvel. A app funciona igual sem elas.': 'Toca para activarlas en los ajustes del teléfono. La app funciona igual sin ellas.',
 };
 
 export default es;
