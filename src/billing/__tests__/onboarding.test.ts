@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { festivalPicks, firstAction, fourWeeks, GOALS, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
+import { festivalPicks, firstAction, firstKind, fourWeeks, GOALS, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
 
 test('plan follows what they play and want', () => {
   const p = planFor({ goals: ['results', 'backers'], plays: 'mtt3', volume: 'lots' });
@@ -59,4 +59,12 @@ test("the plan's one number comes from the pace they gave, never invented", () =
 test('every goal says what the app does with it, and staking says it is Pro', () => {
   for (const g of GOALS) assert.ok(g.sub.length > 0, g.key);
   assert.match(GOALS.find((g) => g.key === 'backers')!.sub, /Pro/);
+});
+
+test('a first past session opens on the game they said they play', () => {
+  assert.equal(firstKind(JSON.stringify({ plays: 'cash1' })), 'cash');
+  assert.equal(firstKind(JSON.stringify({ plays: 'mtt2' })), 'mtt');
+  assert.equal(firstKind('{}'), null);
+  assert.equal(firstKind(null), null);
+  assert.equal(firstKind('not json'), null);
 });

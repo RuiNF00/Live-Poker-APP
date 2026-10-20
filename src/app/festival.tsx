@@ -32,6 +32,7 @@ import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
 import { C, R, S } from '@/theme';
 import { reduceMotion } from '@/lib/motion';
+import { track } from '@/lib/events';
 
 type Filter = 'all' | 'mine' | 'NLH' | 'PLO' | 'Mix' | EventKind;
 const LATE_REG_HOURS = [2, 3, 4, 5, 6, 8];
@@ -92,6 +93,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
 
   const toggle = (e: FestivalEvent) => {
     tap('select');
+    // First event marked in this festival: the end of the festival path in the activation funnel (crescimento/funil-ativacao.md).
+    if (!plan.picked.length) track('onboarding_step', { step: 'festival_pick' });
     if (!plan.picked.length)
       void askNotify({
         where: 'festival',

@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
+import { firstKind, ONBOARDING_KEY } from '@/billing/onboarding';
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
@@ -196,9 +198,16 @@ function BankrollTab() {
   const signedMoney = (n: number) => (hidden ? '•••' : plus(n) + fmt(n, cur));
   const pastBankroll = single ?? scopeBankrolls[0] ?? defaultBankroll;
   const saveRef = useRef<(() => void) | null>(null);
+  // Nothing played yet: the first past session opens on the game they said they play on first run.
+  const [playsKind, setPlaysKind] = useState<'cash' | 'mtt' | null>(null);
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => setPlaysKind(firstKind(v)))
+      .catch(() => {});
+  }, []);
   const newPast = (): Session => {
     const last = lastPlayed(pastBankroll.currency, sessions);
-    return { ...blankSession(last.kind ?? 'mtt', pastBankroll.currency, settings.defaultTableSize), ...last, bankrollId: pastBankroll.id };
+    return { ...blankSession(last.kind ?? playsKind ?? 'mtt', pastBankroll.currency, settings.defaultTableSize), ...last, bankrollId: pastBankroll.id };
   };
   // What each bankroll's own rules let come out (a new withdrawal only).
   const keepFor = (id: string) => {
@@ -513,7 +522,8 @@ function BankrollTab() {
         ) : null}
         {sheet?.type === 'session' ? (
           <SessionForm
-            key={sheet.s === 'new' ? 'new' : sheet.s.id}
+            // The game from first run arrives a moment after the sheet opens: the blank form takes it then, before anything is typed.
+            key={sheet.s === 'new' ? `new-${playsKind ?? ''}` : sheet.s.id}
             past
             bankrolls={bankrolls}
             // A new one starts as the last game played in this bankroll's currency: the result is what's left to type.
