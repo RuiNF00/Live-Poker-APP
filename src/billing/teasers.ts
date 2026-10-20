@@ -1,5 +1,6 @@
-// What Pro would tell this player, said without the answer: "Há uma sala onde
-// perdes dinheiro", not which one or how much. Every line comes from an
+// What Pro would tell this player, said without the answer: "Numa das salas, o
+// teu resultado é negativo", not which one or how much. Never "where you win
+// more": a teaser describes the player's record, it doesn't point them at a table. Every line comes from an
 // insight the app really found in their sessions (insights-math.ts, same
 // sample rules), so nothing is promised that the Pro screen doesn't show.
 // The free screens stay as they are; this only names what's behind the lock.
@@ -20,11 +21,11 @@ export function teaserText(x: Pick<Insight, 'id' | 'tone' | 'groups'>): string {
   const loses = x.groups.some((g) => g.rate < 0);
   switch (x.id) {
     case 'venue':
-      return loses ? 'Há uma sala onde perdes dinheiro.' : 'Há uma sala onde rendes claramente mais.';
+      return loses ? 'Numa das salas, o teu resultado é negativo.' : 'O teu resultado muda muito de sala para sala.';
     case 'stakes':
-      return loses ? 'Há uma stake onde perdes dinheiro.' : 'Há uma stake que rende mais do que as outras.';
+      return loses ? 'Numa das stakes, o teu resultado é negativo.' : 'O teu resultado muda muito de stake para stake.';
     case 'weekday':
-      return loses ? 'Há um dia da semana em que perdes dinheiro.' : 'Há um dia da semana que rende mais do que os outros.';
+      return loses ? 'Num dos dias da semana, o teu resultado é negativo.' : 'O teu resultado muda muito com o dia da semana.';
     case 'daytime':
       return 'A hora a que começas a sessão mexe no teu resultado.';
     case 'length':
