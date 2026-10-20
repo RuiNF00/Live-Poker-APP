@@ -4,7 +4,7 @@
 // comes back undefined and the screen says so.
 
 import { t } from '@/i18n';
-import { venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
+import { venueClock, venueTime, type Festival, type FestivalEvent, type Structure } from '@/poker/festivals';
 
 /** Every row of the same tournament (its flights and Day 2s), in start order. Just the event when it has one row. */
 export function tournamentRows(f: Festival, e: FestivalEvent): FestivalEvent[] {
@@ -46,4 +46,33 @@ export function flightLabel(e: FestivalEvent): string | null {
   if (!e.flight) return null;
   if (!e.day2) return `Flight ${e.flight}`;
   return e.flight === '2' ? t('Dia 2') : t('Dia 2 · Flight {f}', { f: e.flight });
+}
+
+/** Minutes from the start to each level's start (index 0 is level 1), breaks included. */
+export function levelStarts(s: Structure, levelMinutes: number): number[] {
+  const pause = new Map(s.breaks);
+  const out: number[] = [];
+  let at = 0;
+  s.levels.forEach((_, i) => {
+    out.push(at);
+    at += levelMinutes + (pause.get(i + 1) ?? 0);
+  });
+  return out;
+}
+
+/**
+ * The level registration closes at: the one whose start is exactly the published late reg close.
+ * The schedule and the structure sheet are separate documents, so an exact match is a check on both;
+ * no match (a flight with other breaks, a dinner break the sheet doesn't list) gives undefined.
+ */
+export function closeLevel(s: Structure, e: Pick<FestivalEvent, 'levelMinutes' | 'lateRegMin'>): number | undefined {
+  if (!e.levelMinutes || !e.lateRegMin) return undefined;
+  const i = levelStarts(s, e.levelMinutes).indexOf(e.lateRegMin);
+  return i < 0 ? undefined : i + 1;
+}
+
+/** Big blinds in a stack at a level (1-based), rounded down. */
+export function bigBlinds(s: Structure, stack: number, level: number): number | undefined {
+  const bb = s.levels[level - 1]?.[1];
+  return bb ? Math.floor(stack / bb) : undefined;
 }

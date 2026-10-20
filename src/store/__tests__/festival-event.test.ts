@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import { LISBOA_NOV_2026, SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals-nov-2026';
 import { BAHAMAS_DEC_2026 as F } from '../../poker/festival-data';
 import { venueTime } from '../../poker/festivals';
-import { entryFlights, flightLabel, hoursLabel, lateRegClose, phoneStart, tournamentRows } from '../festival-event';
+import { STRUCTURES } from '../../poker/festival-structures';
+import { bigBlinds, closeLevel, entryFlights, flightLabel, hoursLabel, lateRegClose, levelStarts, phoneStart, tournamentRows } from '../festival-event';
 import { ownEvent } from '../festival-plan';
 
 const byId = (f: typeof SP, id: string) => f.events.find((e) => e.id === id)!;
@@ -50,4 +51,37 @@ test('the start on the phone: only when its zone differs, with the day when it c
   assert.equal(lisbon?.ms, venueTime(SP, e.start));
   assert.equal(phoneStart(SP, e, () => 60)?.otherDay, true); // 00:00 next day in Madrid
   assert.equal(phoneStart(LISBOA_NOV_2026, LISBOA_NOV_2026.events[0], () => 0), null);
+});
+
+test('structure: level starts count the breaks; late reg closes where the schedule says', () => {
+  const s = STRUCTURES['sao-paulo-nov-2026'][3];
+  const e = byId(SP, '3'); // 25-min levels, late reg 280 min: ten levels and two 15-min breaks
+  const at = levelStarts(s, 25);
+  assert.equal(at[0], 0);
+  assert.equal(at[5], 5 * 25 + 15);
+  assert.equal(closeLevel(s, e), 11); // the sheet: "re-entry until the start of level 11"
+  assert.equal(bigBlinds(s, 30000, 1), 150);
+  assert.equal(bigBlinds(s, 30000, 11), 12);
+  // A late reg that falls mid-level is no match: nothing is shown rather than a guess.
+  assert.equal(closeLevel(s, { levelMinutes: 25, lateRegMin: 290 }), undefined);
+  assert.equal(closeLevel(s, { levelMinutes: undefined, lateRegMin: 280 }), undefined);
+});
+
+test('every published structure belongs to a hold’em or Omaha tournament and reads as a blind table', () => {
+  for (const [fid, byNumber] of Object.entries(STRUCTURES)) {
+    const f = [SP, LISBOA_NOV_2026].find((x) => x.id === fid);
+    assert.ok(f, fid);
+    for (const [num, s] of Object.entries(byNumber)) {
+      const rows = f.events.filter((e) => e.number === Number(num));
+      assert.ok(rows.length, `${fid} #${num} has rows`);
+      assert.ok(rows.every((e) => e.game !== 'Mix'), `${fid} #${num} is not a mixed game`);
+      assert.ok(s.levels.length >= 10, `${fid} #${num} levels`);
+      let prev = 0;
+      for (const [sb, bb, ante] of s.levels) {
+        assert.ok(sb > 0 && sb <= bb && bb >= prev && ante <= bb, `${fid} #${num} ${sb}/${bb}/${ante}`);
+        prev = bb;
+      }
+      for (const [after, min] of s.breaks) assert.ok(after >= 1 && after < s.levels.length && min > 0 && min <= 90, `${fid} #${num} break after ${after}`);
+    }
+  }
 });

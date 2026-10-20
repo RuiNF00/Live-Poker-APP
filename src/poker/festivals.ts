@@ -29,6 +29,19 @@ export interface FestivalEvent {
   lateRegMin?: number;
 }
 
+/**
+ * A published blind structure, the same for every flight of the tournament. Copied from the
+ * organiser's structure sheet and kept only when two separate readings of it agree (festival-structures.ts).
+ */
+export interface Structure {
+  /** [small blind, big blind, big blind ante] per level, from level 1; ante 0 when there is none. */
+  levels: [number, number, number][];
+  /** [level, minutes]: a break after that level. */
+  breaks: [number, number][];
+  /** The sheet says re-entries are unlimited until this level starts. */
+  unlimitedReentryUntil?: number;
+}
+
 export interface Festival {
   id: string;
   name: string;

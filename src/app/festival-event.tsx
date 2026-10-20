@@ -9,13 +9,15 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { StructureTable } from '@/components/StructureTable';
 import { useStartEvent } from '@/components/useStartEvent';
 import { Badge, Button, Card, ListGroup, ListItem, Row, Section, Stat, StatGrid, T, tap } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { eventDay, eventTitle, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { chips, money, rawCompactMoney } from '@/poker/format';
 import { balanceOf } from '@/store/bankroll-math';
-import { entryFlights, flightLabel, hoursLabel, lateRegClose, phoneStart, tournamentRows } from '@/store/festival-event';
+import { bigBlinds, closeLevel, entryFlights, flightLabel, hoursLabel, lateRegClose, phoneStart, tournamentRows } from '@/store/festival-event';
+import { useStructure } from '@/store/festival-structures';
 import { bankrollShare, clashes, entryBuyIn, eventAction, festivalName, lateRegOf, togglePicked, updatePlan, useFestivalPlan, venueHm, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
@@ -52,6 +54,7 @@ function EventView({ base, eventId }: { base: Festival; eventId: string }) {
     if (!e) router.back();
   }, [e]);
   const rows = useMemo(() => (e ? tournamentRows(f, e) : []), [f, e]);
+  const structure = useStructure(f.own ? '' : f.id, e?.number ?? -1);
   const clash = useMemo(() => clashes(f, plan), [f, plan]);
   if (!e) return null;
 
@@ -60,6 +63,7 @@ function EventView({ base, eventId }: { base: Festival; eventId: string }) {
   const phone = phoneStart(f, e);
   const late = lateRegOf(plan, e);
   const close = lateRegClose(f, e, late);
+  const lastLevel = structure ? closeLevel(structure, e) : undefined;
   const cost = entryBuyIn(f, e);
   const bankroll = bankrolls.find((b) => b.currency === f.currency) ?? defaultBankroll;
   const balance = balanceOf({ bankrollId: bankroll.id }, sessions, transfers, bankrolls).balance;
@@ -130,23 +134,52 @@ function EventView({ base, eventId }: { base: Festival; eventId: string }) {
                       ? t('Hora oficial: {d} depois do início.', { d: hoursLabel(late!) })
                       : t('A hora que marcaste: {d} depois do início.', { d: hoursLabel(late!) })}
                   </T>
+                  {lastLevel && late === e.lateRegMin ? (
+                    <T v="small" color={C.text}>
+                      {e.stack
+                        ? t('Fecha ao começar o nível {n} ({sb}/{bb}): quem entra no fim chega com {x} big blinds.', { n: lastLevel, sb: structure!.levels[lastLevel - 1][0].toLocaleString(locale), bb: structure!.levels[lastLevel - 1][1].toLocaleString(locale), x: bigBlinds(structure!, e.stack, lastLevel)! })
+                        : t('Fecha ao começar o nível {n}.', { n: lastLevel })}
+                    </T>
+                  ) : null}
                 </>
               ) : (
                 <T v="small">{t('O organizador ainda não publicou quando fecha o late reg. Marca a hora no plano quando a souberes.')}</T>
               )}
+              {structure?.unlimitedReentryUntil ? (
+                <Row gap={8}>
+                  <Ionicons name="repeat-outline" size={16} color={C.muted} />
+                  <T v="small" style={{ flex: 1 }}>
+                    {t('Re-entradas ilimitadas até começar o nível {n}.', { n: structure.unlimitedReentryUntil })}
+                  </T>
+                </Row>
+              ) : null}
             </Card>
           </Section>
         )}
 
         <Section title={t('Estrutura')}>
-          <Card tone="inset" style={{ gap: S.sm }}>
+          <View style={{ gap: S.sm }}>
             {e.stack && e.levelMinutes ? (
-              <T v="small" color={C.text}>
-                {t('Começas com {stack} fichas e os blinds sobem a cada {min} min.', { stack: e.stack.toLocaleString(locale), min: e.levelMinutes })}
+              <T v="small" color={C.text} style={{ paddingHorizontal: 4 }}>
+                {structure && bigBlinds(structure, e.stack, 1)
+                  ? t('Começas com {stack} fichas ({bb} big blinds) e os blinds sobem a cada {min} min.', { stack: e.stack.toLocaleString(locale), bb: bigBlinds(structure, e.stack, 1)!, min: e.levelMinutes })
+                  : t('Começas com {stack} fichas e os blinds sobem a cada {min} min.', { stack: e.stack.toLocaleString(locale), min: e.levelMinutes })}
               </T>
             ) : null}
-            <T v="small">{t('A tabela de blinds nível a nível ainda não está na app. Pede-a no balcão do torneio.')}</T>
-          </Card>
+            {structure ? (
+              <>
+                {!lastLevel && e.lateRegMin && !e.day2 ? <T v="small" color={C.warn} style={{ paddingHorizontal: 4 }}>{t('Neste flight as pausas podem não ser as da tabela: confirma no balcão.')}</T> : null}
+                <StructureTable f={f} e={e} s={structure} />
+                <T v="tiny" color={C.textDim} style={{ paddingHorizontal: 4 }}>
+                  {t('Fonte: folha de estrutura oficial do organizador.')}
+                </T>
+              </>
+            ) : structure === null ? (
+              <Card tone="inset">
+                <T v="small">{t('A tabela de blinds nível a nível deste torneio ainda não está na app. Pede-a no balcão do torneio.')}</T>
+              </Card>
+            ) : null}
+          </View>
         </Section>
 
         {rows.length > 1 ? (
