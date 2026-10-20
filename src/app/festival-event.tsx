@@ -1,8 +1,8 @@
 // One festival tournament in full, opened from its row in the planner: when it
 // starts (also on the phone's clock abroad), what it costs and guarantees, the
-// structure as published (stack, level length, late reg), its other flights
-// and days, and the player's plan for it. Only what the organiser published:
-// anything missing says so instead of a guess.
+// structure as published (stack, level length, late reg), the player's plan for
+// it and its other flights and days. Only what the organiser published: anything
+// missing says so instead of a guess. Festival-wide notes stay on the festival screen.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
@@ -182,27 +182,6 @@ function EventView({ base, eventId }: { base: Festival; eventId: string }) {
           </View>
         </Section>
 
-        {rows.length > 1 ? (
-          <Section title={rows.every((x) => !x.flight) ? t('Mais datas') : flights.length > 1 ? t('Flights e dias ({n} flights)', { n: flights.length }) : t('Dias do torneio')}>
-            <ListGroup>
-              {rows.map((x) => {
-                const picked = plan.picked.includes(x.id);
-                const differs = [x.stack && x.stack !== e.stack ? chips(x.stack) : null, x.levelMinutes && x.levelMinutes !== e.levelMinutes ? `${x.levelMinutes} min` : null].filter(Boolean).join(' · ');
-                return (
-                  <ListItem
-                    key={x.id}
-                    title={(flightLabel(x) ?? eventTitle(x)) + (x.id === e.id ? ` · ${t('este')}` : '')}
-                    subtitle={[dayLabel(eventDay(x)), x.start.slice(11), differs || null].filter(Boolean).join(' · ')}
-                    right={picked ? <Ionicons name="checkmark-circle" size={20} color={C.accent} /> : undefined}
-                    onPress={x.id === e.id ? undefined : () => router.setParams({ event: x.id })}
-                    chevron={x.id !== e.id}
-                  />
-                );
-              })}
-            </ListGroup>
-          </Section>
-        ) : null}
-
         <Section title={t('O teu plano')}>
           <View style={{ gap: S.sm }}>
             {on && other ? (
@@ -233,16 +212,32 @@ function EventView({ base, eventId }: { base: Festival; eventId: string }) {
           </View>
         </Section>
 
+        {rows.length > 1 ? (
+          <Section title={rows.every((x) => !x.flight) ? t('Mais datas') : flights.length > 1 ? t('Flights e dias ({n} flights)', { n: flights.length }) : t('Dias do torneio')}>
+            <ListGroup>
+              {rows.map((x) => {
+                const picked = plan.picked.includes(x.id);
+                const differs = [x.stack && x.stack !== e.stack ? chips(x.stack) : null, x.levelMinutes && x.levelMinutes !== e.levelMinutes ? `${x.levelMinutes} min` : null].filter(Boolean).join(' · ');
+                return (
+                  <ListItem
+                    key={x.id}
+                    title={(flightLabel(x) ?? eventTitle(x)) + (x.id === e.id ? ` · ${t('este')}` : '')}
+                    subtitle={[dayLabel(eventDay(x)), x.start.slice(11), differs || null].filter(Boolean).join(' · ')}
+                    right={picked ? <Ionicons name="checkmark-circle" size={20} color={C.accent} /> : undefined}
+                    onPress={x.id === e.id ? undefined : () => router.setParams({ event: x.id })}
+                    chevron={x.id !== e.id}
+                  />
+                );
+              })}
+            </ListGroup>
+          </Section>
+        ) : null}
+
         {f.own ? null : (
           <View style={{ gap: 6, paddingHorizontal: 4 }}>
             <T v="tiny" color={C.textDim}>
               {t('Fonte: {source}, verificado a {date}', { source: t(f.source.label), date: new Date(f.source.checked + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
             </T>
-            {f.notes.map((n) => (
-              <T key={n} v="tiny">
-                {t(n)}
-              </T>
-            ))}
           </View>
         )}
       </ScrollView>
