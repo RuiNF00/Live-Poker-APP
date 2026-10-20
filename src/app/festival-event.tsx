@@ -29,6 +29,9 @@ function dayLabel(day: string) {
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 }
 
+/** Back to where the player came from; opened from a link with nothing behind it, the festivals list. */
+const leave = () => (router.canGoBack() ? router.back() : router.replace('/festivals'));
+
 const GAME: Record<FestivalEvent['game'], string> = { NLH: "No Limit Hold'em", PLO: 'Pot Limit Omaha', Mix: 'Mixed Games' };
 
 export default function FestivalEventScreen() {
@@ -38,7 +41,7 @@ export default function FestivalEventScreen() {
   const base = festivals.find((x) => x.id === id);
   const gone = ready && !base;
   useEffect(() => {
-    if (gone) router.back();
+    if (gone) leave();
   }, [gone]);
   return base && event ? <EventView key={base.id} base={base} eventId={event} /> : null;
 }
@@ -51,7 +54,7 @@ function EventView({ base, eventId }: { base: Festival; eventId: string }) {
   const start = useStartEvent();
   // An added tournament deleted on another screen: back to the schedule.
   useEffect(() => {
-    if (!e) router.back();
+    if (!e) leave();
   }, [e]);
   const rows = useMemo(() => (e ? tournamentRows(f, e) : []), [f, e]);
   const structure = useStructure(f.own ? '' : f.id, e?.number ?? -1);
