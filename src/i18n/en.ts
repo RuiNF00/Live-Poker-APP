@@ -3500,7 +3500,6 @@ const en: Record<string, string> = {
   'Ainda sem sessões em {month}': 'No sessions in {month} yet',
   '{month}: {amount}': '{month}: {amount}',
   'Esta semana: {n} dias com sessões.': 'This week: {n} days with sessions.',
-  'Resultado total': 'Total result',
   'Sem {list}': 'Without {list}',
   '{n} por rever': '{n} to review',
   'esta semana': 'this week',

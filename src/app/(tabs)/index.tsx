@@ -5,8 +5,8 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
@@ -27,6 +27,7 @@ import { locale, t } from '@/i18n';
 import { useCoach } from '@/lib/coach-api';
 import { useSharedHands } from '@/lib/friend-hands';
 import { duration, money, plus } from '@/poker/format';
+import { useReduceMotion } from '@/lib/motion';
 import { needsReview } from '@/poker/review';
 import type { Hand } from '@/poker/types';
 import { monthKey, monthName, monthRecap, prevKey } from '@/store/month-recap';
@@ -44,7 +45,10 @@ const DAY = 86400000;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const narrow = useWindowDimensions().width < 380;
+  const win = useWindowDimensions();
+  const narrow = win.width < 380;
+  // 200% text or a very small screen: one column, nothing side by side.
+  const compact = win.fontScale >= 1.6 || win.width < 330;
   const { hands, sessions, players, activeSession, settings, draft, setDraft } = useStore();
   // Cloud copy failed or a week old: one quiet card with «Fazer cópia agora».
   const backup = useBackupWarning();
@@ -162,25 +166,25 @@ export default function HomeScreen() {
         }
       />
 
-      {fresh ? <FirstRun /> : <MonthHero sessions={sessions} hands={hands} now={now} streak={hands.length > 0} />}
+      {fresh ? <FirstRun /> : <MonthHero sessions={sessions} hands={hands} now={now} streak={hands.length > 0} compact={compact} />}
 
       {activeSession ? <LiveCard s={activeSession} /> : null}
       {card}
       {!activeSession && !fresh ? (
-        <Row gap={S.sm}>
-          <Button title={t('Começar sessão')} icon="play" onPress={() => router.navigate('/session')} style={{ flex: 1 }} />
+        <FadeUp i={1} style={{ flexDirection: compact ? 'column' : 'row', gap: S.sm }}>
+          <Button title={t('Começar sessão')} icon="play" onPress={() => router.navigate('/session')} style={compact ? null : { flex: 1.25, paddingHorizontal: narrow ? 12 : 20 }} />
           {/* Most installs happen away from the table: log the last session in 20 s instead of a timer. */}
-          <Button title={t('Já joguei')} icon="time-outline" kind="secondary" onPress={() => router.navigate({ pathname: '/bankroll', params: { add: 'session' } })} style={{ flex: 1 }} />
-        </Row>
+          <Button title={t('Já joguei')} icon="time-outline" kind="secondary" onPress={() => router.navigate({ pathname: '/bankroll', params: { add: 'session' } })} style={compact ? null : { flex: 1, paddingHorizontal: narrow ? 12 : 20 }} />
+        </FadeUp>
       ) : null}
 
       {fresh ? null : (
-        <View style={{ gap: S.sm }}>
-          <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+        <FadeUp i={2} style={{ gap: S.sm }}>
+          <View style={[tileSt.row, compact && tileSt.col]}>
             {played ? <TotalTile sessions={sessions} /> : <Tile icon="stats-chart-outline" label="Bankroll" value="—" sub={t('Ainda sem sessões terminadas')} onPress={() => router.navigate('/bankroll')} />}
             <HandsTile week={weekHands} toReview={toReview} handsLeft={handsLeft} cta={cta} onPro={onPro} />
-          </Row>
-          <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+          </View>
+          <View style={[tileSt.row, compact && tileSt.col]}>
             {played ? <RateTile sessions={sessions} /> : <Tile icon="calendar-outline" label={t('Festivais')} value="" sub={t('Calendário e plano')} onPress={() => router.push('/festivals')} />}
             <Tile
               icon="create-outline"
@@ -189,22 +193,24 @@ export default function HomeScreen() {
               sub={lastNote ? lastNote.name || t('Sem nome') : t('Nova nota')}
               onPress={() => router.push(players.length ? '/notes' : { pathname: '/notes', params: { id: 'new' } })}
             />
-          </Row>
-        </View>
+          </View>
+        </FadeUp>
       )}
 
       {lastHand ? (
-        <Section title={t('Última mão')} action={t('Ver todas')} onAction={() => router.navigate('/hands')}>
-          <HandRow hand={lastHand} inBB={settings.inBB} />
-        </Section>
+        <FadeUp i={3}>
+          <Section title={t('Última mão')} action={t('Ver todas')} onAction={() => router.navigate('/hands')}>
+            <HandRow hand={lastHand} inBB={settings.inBB} />
+          </Section>
+        </FadeUp>
       ) : null}
 
       {fresh ? null : (
-        <Row gap={S.sm}>
+        <View style={[tileSt.row, compact && tileSt.col]}>
           <Shortcut icon="calendar-outline" label={t('Festivais')} onPress={() => router.push('/festivals')} />
           <Shortcut icon="calculator-outline" label={t('Calculadora')} onPress={() => router.push('/odds')} />
           <Shortcut icon="swap-horizontal-outline" label={t('Swaps')} onPress={() => router.push('/swaps')} />
-        </Row>
+        </View>
       )}
     </ScrollView>
   );
@@ -222,25 +228,26 @@ function weekStart(now: number): number {
  * The month as one big number with a short line under it, the month before for scale, and the
  * week as seven dots (Runna). The verdict on everything shows here once there's enough to judge.
  */
-function MonthHero({ sessions, hands, now, streak }: { sessions: Session[]; hands: Hand[]; now: number; streak: boolean }) {
+function MonthHero({ sessions, hands, now, streak, compact }: { sessions: Session[]; hands: Hand[]; now: number; streak: boolean; compact: boolean }) {
   const key = monthKey(now);
   const m = useMemo(() => monthRecap(sessions, key), [sessions, key]);
   const cur = m.currency;
   const prev = useMemo(() => monthRecap(sessions, prevKey(key), cur), [sessions, key, cur]);
   const v = useMemo(() => verdict(sessions, cur, (n) => money(n, cur)), [sessions, cur]);
+  const shown = useCountUp(m.profit);
   const line = m.sessions
     ? [m.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: m.sessions }), t('{h} h', { h: m.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }), rateShown(m.hours) ? t('{amount}/h', { amount: money(Math.round(m.hourly), cur) }) : ''].filter(Boolean).join(' · ')
     : t('Ainda sem sessões em {month}', { month: monthName(key).toLowerCase() });
   return (
     <View style={heroSt.wrap}>
-      <Row style={{ alignItems: 'flex-start' }}>
+      <View style={{ flexDirection: compact ? 'column' : 'row', alignItems: 'flex-start', gap: S.md }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${monthName(key)}: ${m.sessions ? plus(m.profit) + money(m.profit, cur) : '—'}. ${line}`}
           onPress={() => router.push({ pathname: '/month', params: { m: key, c: cur } })}
-          style={({ pressed }) => ({ flex: 1, gap: 2, opacity: pressed ? 0.7 : 1 })}>
+          style={({ pressed }) => ({ flex: compact ? undefined : 1, alignSelf: 'stretch', gap: 2, opacity: pressed ? 0.7 : 1 })}>
           <T v="label">{monthName(key)}</T>
-          {m.sessions ? <Amount value={m.profit} text={money(m.profit, cur)} v="monoXL" fit /> : <T v="monoXL" color={C.muted}>—</T>}
+          {m.sessions ? <Amount value={m.profit} text={money(shown, cur)} v="monoXL" fit /> : <T v="monoXL" color={C.muted}>—</T>}
           <T v="small">{line}</T>
           {prev.sessions ? (
             <T v="tiny">
@@ -249,11 +256,11 @@ function MonthHero({ sessions, hands, now, streak }: { sessions: Session[]; hand
           ) : null}
         </Pressable>
         {streak ? (
-          <View style={{ width: 92 }}>
+          <View style={compact ? null : { width: 92 }}>
             <StreakStat />
           </View>
         ) : null}
-      </Row>
+      </View>
       <WeekStrip sessions={sessions} hands={hands} now={now} />
       {v.ready ? (
         <T v="callout" color={v.tone === 'good' ? C.good : v.tone === 'bad' ? C.bad : C.text}>
@@ -307,7 +314,7 @@ function WeekStrip({ sessions, hands, now }: { sessions: Session[]; hands: Hand[
           <T v="tiny" color={i === today ? C.text : C.muted} style={i === today ? { fontFamily: ff(800) } : null}>
             {names[i]}
           </T>
-          <View
+          <Dot i={i}
             style={[
               heroSt.day,
               i === today && { borderWidth: 1.5, borderColor: C.borderStrong },
@@ -315,13 +322,59 @@ function WeekStrip({ sessions, hands, now }: { sessions: Session[]; hands: Hand[
               d.played && d.net < 0 && { backgroundColor: 'transparent', borderWidth: 2, borderColor: C.bad },
               d.played && d.net === 0 && { backgroundColor: C.textDim, borderWidth: 0 },
               // Hands but no finished session: a small grey dot, never a ring (a ring is a loss).
-              !d.played && d.hands > 0 && { backgroundColor: C.textDim, transform: [{ scale: 0.6 }] },
+              !d.played && d.hands > 0 && { backgroundColor: C.textDim, width: 8, height: 8, margin: 3 },
             ]}
           />
         </View>
       ))}
     </View>
   );
+}
+
+/**
+ * Motion, once, when the app opens: the month counts up, the week's days light up one after another
+ * and the rest rises into place (Oura, WHOOP). Nothing moves with Reduce Motion, and the screen reads
+ * the same without it: the final value is there for VoiceOver from the start.
+ */
+function useCountUp(target: number, ms = 650) {
+  const reduce = useReduceMotion();
+  const [v, setV] = useState(reduce ? target : 0);
+  const done = useRef(reduce);
+  useEffect(() => {
+    if (done.current || target === 0) {
+      setV(target);
+      return;
+    }
+    done.current = true;
+    const a = new Animated.Value(0);
+    const id = a.addListener(({ value }) => setV(Math.round(target * value)));
+    Animated.timing(a, { toValue: 1, duration: ms, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => setV(target));
+    return () => {
+      a.removeListener(id);
+      a.stopAnimation();
+    };
+  }, [target, ms]);
+  return v;
+}
+
+/** Fades and rises 8 pt into place, in order (`i`), the first time it shows. */
+function FadeUp({ i, style, children }: { i: number; style?: React.ComponentProps<typeof View>['style']; children: React.ReactNode }) {
+  const reduce = useReduceMotion();
+  const [a] = useState(() => new Animated.Value(reduce ? 1 : 0));
+  useEffect(() => {
+    Animated.timing(a, { toValue: 1, duration: 320, delay: 60 + i * 70, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [a, i]);
+  return <Animated.View style={[style, { opacity: a, transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }]}>{children}</Animated.View>;
+}
+
+/** A day of the week strip: pops in after the one before it. */
+function Dot({ i, style }: { i: number; style: React.ComponentProps<typeof View>['style'] }) {
+  const reduce = useReduceMotion();
+  const [a] = useState(() => new Animated.Value(reduce ? 1 : 0));
+  useEffect(() => {
+    Animated.spring(a, { toValue: 1, delay: 200 + i * 45, friction: 6, tension: 140, useNativeDriver: true }).start();
+  }, [a, i]);
+  return <Animated.View style={[style, { transform: [{ scale: a }] }]} />;
 }
 
 const heroSt = StyleSheet.create({
@@ -393,6 +446,8 @@ function Tile({ icon, label, value, sub, subColor, onPress, children }: { icon: 
 }
 
 const tileSt = StyleSheet.create({
+  row: { flexDirection: 'row', gap: S.sm, alignItems: 'stretch' },
+  col: { flexDirection: 'column' },
   tile: { flex: 1, gap: 4, minHeight: 112, padding: 14, backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.border },
 });
 
@@ -403,7 +458,7 @@ function TotalTile({ sessions }: { sessions: Session[] }) {
   return (
     <Tile
       icon="stats-chart-outline"
-      label={t('Resultado total')}
+      label={t('Total')}
       value={<Amount value={tot.profit} text={money(tot.profit, tot.currency)} v="monoL" fit />}
       sub={tot.otherCurrencies.length ? t('Sem {list}', { list: tot.otherCurrencies.join(', ') }) : undefined}
       onPress={() => router.navigate('/bankroll')}>
@@ -450,7 +505,7 @@ function HandsTile({ week, toReview, handsLeft, cta, onPro }: { week: number; to
             <T v="small">{t('Grátis hoje')}</T>
             <Row gap={3}>
               {[0, 1, 2].map((i) => (
-                <View key={i} style={{ width: 10, height: 5, borderRadius: 3, backgroundColor: i < 3 - handsLeft ? C.accent : C.surface3 }} />
+                <View key={i} style={{ width: 10, height: 5, borderRadius: 3, backgroundColor: i < handsLeft ? C.accent : C.surface3 }} />
               ))}
             </Row>
           </Row>
