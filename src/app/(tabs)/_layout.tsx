@@ -73,7 +73,8 @@ export default function TabsLayout() {
       )}
       tabBar={(props) => (
         <>
-          <SessionMiniBar hidden={props.state.routes[props.state.index]?.name === 'session'} />
+          {/* Hidden where the session already shows big: its own tab and Resumo's live card. */}
+          <SessionMiniBar hidden={['session', 'index'].includes(props.state.routes[props.state.index]?.name ?? '')} />
           <BottomTabBar {...props} />
         </>
       )}
@@ -90,7 +91,7 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: C.text,
         tabBarInactiveTintColor: C.muted,
-        // Shrinks rather than cutting "Bankroll" / "Jugadores" on a narrow screen or a zoomed browser.
+        // Shrinks rather than cutting "Bankroll" / "Resumen" on a narrow screen or a zoomed browser.
         tabBarLabel: ({ color, children }) => (
           <FitText allowFontScaling={LABEL_SCALES} maxFontSizeMultiplier={LABEL_MAX_SCALE} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ color, fontWeight: '700', fontFamily: ff(700), fontSize: 11, marginTop: 2, textAlign: 'center' }}>
             {children}
@@ -99,11 +100,12 @@ export default function TabsLayout() {
         // The bar has a fixed height; iOS shows the big label on long-press instead.
         tabBarAllowFontScaling: LABEL_SCALES,
       }}>
-      <Tabs.Screen name="index" options={{ title: t('Mãos'), tabBarIcon: icon('albums', 'albums-outline') }} />
-      <Tabs.Screen name="session" options={{ title: t('Sessão'), tabBarIcon: icon('timer', 'timer-outline') }} />
+      {/* Início sums everything up; the other tabs are for doing. Player notes open from Início. */}
+      <Tabs.Screen name="index" options={{ title: t('Resumo'), tabBarIcon: icon('home', 'home-outline') }} />
+      <Tabs.Screen name="hands" options={{ title: t('Mãos'), tabBarIcon: icon('albums', 'albums-outline') }} />
       <Tabs.Screen name="new" options={{ title: '', tabBarButton: () => <NewHandButton /> }} />
+      <Tabs.Screen name="session" options={{ title: t('Sessão'), tabBarIcon: icon('timer', 'timer-outline') }} />
       <Tabs.Screen name="bankroll" options={{ title: 'Bankroll', tabBarIcon: icon('stats-chart', 'stats-chart-outline') }} />
-      <Tabs.Screen name="players" options={{ title: t('Jogadores'), tabBarIcon: icon('people', 'people-outline') }} />
     </Tabs>
   );
 }

@@ -1817,6 +1817,16 @@ const ptBR: Record<string, string> = {
   'Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Não guardamos a tua idade.': 'Onde a lei exige, o app pede à Apple sua faixa etária antes de abrir. Não armazenamos sua idade.',
   'Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.': 'Não foi possível confirmar sua idade. Confira se você iniciou sessão com sua Conta Apple e tente de novo.',
   'Saber mais': 'Saiba mais',
+  // Início (resumo) e Notas
+  'Aqui vês tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.': 'Aqui você vê tudo de uma vez: o resultado, as últimas mãos e sessões e as notas da mesa.',
+  'Apagar nota': 'Excluir nota',
+  '{n} por rever': '{n} para revisar',
+  '1 mão para rever': '1 mão para revisar',
+  '{n} mãos para rever': '{n} mãos para revisar',
+  'Enquanto ainda te lembras de tudo.': 'Enquanto você ainda se lembra de tudo.',
+  'Já jogaste? Regista a última sessão': 'Já jogou? Registre a última sessão',
+  'Visto a {date}': 'Visto em {date}',
+  'Escreve um nome ou alcunha': 'Escreva um nome ou apelido',
 };
 
 export default ptBR;

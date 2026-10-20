@@ -1,0 +1,515 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { usePro } from '@/billing/pro';
+import { HandRow, isIncomplete, netOf, rowSummary } from '@/components/HandRow';
+import { PlayingCard } from '@/components/PlayingCard';
+import { Banner, Button, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Row, ScreenHeader, SearchField, SheetHeader, T, tap, useSheetPad } from '@/components/ui';
+import { locale, t } from '@/i18n';
+import { fileInFolder, needsReview } from '@/poker/review';
+import { DEFAULT_TAGS, type Hand } from '@/poker/types';
+import { filterPills, HandFilterSheet, RESULTS } from '@/components/HandFilters';
+import { activeFilters, handSearchText, matches, matchesSearch, NO_FILTER, parseSearch, sortByResult, type HandFilter } from '@/store/hand-filters';
+import { unreadByHand } from '@/lib/coach-core';
+import { useCoach } from '@/lib/coach-api';
+import { openInGtoWizard } from '@/lib/gto-wizard';
+import { useIdleCount } from '@/lib/idle-count';
+import { saveSolverFile, solverReady } from '@/lib/solver-export';
+import { useStore } from '@/store/store';
+import { C, R, S, SHADOW, ff } from '@/theme';
+
+const DAY = 86400000;
+const FOLDER = 'folder:';
+
+function dayKey(ts: number) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+// toLocaleDateString builds a new formatter on every call, which is slow on Hermes
+// and in browsers; a long history has hundreds of days. Two formatters, made once.
+const dayTitles = new Map<number, string>();
+const dayFmt: Partial<Record<'year' | 'other', Intl.DateTimeFormat>> = {};
+function dayTitle(day: number) {
+  const today = dayKey(Date.now());
+  if (day === today) return t('Hoje');
+  // Half a day back is always inside yesterday, even when it was 23 or 25 hours long.
+  if (day === dayKey(today - DAY / 2)) return t('Ontem');
+  let s = dayTitles.get(day);
+  if (s === undefined) {
+    const sameYear = new Date(day).getFullYear() === new Date().getFullYear();
+    const k = sameYear ? 'year' : 'other';
+    s = (dayFmt[k] ??= new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'short', ...(sameYear ? null : { year: 'numeric' }) })).format(day);
+    dayTitles.set(day, s);
+  }
+  return s;
+}
+
+// Defined once: an inline component here is a new type on every render, so
+// React unmounted and remounted every separator each time the list rendered.
+const Separator = () => <View style={{ height: S.sm }} />;
+
+export default function HandsScreen() {
+  const sheetPad = useSheetPad(S.xxl);
+  const { hands, sessions, settings, saveHand, deleteHand } = useStore();
+  const { paywall, isPro } = usePro();
+  const [q, setQ] = useState('');
+  const [tag, setTag] = useState<string | null>(null);
+  const [filter, setFilter] = useState<HandFilter>(NO_FILTER);
+  const [filtering, setFiltering] = useState(false);
+  const coach = useCoach();
+  const unread = useMemo(() => unreadByHand(coach), [coach]);
+  const sentToCoach = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
+  const [searching, setSearching] = useState(false);
+
+  // The search also looks in the hand's session ("Main Event Dia 1", "Casino Lisboa").
+  const sessionText = useMemo(() => new Map(sessions.map((x) => [x.id, ` ${x.name} ${x.venue}`.toLowerCase()])), [sessions]);
+  const sections = useMemo(() => {
+    const words = parseSearch(q);
+    const rows = [...hands]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .filter(
+        (h) =>
+          (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag === TO_REVIEW ? needsReview(h, sentToCoach) : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) &&
+          (!words.length || matchesSearch(h, words, searchText(h) + (h.sessionId ? (sessionText.get(h.sessionId) ?? '') : ''))) &&
+          matches(h, filter, netOf),
+      );
+    // Sorted by result: one list, biggest first, instead of days.
+    if (filter.sort !== 'recent') {
+      const data = sortByResult(rows, filter.sort, (h) => rowSummary(h).net);
+      return data.length ? [{ title: filter.sort === 'won' ? t('Mais bb ganhas') : t('Mais bb perdidas'), data }] : [];
+    }
+    const out: { title: string; data: Hand[] }[] = [];
+    let cur = -1;
+    for (const h of rows) {
+      const k = dayKey(h.createdAt);
+      if (k !== cur) {
+        out.push({ title: dayTitle(k), data: [] });
+        cur = k;
+      }
+      out[out.length - 1].data.push(h);
+    }
+    return out;
+  }, [hands, q, tag, sentToCoach, filter, sessionText]);
+
+  const sessionName = useCallback((id: string) => {
+    const x = sessions.find((y) => y.id === id);
+    return x ? x.name || x.venue : '';
+  }, [sessions]);
+  // While searching, the chips under the box already show the result and session as on.
+  const pills = useMemo(() => filterPills(filter, sessionName).filter((x) => !searching || (x.key !== 'result' && x.key !== 'session')), [filter, sessionName, searching]);
+  // Quick picks under the search box: the last two sessions with hands in them.
+  const recentSessions = useMemo(() => {
+    const withHands = new Set(hands.map((h) => h.sessionId).filter(Boolean));
+    return sessions
+      .filter((x) => withHands.has(x.id) && (x.name || x.venue))
+      .sort((a, b) => b.startedAt - a.startedAt)
+      .slice(0, 2);
+  }, [hands, sessions]);
+  // While the list is narrowed, nudges about the rest of it get out of the way.
+  const narrowed = !!tag || pills.length > 0;
+  const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
+  // Replays every hand: counted in slices after the list has drawn (years of hands take a second on a mid-range phone).
+  const incomplete = useIdleCount(hands, isIncomplete) ?? 0;
+
+  // Long-press a hand to start picking several; tap then adds or removes.
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const picking = picked.size > 0;
+  // Android back closes the selection or the search first, instead of leaving the app.
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android' || (!picking && !searching)) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (picking) setPicked(new Set());
+        else {
+          setSearching(false);
+          setQ('');
+          setFilter((f) => ({ ...f, result: null, session: null }));
+        }
+        return true;
+      });
+      return () => sub.remove();
+    }, [picking, searching]),
+  );
+  const togglePick = useCallback((id: string) => {
+    tap('select');
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const [tagging, setTagging] = useState(false);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} coach={unread[item.id] ?? 0} />,
+    [settings.inBB, picking, picked, togglePick, unread],
+  );
+
+  const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
+  const folders = useMemo(() => [...new Set(hands.flatMap((h) => h.folders ?? []))].sort((a, b) => a.localeCompare(b)), [hands]);
+  const toReview = useMemo(() => hands.filter((h) => needsReview(h, sentToCoach)).length, [hands, sentToCoach]);
+  const [filing, setFiling] = useState(false);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <SectionList
+        sections={sections}
+        keyExtractor={(h) => h.id}
+        stickySectionHeadersEnabled={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ paddingHorizontal: S.gutter, paddingBottom: picking ? 110 : 40 }}
+        ItemSeparatorComponent={Separator}
+        ListHeaderComponent={
+          <SafeTop>
+            <View style={{ gap: S.md, marginBottom: S.sm }}>
+              <ScreenHeader
+                title={t('Mãos')}
+                right={
+                  <>
+                    {hands.length > 0 ? <IconButton name={searching ? 'close' : 'search'} label={t('Procurar')} onPress={() => (searching ? (setSearching(false), setQ(''), setFilter((f) => ({ ...f, result: null, session: null }))) : setSearching(true))} /> : null}
+                    {hands.length > 1 ? <IconButton name={activeFilters(filter) || filter.sort !== 'recent' ? 'options' : 'options-outline'} label={t('Filtrar mãos')} onPress={() => setFiltering(true)} /> : null}
+                  </>
+                }
+              />
+              {/* The summary and the one context card live on Início; here only what's about the list. */}
+              {!searching && !narrowed && incomplete > 0 && tag !== INCOMPLETE ? (
+                <Banner
+                  tone="warn"
+                  icon="alert-circle-outline"
+                  title={incomplete === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: incomplete })}
+                  action={incomplete === 1 ? t('Acabar') : t('Ver')}
+                  onPress={() => {
+                    // Just one: straight into the editor, where it stopped.
+                    const only = incomplete === 1 ? hands.find(isIncomplete) : undefined;
+                    if (only) router.push({ pathname: '/hand/new', params: { edit: only.id } });
+                    else setTag(INCOMPLETE);
+                  }}
+                />
+              ) : null}
+              {searching ? <SearchField autoFocus value={q} onChange={setQ} placeholder={t('AK, QQ+, BTN, torneio…')} /> : null}
+              {searching ? (
+                // One tap each for what players look for most: how it went, where, and the usual hands.
+                <ChipRow>
+                  {RESULTS.map((r) => (
+                    <Chip key={r.key} label={t(r.label)} active={filter.result === r.key} onPress={() => setFilter((f) => ({ ...f, result: f.result === r.key ? null : r.key }))} />
+                  ))}
+                  {recentSessions.map((x) => (
+                    <Chip key={x.id} icon="calendar-outline" label={x.name || x.venue} active={filter.session === x.id} onPress={() => setFilter((f) => ({ ...f, session: f.session === x.id ? null : x.id }))} />
+                  ))}
+                  {QUICK_WORDS.map((w) => {
+                    const on = q.split(/\s+/).some((x) => x.toLowerCase() === w.toLowerCase());
+                    return <Chip key={w} label={w} active={on} onPress={() => setQ((cur) => (on ? cur.split(/\s+/).filter((x) => x.toLowerCase() !== w.toLowerCase()).join(' ') : `${cur.trim()} ${w}`.trim()))} />;
+                  })}
+                </ChipRow>
+              ) : null}
+              {usedTags.length > 0 || folders.length > 0 || toReview > 0 ? (
+                <ChipRow>
+                  <Chip label={t('Todas')} active={!tag} onPress={() => setTag(null)} />
+                  {toReview > 0 || tag === TO_REVIEW ? (
+                    <Chip icon="school-outline" label={t('Por rever ({n})', { n: toReview })} active={tag === TO_REVIEW} onPress={() => setTag(tag === TO_REVIEW ? null : TO_REVIEW)} />
+                  ) : null}
+                  {folders.map((f) => (
+                    <Chip key={FOLDER + f} icon="folder-outline" label={f} active={tag === FOLDER + f} onPress={() => setTag(tag === FOLDER + f ? null : FOLDER + f)} />
+                  ))}
+                  {usedTags.map((tg) => (
+                    <Chip key={tg} label={t(tg)} active={tag === tg} onPress={() => setTag(tag === tg ? null : tg)} />
+                  ))}
+                </ChipRow>
+              ) : null}
+              {tag || q.trim() ? (
+                <Row gap={S.sm}>
+                  <T v="small" style={{ flex: 1 }}>
+                    {shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}
+                  </T>
+                  {tag ? <FilterPill label={tag === INCOMPLETE ? t('Por completar') : tag === TO_REVIEW ? t('Por rever') : tag.startsWith(FOLDER) ? tag.slice(FOLDER.length) : t(tag)} onClear={() => setTag(null)} /> : null}
+                  {tag?.startsWith(FOLDER) && shown > 0 ? (
+                    <Button
+                      kind="secondary"
+                      size="sm"
+                      icon="school-outline"
+                      title={t('Enviar ao coach')}
+                      onPress={() => router.push({ pathname: '/coach/new', params: { folder: tag.slice(FOLDER.length) } })}
+                    />
+                  ) : null}
+                </Row>
+              ) : null}
+              {pills.length ? (
+                <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
+                  {tag || q.trim() ? null : <T v="small">{shown === 1 ? t('1 mão') : t('{n} mãos', { n: shown })}</T>}
+                  {pills.map((x) => (
+                    <FilterPill key={x.key} label={x.label} onClear={() => setFilter((f) => ({ ...f, ...x.clear }))} />
+                  ))}
+                </Row>
+              ) : null}
+            </View>
+          </SafeTop>
+        }
+        renderSectionHeader={({ section }) => (
+          <Row style={{ paddingTop: S.lg, paddingBottom: S.sm, paddingHorizontal: 4 }}>
+            <T v="label" style={{ flex: 1 }}>
+              {section.title}
+            </T>
+            <T v="tiny">{section.data.length === 1 ? t('1 mão') : t('{n} mãos', { n: section.data.length })}</T>
+          </Row>
+        )}
+        ListEmptyComponent={
+          hands.length === 0 ? (
+            <FirstRun />
+          ) : (
+            pills.length && !q.trim() ? (
+              <Empty
+                icon="options-outline"
+                title={t('Nenhuma mão com estes filtros')}
+                body={t('Tira um filtro ou limpa todos para voltares a ver as mãos.')}
+                action={<Button title={t('Limpar filtros')} kind="secondary" size="md" onPress={() => setFilter(NO_FILTER)} />}
+              />
+            ) : (
+              <Empty
+                icon="search"
+                title={t('Nada encontrado')}
+                body={t('Tenta outro nome, torneio ou mão.')}
+                action={<Button title={t('Ver todas as mãos')} kind="secondary" size="md" onPress={() => (setTag(null), setQ(''), setSearching(false), setFilter(NO_FILTER))} />}
+              />
+            )
+          )
+        }
+        renderItem={renderItem}
+        // Long histories: render a screenful first, keep a small window
+        // mounted and build the rest in idle batches.
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        extraData={picked}
+      />
+      {picking ? (
+        <View style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: S.md, flexDirection: 'row', alignItems: 'center', gap: S.sm, padding: S.sm, paddingLeft: S.lg, borderRadius: R.lg, backgroundColor: C.surface3, borderWidth: 1, borderColor: C.borderStrong, ...SHADOW }}>
+          <T v="h3" numberOfLines={1} style={{ flex: 1 }} accessibilityLiveRegion="polite">
+            {picked.size === 1 ? t('1 selecionada') : t('{n} selecionadas', { n: picked.size })}
+          </T>
+          <IconButton
+            name="school-outline"
+            label={t('Enviar ao coach')}
+            onPress={() => {
+              router.push({ pathname: '/coach/new', params: { ids: [...picked].join(',') } });
+              setPicked(new Set());
+            }}
+          />
+          <IconButton
+            name="albums-outline"
+            label={t('Partilhar num só link')}
+            onPress={() => {
+              router.push({ pathname: '/pack/new', params: { ids: [...picked].join(',') } });
+              setPicked(new Set());
+            }}
+          />
+          <IconButton name="analytics-outline" label={t('Abrir no GTO Wizard')} onPress={() => (isPro || picked.size === 1 ? toSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
+          <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
+          <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
+          <IconButton
+            name="trash-outline"
+            label={t('Apagar')}
+            color={C.danger}
+            onPress={() =>
+              confirmAction(picked.size === 1 ? t('Apagar mão?') : t('Apagar {n} mãos?', { n: picked.size }), t('Não dá para desfazer.'), t('Apagar'), () => {
+                picked.forEach((id) => deleteHand(id));
+                setPicked(new Set());
+              })
+            }
+          />
+          <IconButton name="close" label={t('Cancelar')} onPress={() => setPicked(new Set())} />
+        </View>
+      ) : null}
+      <HandFilterSheet visible={filtering} onClose={() => setFiltering(false)} value={filter} onChange={setFilter} hands={hands} />
+      <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={hands.filter((h) => picked.has(h.id))} save={saveHand} />
+      <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
+        <Pressable accessible={false} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={() => setTagging(false)} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
+            <SheetHeader title={picked.size === 1 ? t('Tag para 1 mão') : t('Tag para {n} mãos', { n: picked.size })} onClose={() => setTagging(false)} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+              {DEFAULT_TAGS.map((tg) => {
+                const list = hands.filter((h) => picked.has(h.id));
+                const all = list.length > 0 && list.every((h) => h.tags.includes(tg));
+                return (
+                  <Chip
+                    key={tg}
+                    big
+                    label={t(tg)}
+                    active={all}
+                    onPress={() => list.forEach((h) => saveHand({ ...h, tags: all ? h.tags.filter((x) => x !== tg) : h.tags.includes(tg) ? h.tags : [...h.tags, tg] }))}
+                  />
+                );
+              })}
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+function SafeTop({ children }: { children: React.ReactNode }) {
+  // SectionList has no safe-area prop; pad the header instead.
+  const insets = useSafeAreaInsets();
+  return <View style={{ paddingTop: insets.top + S.sm }}>{children}</View>;
+}
+
+/** Empty state for a brand-new install: what the app does, in three steps. */
+function FirstRun() {
+  const steps: [React.ComponentProps<typeof Ionicons>['name'], string, string][] = [
+    ['flash-outline', t('Regista em segundos'), t('Posição, cartas e ação com poucos toques, entre mãos.')],
+    ['play-circle-outline', t('Revê no replayer'), t('Cada mão fica numa mesa que podes ver rua a rua.')],
+    ['paper-plane-outline', t('Partilha e discute'), t('Um link para os amigos votarem no que fariam.')],
+  ];
+  return (
+    <View style={{ gap: S.xl, paddingTop: S.lg }}>
+      <View style={{ alignItems: 'center', gap: S.md }}>
+        <Row gap={0} style={{ marginBottom: 6 }}>
+          <View style={{ transform: [{ rotate: '-8deg' }], ...SHADOW }}>
+            <PlayingCard card="Ah" size="lg" />
+          </View>
+          <View style={{ marginLeft: -12, transform: [{ rotate: '7deg' }, { translateY: 4 }], ...SHADOW }}>
+            <PlayingCard card="Ks" size="lg" />
+          </View>
+        </Row>
+        <T v="h1" style={{ textAlign: 'center' }}>
+          {t('O teu caderno de póquer live')}
+        </T>
+        <T v="callout" style={{ textAlign: 'center', maxWidth: 300 }}>
+          {t('Guarda as mãos que importam enquanto ainda te lembras de tudo.')}
+        </T>
+      </View>
+      <View style={{ gap: S.md }}>
+        {steps.map(([ic, title, body]) => (
+          <Row key={title} gap={14} style={{ alignItems: 'flex-start' }}>
+            <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={ic} size={19} color={C.accent} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T v="h3">{title}</T>
+              <T v="small">{body}</T>
+            </View>
+          </Row>
+        ))}
+      </View>
+      <View style={{ gap: S.sm }}>
+        <Button title={t('Registar a primeira mão')} icon="add" onPress={() => router.push('/hand/new')} />
+        <Button title={t('Ver uma mão de exemplo')} kind="ghost" size="md" onPress={() => router.push({ pathname: '/hand/[id]', params: { id: 'sample' } })} />
+      </View>
+    </View>
+  );
+}
+
+// Search text per hand, built once per hand version rather than on every keystroke.
+const searchCache = new WeakMap<Hand, string>();
+function searchText(h: Hand): string {
+  let s = searchCache.get(h);
+  if (s === undefined) {
+    s = handSearchText(h);
+    searchCache.set(h, s);
+  }
+  return s;
+}
+
+/** Hands players look up most, as one-tap words for the search box. */
+const QUICK_WORDS = ['AK', 'QQ+', 'BTN'];
+
+const INCOMPLETE = '__incomplete';
+const TO_REVIEW = '__review';
+
+/** A filter that is on, with an x to take it off. */
+/** "Guardar em pasta": private study folders, toggled on every picked hand. */
+function FolderSheet({ visible, onClose, folders, list, save }: { visible: boolean; onClose: () => void; folders: string[]; list: Hand[]; save: (h: Hand) => void }) {
+  const [name, setName] = useState('');
+  const sheetPad = useSheetPad(S.xxl);
+  const toggle = (f: string, on: boolean) => list.forEach((h) => save(fileInFolder(h, f, on)));
+  const create = () => {
+    const f = name.trim();
+    if (!f) return;
+    toggle(f, true);
+    tap('success');
+    setName('');
+  };
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <Pressable accessible={false} onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+          <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={onClose} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
+            <SheetHeader title={list.length === 1 ? t('Guardar 1 mão em') : t('Guardar {n} mãos em', { n: list.length })} onClose={onClose} />
+            {folders.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+                {folders.map((f) => {
+                  const all = list.length > 0 && list.every((h) => h.folders?.includes(f));
+                  return <Chip key={f} big icon={all ? 'folder' : 'folder-outline'} label={f} active={all} onPress={() => toggle(f, !all)} />;
+                })}
+              </View>
+            ) : (
+              <T v="body" style={{ color: C.textDim }}>
+                {t('Junta mãos para estudar depois, por exemplo "Rever com coach". As pastas são só tuas e nunca saem quando partilhas.')}
+              </T>
+            )}
+            <Row gap={S.sm}>
+              <Field value={name} onChangeText={setName} placeholder={t('Nova pasta')} maxLength={30} returnKeyType="done" onSubmitEditing={create} style={{ flex: 1 }} />
+              <Button title={t('Criar')} size="md" kind="secondary" disabled={!name.trim()} onPress={create} />
+            </Row>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+function FilterPill({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('Tirar filtro {name}', { name: label })}
+      onPress={onClear}
+      hitSlop={8}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 12, paddingRight: 8, height: 30, borderRadius: R.pill, backgroundColor: C.accentSoft, borderWidth: 1, borderColor: C.accentLine, opacity: pressed ? 0.75 : 1 })}>
+      <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+        {label}
+      </T>
+      <Ionicons name="close" size={14} color={C.accent} />
+    </Pressable>
+  );
+}
+
+
+/** Picked hands to GTO Wizard in one go, or as one PokerStars .txt for other solvers and trackers. */
+function toSolver(list: Hand[]) {
+  tap();
+  if (Platform.OS === 'web') return openInGtoWizard(list);
+  Alert.alert(t('Exportar {n} mãos', { n: list.length }), t('Formato hand history (.txt): GTO Wizard, PioSolver, Hold\'em Manager e PokerTracker leem-no.'), [
+    { text: t('Abrir no GTO Wizard'), onPress: () => openInGtoWizard(list) },
+    { text: t('Guardar ficheiro .txt'), onPress: () => exportSolver(list) },
+    { text: t('Cancelar'), style: 'cancel' },
+  ]);
+}
+
+/** Picked hands as one PokerStars file; unfinished hands are left out, and the player is told. */
+function exportSolver(list: Hand[]) {
+  tap();
+  const ready = solverReady(list);
+  const skipped = list.length - ready.length;
+  if (!ready.length) {
+    note(t('Nenhuma mão completa'), t('Os solvers só leem mãos completas.'));
+    return;
+  }
+  saveSolverFile(ready)
+    .then(() => {
+      if (skipped) note(skipped === 1 ? t('1 mão por completar ficou de fora') : t('{n} mãos por completar ficaram de fora', { n: skipped }));
+    })
+    .catch(() => note(t('Não deu'), t('Não conseguimos guardar o ficheiro. Tenta outra vez.')));
+}
+
+function note(title: string, body?: string) {
+  if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
+  else Alert.alert(title, body);
+}

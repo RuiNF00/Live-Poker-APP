@@ -56,7 +56,7 @@ export default function SharedHands() {
         icon="chatbubbles-outline"
         title={t('Ainda sem mãos partilhadas')}
         body={t('Partilha uma mão e os comentários aparecem aqui.')}
-        action={<Button title={t('Ir para as mãos')} onPress={() => router.navigate('/')} />}
+        action={<Button title={t('Ir para as mãos')} onPress={() => router.navigate('/hands')} />}
       />
     );
 
@@ -100,7 +100,7 @@ export default function SharedHands() {
         ) : (
           <View style={{ gap: S.sm, paddingHorizontal: 4, alignItems: 'flex-start' }}>
             <T v="small">{t('Partilha uma mão (botão Partilhar na mão) para os teus amigos comentarem.')}</T>
-            <Button title={t('Partilhar uma mão')} kind="secondary" size="md" onPress={() => router.navigate('/')} />
+            <Button title={t('Partilhar uma mão')} kind="secondary" size="md" onPress={() => router.navigate('/hands')} />
           </View>
         )}
       </Section>
