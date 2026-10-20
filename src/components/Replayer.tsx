@@ -594,12 +594,14 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
 }
 
 function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'][number]['state']; onPick: (c: string) => void }) {
+  // With autoPlay the question appears on its own: VoiceOver says so instead of leaving the user on the table.
+  useEffect(() => AccessibilityInfo.announceForAccessibility(t('O que fazes aqui?')), []);
   const l = legal(state);
   if (!l) return null;
   const opts = [l.canCall ? 'Fold' : null, l.canCheck ? 'Check' : 'Call', l.canBet || l.canRaise ? raiseName(state) : null].filter(Boolean) as string[];
   return (
     <View style={{ backgroundColor: '#14100D', borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
-      <Text style={{ color: C.text, fontFamily: ff(800), fontSize: 18, textAlign: 'center' }}>{t('O que fazes aqui?')}</Text>
+      <Text accessibilityRole="header" style={{ color: C.text, fontFamily: ff(800), fontSize: 18, textAlign: 'center' }}>{t('O que fazes aqui?')}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {opts.map((o) => (
           <Pressable

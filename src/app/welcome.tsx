@@ -231,6 +231,7 @@ export default function Welcome() {
                 label={t('Moeda')}
                 value={FIRST_CURRENCIES.find((c) => c.code === settings.currency)?.sym ?? settings.currency}
                 action={t('Mudar')}
+                open={pickingCur}
                 onPress={() => setPickingCur((x) => !x)}
               />
               {pickingCur ? (
@@ -354,20 +355,21 @@ function Option({ label, sub, icon, badge, active, multi, compact, onPress }: { 
 }
 
 /** One answer of the plan: icon, what it is, the answer; the currency line can be changed. */
-function Line({ icon, label, value, action, onPress }: { icon: IconName; label: string; value: string; action?: string; onPress?: () => void }) {
+function Line({ icon, label, value, action, open, onPress }: { icon: IconName; label: string; value: string; action?: string; open?: boolean; onPress?: () => void }) {
   return (
     <Row gap={S.md}>
       <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name={icon} size={18} color={C.accent} />
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
+      {/* One stop for VoiceOver: «Jogo: Cash 1/2 a 2/5», not the label and the answer apart. */}
+      <View accessible accessibilityLabel={`${label}: ${value}`} style={{ flex: 1, gap: 2 }}>
         <T v="tiny" color={C.muted}>
           {label}
         </T>
         <T v="h3">{value}</T>
       </View>
       {action && onPress ? (
-        <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${action}: ${label}`} style={{ minHeight: 44, justifyContent: 'center' }}>
+        <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${action}: ${label}`} accessibilityState={{ expanded: !!open }} style={{ minHeight: 44, justifyContent: 'center' }}>
           <T v="small" color={C.accent}>
             {action}
           </T>
@@ -379,8 +381,9 @@ function Line({ icon, label, value, action, onPress }: { icon: IconName; label: 
 
 /** The effect of the answers as one number (Opal), worked out from the pace they gave, never invented. */
 function Forecast({ n }: { n: number }) {
+  const says = [`${n} ${t('sessões nas próximas 4 semanas, ao teu ritmo')}`, t('Chega para a tua curva de resultados começar a dizer alguma coisa.'), t('Segundo as tuas respostas')];
   return (
-    <View style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: S.lg, gap: S.xs }}>
+    <View accessible accessibilityLabel={says.join('. ')} style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: S.lg, gap: S.xs }}>
       <T v="monoXL" color={C.accent}>
         {n}
       </T>
