@@ -16,11 +16,12 @@ export interface Answers {
 }
 
 /** Portuguese keys; show with t(). */
-export const GOALS: { key: Goal; icon: string; label: string }[] = [
-  { key: 'results', icon: 'trending-up', label: 'Ver os meus resultados' },
-  { key: 'leaks', icon: 'search', label: 'Encontrar leaks' },
-  { key: 'backers', icon: 'people', label: 'Gerir backers' },
-  { key: 'discuss', icon: 'chatbubbles', label: 'Guardar mãos para discutir' },
+/** `sub` says what the app does with the answer, shown once it is picked (Fitbod). */
+export const GOALS: { key: Goal; icon: string; label: string; sub: string }[] = [
+  { key: 'results', icon: 'trending-up', label: 'Ver os meus resultados', sub: 'Cada sessão entra na tua curva de bankroll' },
+  { key: 'leaks', icon: 'search', label: 'Encontrar leaks', sub: 'Cada mão revista rua a rua, para veres onde perdes' },
+  { key: 'backers', icon: 'people', label: 'Gerir backers', sub: 'Contas com cada backer e makeup, no Pro' },
+  { key: 'discuss', icon: 'chatbubbles', label: 'Guardar mãos para discutir', sub: 'Um link por mão para os amigos dizerem o que fariam' },
 ];
 
 /** The whole ladder, up to the high stakes the app is built for. `label` is a Portuguese key for the plan screen. */
@@ -53,6 +54,14 @@ export const VOLUMES: { key: Volume; label: string }[] = [
   { key: 'some', label: '5 a 10 por mês' },
   { key: 'lots', label: 'Mais de 10 por mês' },
 ];
+
+/**
+ * Sessions in the next four weeks at the pace they told us: the plan's one number, derived
+ * only from the answer (Opal shows the effect of the answers; never an invented figure).
+ */
+export function fourWeeks(v: Volume | null): number | null {
+  return v === 'few' ? 4 : v === 'some' ? 8 : v === 'lots' ? 12 : null;
+}
 
 /** What the plan screen promises, in Portuguese keys. Every point is something the app does today. */
 export function planFor(a: Answers): { title: string; points: string[]; pro: string[] } {
