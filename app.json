@@ -228,6 +228,7 @@
       "./plugins/with-async-storage-size",
       "./plugins/with-android-backup",
       "./plugins/with-android-portrait",
+      "./plugins/with-declared-age-range",
       [
         "expo-splash-screen",
         {

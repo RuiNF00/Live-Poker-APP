@@ -1809,6 +1809,11 @@ const ptBR: Record<string, string> = {
   'Os teus comentários, as mãos que partilhas e o teu perfil público podem ser vistos por outras pessoas.': 'Seus comentários, as mãos que você compartilha e seu perfil público podem ser vistos por outras pessoas.',
   'Temos tolerância zero para conteúdo ofensivo e abusos. Podes denunciar ou bloquear quem o fizer. Nós retiramos esse conteúdo e afastamos quem o publicou.': 'Temos tolerância zero para conteúdo ofensivo e abusos. Você pode denunciar ou bloquear quem fizer isso. Nós retiramos esse conteúdo e afastamos quem o publicou.',
   'Só te perguntamos uma vez.': 'Só perguntamos uma vez.',
+  'A Sweatbook é só para maiores de 18': 'O Sweatbook é só para maiores de 18',
+  'A tua conta Apple indica menos de 18 anos. Onde a lei o exige, a app só abre a quem tem 18 ou mais.': 'Sua Conta Apple indica menos de 18 anos. Onde a lei exige, o app só abre para quem tem 18 ou mais.',
+  'Onde a lei o exige, a app pede à Apple a tua faixa etária antes de abrir. Não guardamos a tua idade.': 'Onde a lei exige, o app pede à Apple sua faixa etária antes de abrir. Não armazenamos sua idade.',
+  'Não foi possível confirmar a tua idade. Confirma que tens sessão iniciada com a tua conta Apple e tenta de novo.': 'Não foi possível confirmar sua idade. Confira se você iniciou sessão com sua Conta Apple e tente de novo.',
+  'Saber mais': 'Saiba mais',
 };
 
 export default ptBR;

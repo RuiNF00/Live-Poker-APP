@@ -16,6 +16,7 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
+import { AgeGate } from '@/components/AgeGate';
 import { AppLock } from '@/components/AppLock';
 import { Deferred } from '@/components/Deferred';
 import { OfflineBadge, useOffline } from '@/components/NetStatus';
@@ -147,6 +148,8 @@ export default function RootLayout() {
             <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
           <AppLock />
+          {/* After the lock, so it sits on top: no app (and no lock) until the age check allows it. */}
+          <AgeGate />
           </ProProvider>
         </StoreProvider>
       </ThemeProvider>
