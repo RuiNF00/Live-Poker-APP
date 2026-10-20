@@ -3521,7 +3521,7 @@ const es: Record<string, string> = {
   'Dias a perder: {n}.': 'Días perdiendo: {n}.',
   // Festival tournament screen.
   'Fonte: folha de estrutura oficial do organizador.': 'Fuente: hoja de estructura oficial del organizador.',
-  'Re-entradas ilimitadas até começar o nível {n}.': 'Reentradas ilimitadas hasta que empieza el nivel {n}.',
+  'Re-entradas ilimitadas até começar o nível {n}.': 'Reentradas ilimitadas hasta que empiece el nivel {n}.',
   'Fecha ao começar o nível {n} ({sb}/{bb}): quem entra no fim chega com {x} big blinds.': 'Cierra al empezar el nivel {n} ({sb}/{bb}): quien entra al final se sienta con {x} ciegas grandes.',
   'Fecha ao começar o nível {n}.': 'Cierra al empezar el nivel {n}.',
   'Começas com {stack} fichas ({bb} big blinds) e os blinds sobem a cada {min} min.': 'Empiezas con {stack} fichas ({bb} ciegas grandes) y las ciegas suben cada {min} min.',
@@ -3536,7 +3536,7 @@ const es: Record<string, string> = {
   'O teu stack do Dia 1': 'Tu stack del Día 1',
   'Adicionado por ti': 'Añadido por ti',
   'Hora local em {city}': 'Hora local en {city}',
-  'No teu telemóvel: {time}': 'En tu móvil: {time}',
+  'No teu telemóvel: {time}': 'En tu teléfono: {time}',
   'Sem novo buy-in: continua o Dia 1 ({amount})': 'Sin nuevo buy-in: sigue el Día 1 ({amount})',
   'Garantido': 'Garantizado',
   'Sem garantido publicado': 'Sin garantizado publicado',

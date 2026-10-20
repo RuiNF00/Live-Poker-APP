@@ -1828,6 +1828,7 @@ const ptBR: Record<string, string> = {
   'Visto a {date}': 'Visto em {date}',
   'Escreve um nome ou alcunha': 'Escreva um nome ou apelido',
   // Festival tournament screen.
+  'Juntar ao plano': 'Adicionar ao plano',
   'Re-entradas ilimitadas até começar o nível {n}.': 'Reentradas ilimitadas até começar o nível {n}.',
   'Começas com {stack} fichas ({bb} big blinds) e os blinds sobem a cada {min} min.': 'Você começa com {stack} fichas ({bb} big blinds) e os blinds sobem a cada {min} min.',
   'Neste flight as pausas podem não ser as da tabela: confirma no balcão.': 'Neste flight os intervalos podem não ser os da tabela: confirme no balcão.',
