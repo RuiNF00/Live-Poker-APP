@@ -17,4 +17,4 @@ Gulf states (United Arab Emirates, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman), 
 Available, including the US (all states), Canada, the UK, the EU except France, Brazil, Mexico, Latin America, Australia, Asia ex-China.
 
 ## Languages
-v1 metadata: PT-PT (primary), EN-US (App Store also EN-GB, a copy of EN-US), PT-BR (`store/listing/pt-BR.md`), ES-ES and ES-MX (both from `store/listing/es-ES.md`). The app UI ships in pt-PT, pt-BR, es and en since #131 (merged at 174ec64) and follows the device language; anything else falls back to English. Screenshots exist for all four (`final/{ios,android}/{pt,en,pt-BR,es}`).
+v1 metadata: EN-US (primary language on both stores, launch/colar-nas-contas.md §1c; Play also gets es-419 and en-GB copies), PT-PT (App Store also EN-GB, a copy of EN-US except its own keywords, `store/listing/en-US.md`), PT-BR (`store/listing/pt-BR.md`), ES-ES (`store/listing/es-ES.md`) and ES-MX / Play es-419 (`store/listing/es-MX.md`). The app UI ships in pt-PT, pt-BR, es and en since #131 (merged at 174ec64) and follows the device language; anything else falls back to English. Screenshots exist for all four (`final/{ios,android}/{pt,en,pt-BR,es}`).

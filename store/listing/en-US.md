@@ -16,6 +16,9 @@ New: log a live hand in 11 taps between levels, replay it street by street and a
 **Keywords** (100 bytes, comma-separated, no spaces):
 history,session,tournament,schedule,festival,mtt,cash,staking,swap,holdem,icm,equity,chip,tax,notes
 
+**Keywords, English (U.K.) only** (97 bytes). Everything else in en-GB is a copy of en-US. en-GB is also the extra language of the PT, BR, ES and MX App Stores, so it carries words the local listings don't have (research: /mnt/project-files/pesquisa/palavras-chave-aso.md):
+history,session,tournament,mtt,cash,staking,holdem,icm,equity,stack,recorder,backer,results,notes
+
 **Description** (4000):
 
 The fastest way to save the hands you play live.

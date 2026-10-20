@@ -12,7 +12,7 @@ Tab names match `src/i18n` (Mãos partilhadas / Mãos compartilhadas / Manos com
 
 ## PT-PT
 
-> Obrigado por testares o Sweatbook! Esta é a primeira versão.
+> Obrigado por testares a Sweatbook! Esta é a primeira versão.
 >
 > O que testar:
 > • Regista mãos à mesa (ou de memória) e revê-as no replayer, rua a rua.

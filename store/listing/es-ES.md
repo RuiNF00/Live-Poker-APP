@@ -1,4 +1,4 @@
-# Ficha de la tienda: Español (es-ES y es-MX)
+# Ficha de la tienda: Español (es-ES)
 
 > Nombre, subtítulo, palabras clave y descripción corta vienen de research/aso-palavras-chave.md (longitudes verificadas allí).
 > Mismas reglas que la ficha PT-PT: borrar lo que aún no esté en la build; sin "apuesta", "casino" como reclamo ni "ganar dinero".
