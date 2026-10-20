@@ -5,6 +5,9 @@
 // schedules them on the phone.
 
 import { locale, t } from '@/i18n';
+import { needsReview } from '@/poker/review';
+import type { Hand } from '@/poker/types';
+import { weekStart } from '@/store/streak';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -33,20 +36,27 @@ export function comebackSeen(s: ComebackState, now: number): ComebackState {
   return { last: s.planned, ignored: now - s.planned <= 2 * DAY ? 0 : s.ignored + 1 };
 }
 
-export type NudgeId = 'trial-end' | 'comeback';
+/** The week's notice: Sunday at 13:00, before the evening game. */
+export const WEEK_DAY = 0;
+/** No come-back nudge this close to the week's notice: one of them is enough. */
+const WEEK_COMEBACK_GAP = 2 * DAY;
+
+export type NudgeId = 'trial-end' | 'comeback' | 'week';
 /** Notification kind (lib/notify-policy): only the notice before a charge is 'billing', which can't be switched off. */
-export const NUDGE_KIND: Record<NudgeId, 'billing' | 'tips'> = { 'trial-end': 'billing', comeback: 'tips' };
+export const NUDGE_KIND: Record<NudgeId, 'billing' | 'tips'> = { 'trial-end': 'billing', comeback: 'tips', week: 'tips' };
 /**
  * Old ids, still cancelled so a reminder planned by an older version never fires.
  * 'trial-recap' went because notifications never sell Pro (design/notificacoes.md).
  */
-export const NUDGE_IDS: (NudgeId | 'trial-day5' | 'trial-recap')[] = ['trial-end', 'comeback', 'trial-day5', 'trial-recap'];
+export const NUDGE_IDS: (NudgeId | 'trial-day5' | 'trial-recap')[] = ['trial-end', 'comeback', 'week', 'trial-day5', 'trial-recap'];
 
 export interface Nudge {
   id: NudgeId;
   at: number;
   title: string;
   body: string;
+  /** Opened when tapped; the app's first screen when absent. */
+  url?: string;
 }
 
 export interface Trial {
@@ -63,12 +73,14 @@ export interface NudgeInput {
   /** Annual price as the store shows it, for the charge notice. */
   annualPrice: string;
   store: string;
-  hands: { createdAt: number; sessionId?: string }[];
+  hands: (Pick<Hand, 'createdAt'> & Partial<Pick<Hand, 'id' | 'sessionId' | 'tags' | 'review' | 'folders'>>)[];
   sessions: { id?: string; startedAt: number; endedAt?: number }[];
   sessionActive: boolean;
   comeback?: ComebackState;
   /** True when a festival is on at that time: no come-back nudge then, the player is away playing. */
   festivalAt?: (ts: number) => boolean;
+  /** Weeks in a row with something logged (store/streak), for the week's notice. */
+  streakWeeks?: number;
 }
 
 /** `hour`:00 local time on the calendar day of `ts`. */
@@ -96,6 +108,43 @@ export function chargeNoticeDue(trial: Trial | null, now: number, notificationsO
   return !!trial && trial.willRenew && !notificationsOn && now >= chargeNoticeAt(trial.end) && now < trial.end;
 }
 
+/** Sunday 13:00 of the week `now` falls in (weeks start on Monday, as the streak's). */
+export function weekNoticeAt(now: number): number {
+  const d = new Date(weekStart(now));
+  d.setDate(d.getDate() + 6);
+  return atHour(d.getTime(), NUDGE_HOUR);
+}
+
+const count = (n: number, one: string, many: string) => (n === 1 ? t(one) : t(many, { n }));
+
+/**
+ * The week's notice, planned for this Sunday: only for a week with something
+ * logged, so it never chases someone who stopped. No amounts, no "won" or
+ * "lost": it reaches the lock screen, and it is about the habit, not the result.
+ * With hands waiting it opens the review queue (pure, tested).
+ */
+export function weekNotice(p: Pick<NudgeInput, 'now' | 'hands' | 'sessions' | 'streakWeeks'>): Nudge | null {
+  const at = weekNoticeAt(p.now);
+  if (at <= p.now + 60_000) return null;
+  // The 1st is the month's recap day (lib/month-recap): one notice that day.
+  if (new Date(at).getDate() === 1) return null;
+  const from = weekStart(p.now);
+  const sessions = p.sessions.filter((s) => s.endedAt && s.endedAt >= from && s.endedAt < at).length;
+  const hands = p.hands.filter((h) => h.createdAt >= from && h.createdAt < at).length;
+  if (!sessions && !hands) return null;
+  const waiting = p.hands.filter((h) => needsReview({ ...h, tags: h.tags ?? [] } as Hand)).length;
+  const logged = [sessions ? count(sessions, '1 sessão', '{n} sessões') : '', hands ? count(hands, '1 mão', '{n} mãos') : ''].filter(Boolean);
+  const week = logged.length === 2 ? t('{a} e {b} esta semana.', { a: logged[0], b: logged[1] }) : t('{a} esta semana.', { a: logged[0] });
+  const next = waiting
+    ? waiting === 1
+      ? t('Tens 1 mão para rever: toca para começar.')
+      : t('Tens {n} mãos para rever: toca para começar.', { n: waiting })
+    : (p.streakWeeks ?? 0) >= 2
+      ? t('{n} semanas seguidas a registar.', { n: p.streakWeeks! })
+      : t('Toca para veres as tuas mãos.');
+  return { id: 'week', at, title: t('A tua semana no póquer'), body: `${week} ${next}`, url: waiting ? 'sweatbook://hands?review=1' : 'sweatbook://hands' };
+}
+
 export function planNudges(p: NudgeInput): Nudge[] {
   const out: Nudge[] = [];
   const soon = p.now + 60_000;
@@ -117,11 +166,16 @@ export function planNudges(p: NudgeInput): Nudge[] {
     }
   }
 
+  // The week, unless the player is at the table or away at a festival then.
+  const week = p.sessionActive ? null : weekNotice(p);
+  if (week && !p.festivalAt?.(week.at) && !out.some((n) => Math.abs(n.at - week.at) < 12 * HOUR)) out.push(week);
+
   // Back after a few days away, only for someone who has logged something to come back to.
   const cb = p.comeback ?? { ignored: 0 };
   if (!p.sessionActive && p.hands.length + p.sessions.length > 0 && cb.ignored < COMEBACK_MAX_IGNORED) {
     const at = atHour(Math.max(p.now + COMEBACK_DAYS * DAY, (cb.last ?? 0) + COMEBACK_GAP_DAYS * DAY), NUDGE_HOUR);
-    if (!out.some((n) => Math.abs(n.at - at) < 12 * HOUR) && !p.festivalAt?.(at)) {
+    const near = out.some((n) => Math.abs(n.at - at) < (n.id === 'week' ? WEEK_COMEBACK_GAP : 12 * HOUR));
+    if (!near && !p.festivalAt?.(at)) {
       out.push({ id: 'comeback', at, title: t('Jogaste esta semana?'), body: t('Regista a sessão e a mão que te ficou na cabeça.') });
     }
   }

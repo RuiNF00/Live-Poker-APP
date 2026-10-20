@@ -31,7 +31,7 @@ export function rowSummary(hand: Hand) {
 export const isIncomplete = (h: Hand) => !rowSummary(h).done;
 export const netOf = (h: Hand) => rowSummary(h).net;
 
-export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false, picked = false, onPick, coach = 0 }: { hand: Hand; inBB: boolean; picking?: boolean; picked?: boolean; onPick?: (id: string) => void; coach?: number }) {
+export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false, picked = false, onPick, coach = 0, queue }: { hand: Hand; inBB: boolean; picking?: boolean; picked?: boolean; onPick?: (id: string) => void; coach?: number; queue?: boolean }) {
   const { net, done } = rowSummary(hand);
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   // Next to a full board only two tags fit on the line at 390 pt.
@@ -44,7 +44,7 @@ export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false
       accessibilityRole="button"
       accessibilityState={picking ? { selected: picked } : undefined}
       // An unfinished hand opens where it stopped: finishing it is why it's tapped.
-      onPress={() => (picking && onPick ? onPick(hand.id) : done ? router.push({ pathname: '/hand/[id]', params: { id: hand.id } }) : router.push({ pathname: '/hand/new', params: { edit: hand.id } }))}
+      onPress={() => (picking && onPick ? onPick(hand.id) : done ? router.push({ pathname: '/hand/[id]', params: queue ? { id: hand.id, q: 'all' } : { id: hand.id } }) : router.push({ pathname: '/hand/new', params: { edit: hand.id } }))}
       onLongPress={onPick ? () => onPick(hand.id) : undefined}
       // The long press that starts picking, for VoiceOver and TalkBack too.
       accessibilityActions={picking || !onPick ? undefined : [{ name: 'longpress', label: t('Selecionar') }]}

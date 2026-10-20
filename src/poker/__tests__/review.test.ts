@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { publicHand } from '../privacy';
-import { clearReview, fileInFolder, isReviewFolder, markPending, markReviewed, needsReview } from '../review';
+import { clearReview, fileInFolder, isReviewFolder, markPending, markReviewed, needsReview, reviewQueue } from '../review';
 import type { Hand } from '../types';
 
 const base: Hand = {
@@ -63,4 +63,27 @@ test('a hand sent to a coach through a coaching link waits for review too', () =
   assert.equal(needsReview(base, sent), true);
   assert.equal(needsReview(base, new Set(['other'])), false);
   assert.equal(needsReview(markReviewed(base), sent), false, 'until you mark it reviewed');
+});
+
+test('the "Rever" tag tapped at the table puts the hand in the queue; taking it out removes the tag', () => {
+  const tagged = { ...base, tags: ['Bluff', 'Rever'] };
+  assert.equal(needsReview(tagged), true);
+  assert.equal(needsReview(markReviewed(tagged)), false, 'reviewed wins over the tag');
+  assert.equal(needsReview(markPending(markReviewed(tagged))), true);
+  const out = clearReview(tagged);
+  assert.equal(needsReview(out), false);
+  assert.deepEqual(out.tags, ['Bluff'], 'the other tags stay');
+});
+
+test('review queue: oldest first, of one session or of all', () => {
+  const hands = [
+    { ...base, id: 'c', createdAt: 30, sessionId: 's1', review: 'pending' as const },
+    { ...base, id: 'a', createdAt: 10, sessionId: 's1', tags: ['Rever'] },
+    { ...base, id: 'b', createdAt: 20, sessionId: 's2', review: 'pending' as const },
+    { ...base, id: 'd', createdAt: 5, sessionId: 's1' },
+    { ...base, id: 'e', createdAt: 1, sessionId: 's1', review: 'reviewed' as const, tags: ['Rever'] },
+  ];
+  assert.deepEqual(reviewQueue(hands, 's1').map((h) => h.id), ['a', 'c']);
+  assert.deepEqual(reviewQueue(hands).map((h) => h.id), ['a', 'b', 'c']);
+  assert.deepEqual(reviewQueue(hands, 's3'), []);
 });

@@ -75,7 +75,7 @@ async function sync(input: Omit<NudgeInput, 'trial' | 'store'>): Promise<void> {
       const kind = NUDGE_KIND[x.id];
       await n.scheduleNotificationAsync({
         identifier: `sweatbook-${x.id}`,
-        content: { title: x.title, body: x.body, data: { url: URL } },
+        content: { title: x.title, body: x.body, data: { url: x.url ?? URL } },
         trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: notifyAt(kind, x.at), channelId: kindInfo(kind).channel },
       });
     }
