@@ -41,6 +41,13 @@ export default function Welcome() {
   const [preparing, setPreparing] = useState(false);
   const [pickingCur, setPickingCur] = useState(false);
   const reduce = useReduceMotion();
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const viewH = useRef(0);
+  // Scroll only as far as needed for the whole question (the table above keeps the hand's context); the replayer sits at the top of the content.
+  const showQuiz = (top: number, height: number) => {
+    const y = Math.min(S.gutter + top - S.sm, S.gutter + top + height + S.md - viewH.current);
+    if (y > 0) scroll.current?.scrollTo({ y, animated: !reduce });
+  };
   useEffect(() => {
     if (!preparing) return;
     const id = setTimeout(() => setPreparing(false), reduce ? 300 : 900);
@@ -141,13 +148,14 @@ export default function Welcome() {
         </Row>
       ) : null}
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: S.gutter, gap: S.xl }}>
+      <ScrollView ref={scroll} onLayout={(e) => (viewH.current = e.nativeEvent.layout.height)} contentContainerStyle={{ flexGrow: 1, padding: S.gutter, gap: S.xl }}>
         {at === 'hero' ? (
           <>
             {/* Same side margin as the hand screen: the controls keep their rounded ends. */}
             <View style={{ marginHorizontal: S.md - S.gutter }}>
               {/* Doing, not watching (Brilliant): the hand plays up to hero's decision and asks. */}
-              <Replayer hand={sample} autoPlay quiz playToQuiz onVote={(c) => track('onboarding_step', { step: 'hero_quiz', index: 0, choice: c })} />
+              {/* On an iPhone SE, or with large text, the question lands under the buttons: scroll it into view. */}
+              <Replayer hand={sample} autoPlay quiz playToQuiz onQuiz={showQuiz} onVote={(c) => track('onboarding_step', { step: 'hero_quiz', index: 0, choice: c })} />
             </View>
             <View style={{ gap: S.sm }}>
               <T v="title">{t('A tua mão, revista em 30 segundos')}</T>

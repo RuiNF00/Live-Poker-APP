@@ -46,6 +46,7 @@ export function Replayer({
   quiz = false,
   playToQuiz = false,
   onVote,
+  onQuiz,
   onStreet,
   seek,
   streetNotes,
@@ -69,6 +70,8 @@ export function Replayer({
   /** With quiz and autoPlay: play from preflop up to hero's decision, then ask (first run). */
   playToQuiz?: boolean;
   onVote?: (choice: string) => void;
+  /** Called once the question is laid out (its top and height inside the replayer), so a short screen can bring it into view. */
+  onQuiz?: (top: number, height: number) => void;
   /** Called with the street on screen whenever it changes (comments mark "you are here"). */
   onStreet?: (street: Street) => void;
   /** Jump to the start of a street; bump `n` to jump again to the same one. */
@@ -284,6 +287,7 @@ export function Replayer({
       {locked && k === last ? (
         <QuizPanel
           state={steps[k].state}
+          onShow={onQuiz}
           onPick={(c) => {
             tap('medium');
             setAnswered(c);
@@ -593,14 +597,21 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
   );
 }
 
-function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'][number]['state']; onPick: (c: string) => void }) {
+function QuizPanel({ state, onPick, onShow }: { state: ReturnType<typeof replay>['steps'][number]['state']; onPick: (c: string) => void; onShow?: (top: number, height: number) => void }) {
   // With autoPlay the question appears on its own: VoiceOver says so instead of leaving the user on the table.
   useEffect(() => AccessibilityInfo.announceForAccessibility(t('O que fazes aqui?')), []);
+  const shown = useRef(false);
   const l = legal(state);
   if (!l) return null;
   const opts = [l.canCall ? 'Fold' : null, l.canCheck ? 'Check' : 'Call', l.canBet || l.canRaise ? raiseName(state) : null].filter(Boolean) as string[];
   return (
-    <View style={{ backgroundColor: '#14100D', borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
+    <View
+      onLayout={(e) => {
+        if (shown.current) return;
+        shown.current = true;
+        onShow?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height);
+      }}
+      style={{ backgroundColor: '#14100D', borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
       <Text accessibilityRole="header" style={{ color: C.text, fontFamily: ff(800), fontSize: 18, textAlign: 'center' }}>{t('O que fazes aqui?')}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {opts.map((o) => (
