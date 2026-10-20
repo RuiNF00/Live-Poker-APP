@@ -308,7 +308,7 @@ function WeekStrip({ sessions, hands, now }: { sessions: Session[]; hands: Hand[
     return days.map((d) => f.format(d.at));
   }, [days]);
   return (
-    <View style={heroSt.week} accessible accessibilityLabel={t('Esta semana: {n} dias com sessões.', { n: days.filter((d) => d.played).length })}>
+    <View style={heroSt.week} accessible accessibilityLabel={t('Dias com sessões esta semana: {n}.', { n: days.filter((d) => d.played).length })}>
       {days.map((d, i) => (
         <View key={i} style={{ alignItems: 'center', gap: 6, flex: 1 }}>
           <T v="tiny" color={i === today ? C.text : C.muted} style={i === today ? { fontFamily: ff(800) } : null}>

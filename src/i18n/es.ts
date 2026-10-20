@@ -3493,7 +3493,7 @@ const es: Record<string, string> = {
   'Última mão': 'Última mano',
   'Ainda sem sessões em {month}': 'Aún sin sesiones en {month}',
   '{month}: {amount}': '{month}: {amount}',
-  'Esta semana: {n} dias com sessões.': 'Esta semana: {n} días con sesiones.',
+  'Dias com sessões esta semana: {n}.': 'Días con sesiones esta semana: {n}.',
   'Sem {list}': 'Sin {list}',
   '{n} por rever': '{n} por revisar',
   'esta semana': 'esta semana',
