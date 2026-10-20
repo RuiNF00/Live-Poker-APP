@@ -1,6 +1,7 @@
-// Início: how everything is going, on one screen. The month, the poker result with its verdict,
-// the last hands and sessions, the table notes and the one card that needs attention. Each part
-// opens its tab or screen; the tabs below are for doing the rest.
+// Resumo: how it's going, in the order a player asks. First the month as one big number with the
+// week under it (Oura, Yahoo Finance; Runna's week strip), then what matters right now (a live
+// session, a hand to finish, one card), then four tiles that each open their tab (WHOOP, Fitbit),
+// the last hand and the table notes. The tabs below are for doing the rest.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
@@ -9,26 +10,30 @@ import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useOnboarding, usePro, useWelcomeOffer } from '@/billing/pro';
-import { Avatar } from '@/components/Avatar';
 import { useBackupSuggestion, useBackupWarning } from '@/components/backup-hooks';
 import { ChargeNotice, useChargeNotice } from '@/components/ChargeNotice';
 import { HandRow } from '@/components/HandRow';
+import { LineChart } from '@/components/LineChart';
 import { PlayingCard } from '@/components/PlayingCard';
 import { ProMoment, useProMoment } from '@/components/ProMoment';
 import { SharedHandsCard } from '@/components/SharedHandsCard';
 import { StartChecklist, useStartChecklist } from '@/components/StartChecklist';
 import { StreakStat } from '@/components/StreakStat';
 import { SwapSettleCard, useSwapSettleCard } from '@/components/swaps/SwapSettleReminder';
+import { useNowAlways } from '@/components/useNow';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
-import { Amount, Banner, Button, Card, IconButton, ListGroup, ListItem, Row, ScreenHeader, Section, T, Wordmark } from '@/components/ui';
+import { Amount, Banner, Button, Card, IconButton, Row, ScreenHeader, Section, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { useCoach } from '@/lib/coach-api';
 import { useSharedHands } from '@/lib/friend-hands';
-import { duration, money, plus, shortDate } from '@/poker/format';
+import { duration, money, plus } from '@/poker/format';
+import { needsReview } from '@/poker/review';
 import type { Hand } from '@/poker/types';
-import { lastResults, verdict } from '@/store/results-math';
-import { mainCurrency, playedMs, profit, rateShown, totals } from '@/store/session-math';
+import { monthKey, monthName, monthRecap, prevKey } from '@/store/month-recap';
+import { verdict } from '@/store/results-math';
+import { curve, isPaused, playedMs, profit, rateShown, totals } from '@/store/session-math';
 import { useStore } from '@/store/store';
-import type { Session } from '@/store/types';
+import type { PlayerNote, Session } from '@/store/types';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
 // Only when there is something to say about the cloud copy: the copy code stays off the first frame.
@@ -53,6 +58,7 @@ export default function HomeScreen() {
   const checklist = useStartChecklist();
   const moment = useProMoment();
   const chargeEnd = useChargeNotice();
+  const coach = useCoach();
   const [now] = useState(() => Date.now());
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
   // Once there's something to lose: the first saved hand or closed session.
@@ -67,225 +73,400 @@ export default function HomeScreen() {
   }, [discarded]);
   const hasDraft = !!draft && (draft.actions.length > 0 || !!draft.players[draft.hero].cards?.length);
 
-  const recentHands = useMemo(() => [...hands].sort((a, b) => b.createdAt - a.createdAt).slice(0, 3), [hands]);
-  const done = useMemo(() => sessions.filter((x) => x.endedAt).sort((a, b) => b.endedAt! - a.endedAt!), [sessions]);
-  const notes = useMemo(() => [...players].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 3), [players]);
+  const lastHand = useMemo(() => hands.reduce<Hand | null>((a, h) => (!a || h.createdAt > a.createdAt ? h : a), null), [hands]);
+  const review = useMemo(() => {
+    const sent = new Set(coach.links.flatMap((l) => l.handIds));
+    return hands.filter((h) => needsReview(h, sent)).sort((a, b) => a.createdAt - b.createdAt);
+  }, [hands, coach]);
+  const toReview = review.length;
+  const weekHands = useMemo(() => hands.filter((h) => h.createdAt >= weekStart(now)).length, [hands, now]);
+  const lastNote = useMemo(() => players.reduce<PlayerNote | null>((a, p) => (!a || p.updatedAt > a.updatedAt ? p : a), null), [players]);
   const fresh = hands.length === 0 && sessions.length === 0;
+  const played = sessions.some((x) => x.endedAt);
+  // The trial is never offered at the table: there the free-hands line only opens the paywall.
+  const cta = handsLeft === 0 && trialDays && !activeSession ? t('{days} dias grátis', { days: trialDays }) : t('Ver com Pro');
+  const onPro = () => paywall(handsLeft === 0 ? (activeSession ? 'handsLive' : 'hands') : 'generic');
+
+  // At most one card: the next thing to do (a live session shows above it). At the table only what's
+  // about the play (a hand to finish, a charge coming): the rest waits until the session ends. Away from
+  // the table: money to settle, comments, hands to review, then news and the first-week steps.
+  // `Começar sessão · Já joguei` under it is always the last next step.
+  const card = hasDraft ? (
+    <Banner
+      tone="warn"
+      icon="create-outline"
+      title={t('Mão a meio')}
+      body={t('Toca para continuar onde ficaste')}
+      onPress={() => router.push('/hand/new')}
+      onDismiss={() => {
+        setDiscarded(draft);
+        setDraft(null);
+      }}
+      dismissLabel={t('Descartar')}
+    />
+  ) : discarded ? (
+    <Banner
+      tone="info"
+      icon="trash-outline"
+      title={t('Mão descartada')}
+      action={t('Anular')}
+      onPress={() => {
+        setDraft(discarded);
+        setDiscarded(null);
+      }}
+    />
+  ) : chargeEnd ? (
+    <ChargeNotice end={chargeEnd} />
+  ) : backup.health ? (
+    <React.Suspense fallback={null}>
+      <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
+    </React.Suspense>
+  ) : activeSession ? null : settle ? (
+    <SwapSettleCard {...settle} />
+  ) : shared.newTotal > 0 ? (
+    <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
+  ) : toReview ? (
+    <Banner
+      icon="school-outline"
+      title={toReview === 1 ? t('1 mão para rever') : t('{n} mãos para rever', { n: toReview })}
+      body={t('Enquanto ainda te lembras de tudo.')}
+      action={t('Rever')}
+      onPress={() => router.push({ pathname: '/hand/[id]', params: { id: review[0].id } })}
+    />
+  ) : news.item ? (
+    <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
+  ) : suggest.show ? (
+    <React.Suspense fallback={null}>
+      <BackupSuggestion onDone={suggest.dismiss} />
+    </React.Suspense>
+  ) : checklist && !fresh ? (
+    <StartChecklist state={checklist} />
+  ) : moment ? (
+    <ProMoment state={moment} />
+  ) : idleDays >= 7 ? (
+    <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
+  ) : null;
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + S.sm, paddingHorizontal: S.gutter, paddingBottom: 40, gap: S.lg }}>
-      <View style={{ gap: S.md }}>
-        <ScreenHeader
-          title={<Wordmark size={narrow ? 25 : 30} />}
-          right={
-            // New comments also show here, so they aren't lost when another card wins the one-card slot below.
-            <IconButton
-              name="settings-outline"
-              label={shared.newTotal ? `${t('Definições')}, ${shared.newTotal === 1 ? t('1 comentário novo') : t('{n} comentários novos', { n: shared.newTotal })}` : t('Definições')}
-              badge={shared.newTotal > 0}
-              onPress={() => router.push('/settings')}
+      <ScreenHeader
+        title={<Wordmark size={narrow ? 25 : 30} />}
+        right={
+          // New comments also show here, so they aren't lost when another card wins the one-card slot.
+          <IconButton
+            name="settings-outline"
+            label={shared.newTotal ? `${t('Definições')}, ${shared.newTotal === 1 ? t('1 comentário novo') : t('{n} comentários novos', { n: shared.newTotal })}` : t('Definições')}
+            badge={shared.newTotal > 0}
+            onPress={() => router.push('/settings')}
+          />
+        }
+      />
+
+      {fresh ? <FirstRun /> : <MonthHero sessions={sessions} hands={hands} now={now} streak={hands.length > 0} />}
+
+      {activeSession ? <LiveCard s={activeSession} /> : null}
+      {card}
+      {!activeSession && !fresh ? (
+        <Row gap={S.sm}>
+          <Button title={t('Começar sessão')} icon="play" onPress={() => router.navigate('/session')} style={{ flex: 1 }} />
+          {/* Most installs happen away from the table: log the last session in 20 s instead of a timer. */}
+          <Button title={t('Já joguei')} icon="time-outline" kind="secondary" onPress={() => router.navigate({ pathname: '/bankroll', params: { add: 'session' } })} style={{ flex: 1 }} />
+        </Row>
+      ) : null}
+
+      {fresh ? null : (
+        <View style={{ gap: S.sm }}>
+          <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+            {played ? <TotalTile sessions={sessions} /> : <Tile icon="stats-chart-outline" label="Bankroll" value="—" sub={t('Ainda sem sessões terminadas')} onPress={() => router.navigate('/bankroll')} />}
+            <HandsTile week={weekHands} toReview={toReview} handsLeft={handsLeft} cta={cta} onPro={onPro} />
+          </Row>
+          <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+            {played ? <RateTile sessions={sessions} /> : <Tile icon="calendar-outline" label={t('Festivais')} value="" sub={t('Calendário e plano')} onPress={() => router.push('/festivals')} />}
+            <Tile
+              icon="create-outline"
+              label={t('Notas')}
+              value={players.length ? String(players.length) : '+'}
+              sub={lastNote ? lastNote.name || t('Sem nome') : t('Nova nota')}
+              onPress={() => router.push(players.length ? '/notes' : { pathname: '/notes', params: { id: 'new' } })}
             />
-          }
-        />
-        <HomeSummary
-          sessions={sessions}
-          streak={hands.length > 0}
-          handsLeft={hands.length > 0 ? handsLeft : null}
-          // The trial is never offered at the table: there the free-hands cell only opens the paywall.
-          cta={handsLeft === 0 && trialDays && !activeSession ? t('{days} dias grátis', { days: trialDays }) : t('Ver com Pro')}
-          onPro={() => paywall(handsLeft === 0 ? (activeSession ? 'handsLive' : 'hands') : 'generic')}
-        />
-        {/* At most one context card. At the table only what's about the play (a hand to finish, a charge
-            coming): news, the start checklist and Pro moments wait until the session ends. */}
-        {hasDraft ? (
-          <Banner
-            tone="warn"
-            icon="create-outline"
-            title={t('Mão a meio')}
-            body={t('Toca para continuar onde ficaste')}
-            onPress={() => router.push('/hand/new')}
-            onDismiss={() => {
-              setDiscarded(draft);
-              setDraft(null);
-            }}
-            dismissLabel={t('Descartar')}
-          />
-        ) : discarded ? (
-          <Banner
-            tone="info"
-            icon="trash-outline"
-            title={t('Mão descartada')}
-            action={t('Anular')}
-            onPress={() => {
-              setDraft(discarded);
-              setDiscarded(null);
-            }}
-          />
-        ) : chargeEnd ? (
-          <ChargeNotice end={chargeEnd} />
-        ) : backup.health ? (
-          <React.Suspense fallback={null}>
-            <BackupHealthBanner health={backup.health} onSnooze={backup.snooze} />
-          </React.Suspense>
-        ) : !activeSession && settle ? (
-          <SwapSettleCard {...settle} />
-        ) : !activeSession && shared.newTotal > 0 ? (
-          <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
-        ) : !activeSession && news.item ? (
-          <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
-        ) : !activeSession && suggest.show ? (
-          <React.Suspense fallback={null}>
-            <BackupSuggestion onDone={suggest.dismiss} />
-          </React.Suspense>
-        ) : !activeSession && checklist ? (
-          <StartChecklist state={checklist} />
-        ) : !activeSession && moment ? (
-          <ProMoment state={moment} />
-        ) : !activeSession && idleDays >= 7 ? (
-          <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
-        ) : null}
-      </View>
+          </Row>
+        </View>
+      )}
 
-      {fresh ? <FirstRun /> : null}
-
-      {done.length ? <ResultCard sessions={sessions} /> : null}
-
-      {hands.length ? (
-        <Section title={t('Últimas mãos')} action={t('Ver todas')} onAction={() => router.navigate('/hands')}>
-          <View style={{ gap: S.sm }}>
-            {recentHands.map((h) => (
-              <HandRow key={h.id} hand={h} inBB={settings.inBB} />
-            ))}
-          </View>
+      {lastHand ? (
+        <Section title={t('Última mão')} action={t('Ver todas')} onAction={() => router.navigate('/hands')}>
+          <HandRow hand={lastHand} inBB={settings.inBB} />
         </Section>
       ) : null}
 
-      {done.length ? (
-        <Section title={t('Últimas sessões')} action={t('Ver todas')} onAction={() => router.navigate('/bankroll')}>
-          <ListGroup>
-            {done.slice(0, 3).map((s) => (
-              <SessionRow key={s.id} s={s} />
-            ))}
-          </ListGroup>
-        </Section>
-      ) : null}
-
-      {fresh ? null : <NotesSection notes={notes} total={players.length} />}
-
-      <Section title={t('Atalhos')}>
+      {fresh ? null : (
         <Row gap={S.sm}>
           <Shortcut icon="calendar-outline" label={t('Festivais')} onPress={() => router.push('/festivals')} />
-          <Shortcut icon="calculator-outline" label={t('Calculadora de odds')} onPress={() => router.push('/odds')} />
+          <Shortcut icon="calculator-outline" label={t('Calculadora')} onPress={() => router.push('/odds')} />
           <Shortcut icon="swap-horizontal-outline" label={t('Swaps')} onPress={() => router.push('/swaps')} />
         </Row>
-      </Section>
+      )}
     </ScrollView>
   );
 }
 
+/** Monday 00:00 of this week, local time. */
+function weekStart(now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getTime();
+}
+
 /**
- * The poker result over everything, in the currency most sessions use, with the verdict and
- * the last five sessions as dots. Sessions in other currencies are left out and the card says so.
+ * The month as one big number with a short line under it, the month before for scale, and the
+ * week as seven dots (Runna). The verdict on everything shows here once there's enough to judge.
  */
-function ResultCard({ sessions }: { sessions: Session[] }) {
-  const tot = useMemo(() => totals(sessions), [sessions]);
-  const cur = tot.currency;
+function MonthHero({ sessions, hands, now, streak }: { sessions: Session[]; hands: Hand[]; now: number; streak: boolean }) {
+  const key = monthKey(now);
+  const m = useMemo(() => monthRecap(sessions, key), [sessions, key]);
+  const cur = m.currency;
+  const prev = useMemo(() => monthRecap(sessions, prevKey(key), cur), [sessions, key, cur]);
   const v = useMemo(() => verdict(sessions, cur, (n) => money(n, cur)), [sessions, cur]);
-  const last5 = useMemo(() => lastResults(sessions.filter((x) => x.currency === cur), 5), [sessions, cur]);
-  if (!tot.sessions) return null;
+  const line = m.sessions
+    ? [m.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: m.sessions }), t('{h} h', { h: m.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }), rateShown(m.hours) ? t('{amount}/h', { amount: money(Math.round(m.hourly), cur) }) : ''].filter(Boolean).join(' · ')
+    : t('Ainda sem sessões em {month}', { month: monthName(key).toLowerCase() });
   return (
-    <Card onPress={() => router.navigate('/bankroll')} style={{ gap: S.sm }} accessibilityLabel={`${t('Resultado de póquer')}: ${plus(tot.profit) + money(tot.profit, cur)}. ${v.text}`}>
-      <Row>
-        <T v="label" style={{ flex: 1 }} numberOfLines={1}>
-          {t('Resultado de póquer')}
-        </T>
-        <Dots results={last5} />
+    <View style={heroSt.wrap}>
+      <Row style={{ alignItems: 'flex-start' }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${monthName(key)}: ${m.sessions ? plus(m.profit) + money(m.profit, cur) : '—'}. ${line}`}
+          onPress={() => router.push({ pathname: '/month', params: { m: key, c: cur } })}
+          style={({ pressed }) => ({ flex: 1, gap: 2, opacity: pressed ? 0.7 : 1 })}>
+          <T v="label">{monthName(key)}</T>
+          {m.sessions ? <Amount value={m.profit} text={money(m.profit, cur)} v="monoXL" fit /> : <T v="monoXL" color={C.muted}>—</T>}
+          <T v="small">{line}</T>
+          {prev.sessions ? (
+            <T v="tiny">
+              {t('{month}: {amount}', { month: monthName(prev.key), amount: plus(prev.profit) + money(prev.profit, cur) })}
+            </T>
+          ) : null}
+        </Pressable>
+        {streak ? (
+          <View style={{ width: 92 }}>
+            <StreakStat />
+          </View>
+        ) : null}
       </Row>
-      <Amount value={tot.profit} text={money(tot.profit, cur)} v="monoL" fit />
-      <T v={v.ready ? 'body' : 'small'} color={v.tone === 'good' ? C.good : v.tone === 'bad' ? C.bad : v.ready ? C.text : C.muted}>
-        {v.text}
+      <WeekStrip sessions={sessions} hands={hands} now={now} />
+      {v.ready ? (
+        <T v="callout" color={v.tone === 'good' ? C.good : v.tone === 'bad' ? C.bad : C.text}>
+          {v.text}
+        </T>
+      ) : null}
+    </View>
+  );
+}
+
+/** This week, Monday to Sunday: a dot per day by its result, a ring for a loss, grey for hands only. */
+function WeekStrip({ sessions, hands, now }: { sessions: Session[]; hands: Hand[]; now: number }) {
+  const start = weekStart(now);
+  const days = useMemo(() => {
+    const out = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      return { at: d.getTime(), net: 0, played: false, hands: 0 };
+    });
+    // By calendar day (a day can be 23 or 25 hours long), and nothing from next week.
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    const idx = (ts: number) => {
+      if (ts >= end.getTime()) return -1;
+      for (let i = 6; i >= 0; i--) if (ts >= out[i].at) return i;
+      return -1;
+    };
+    for (const s of sessions) {
+      if (!s.endedAt || s.startedAt < start) continue;
+      const i = idx(s.startedAt);
+      if (i < 0) continue;
+      out[i].played = true;
+      out[i].net += profit(s);
+    }
+    for (const h of hands) {
+      if (h.createdAt < start) continue;
+      const i = idx(h.createdAt);
+      if (i >= 0) out[i].hands++;
+    }
+    return out;
+  }, [sessions, hands, start]);
+  const today = days.findIndex((d, i) => now >= d.at && (i === 6 || now < days[i + 1].at));
+  const names = useMemo(() => {
+    const f = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
+    return days.map((d) => f.format(d.at));
+  }, [days]);
+  return (
+    <View style={heroSt.week} accessible accessibilityLabel={t('Esta semana: {n} dias com sessões.', { n: days.filter((d) => d.played).length })}>
+      {days.map((d, i) => (
+        <View key={i} style={{ alignItems: 'center', gap: 6, flex: 1 }}>
+          <T v="tiny" color={i === today ? C.text : C.muted} style={i === today ? { fontFamily: ff(800) } : null}>
+            {names[i]}
+          </T>
+          <View
+            style={[
+              heroSt.day,
+              i === today && { borderWidth: 1.5, borderColor: C.borderStrong },
+              d.played && d.net > 0 && { backgroundColor: C.good, borderWidth: 0 },
+              d.played && d.net < 0 && { backgroundColor: 'transparent', borderWidth: 2, borderColor: C.bad },
+              d.played && d.net === 0 && { backgroundColor: C.textDim, borderWidth: 0 },
+              // Hands but no finished session: a small grey dot, never a ring (a ring is a loss).
+              !d.played && d.hands > 0 && { backgroundColor: C.textDim, transform: [{ scale: 0.6 }] },
+            ]}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const heroSt = StyleSheet.create({
+  wrap: { gap: S.md, backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.border, padding: S.lg, ...SHADOW },
+  week: { flexDirection: 'row', paddingTop: S.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+  day: { width: 14, height: 14, borderRadius: 7, backgroundColor: C.surface3 },
+});
+
+/** The session at the table, big, with its clock: one tap back to it. */
+function LiveCard({ s }: { s: Session }) {
+  const now = useNowAlways(30000);
+  const paused = isPaused(s);
+  const col = paused ? C.warn : C.good;
+  return (
+    <Card
+      tone="good"
+      onPress={() => {
+        tap();
+        router.navigate('/session');
+      }}
+      accessibilityLabel={paused ? t('Sessão em pausa · {time}', { time: duration(playedMs(s, now)) }) : t('Sessão em curso · {time}', { time: duration(playedMs(s, now)) })}
+      style={{ gap: S.xs }}>
+      <Row>
+        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: col }} />
+        <T v="label" color={col} style={{ flex: 1 }}>
+          {paused ? t('Em pausa') : t('A decorrer')}
+        </T>
+        <Ionicons name="chevron-forward" size={18} color={C.muted} />
+      </Row>
+      <T v="h2" numberOfLines={1}>
+        {s.name || s.venue || (s.kind === 'mtt' ? t('Torneio') : 'Cash')}
       </T>
-      <T v="small">
-        {[
-          tot.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: tot.sessions }),
-          t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 1 }) }),
-          rateShown(tot.hours) ? t('{amount}/h', { amount: money(Math.round(tot.hourly), cur) }) : '',
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </T>
-      {tot.otherCurrencies.length ? <T v="tiny">{t('Sem as sessões em {list}: vê-as no Bankroll.', { list: tot.otherCurrencies.join(', ') })}</T> : null}
+      <T v="monoL">{duration(playedMs(s, now))}</T>
     </Card>
   );
 }
 
-/** Last sessions as green / red dots, oldest on the left (same as the Bankroll tab). */
-function Dots({ results }: { results: number[] }) {
-  if (results.length < 2) return null;
+/** A tile in the 2×2 grid: a label, one number, one line, and where it opens. */
+function Tile({ icon, label, value, sub, subColor, onPress, children }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: React.ReactNode; sub?: React.ReactNode; subColor?: string; onPress: () => void; children?: React.ReactNode }) {
   return (
-    <Row gap={4} style={{ alignItems: 'center' }} accessible accessibilityLabel={t('Últimas {n} sessões: {won} a ganhar, {lost} a perder.', { n: results.length, won: results.filter((r) => r > 0).length, lost: results.filter((r) => r < 0).length })}>
-      <T v="tiny">{t('Últimas {n}', { n: results.length })}</T>
-      {results.map((r, i) => (
-        // A loss is a ring, not only a red dot: reads without telling red from green.
-        <View key={i} style={{ width: 8, height: 8, borderRadius: 4, ...(r < 0 ? { borderWidth: 1.5, borderColor: C.bad } : { backgroundColor: r > 0 ? C.good : C.muted }) }} />
-      ))}
-    </Row>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [tileSt.tile, pressed && { backgroundColor: C.surface2 }]}>
+      <Row gap={6}>
+        <Ionicons name={icon} size={15} color={C.accent} />
+        <T v="label" numberOfLines={1} style={{ flex: 1 }} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1.3}>
+          {label}
+        </T>
+      </Row>
+      {typeof value === 'string' ? (
+        value ? (
+          <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
+            {value}
+          </T>
+        ) : null
+      ) : (
+        value
+      )}
+      {children}
+      {sub ? (
+        typeof sub === 'string' ? (
+          <T v="small" numberOfLines={1} color={subColor}>
+            {sub}
+          </T>
+        ) : (
+          sub
+        )
+      ) : null}
+    </Pressable>
   );
 }
 
-function SessionRow({ s }: { s: Session }) {
-  const p = profit(s);
-  const mtt = s.kind === 'mtt';
+const tileSt = StyleSheet.create({
+  tile: { flex: 1, gap: 4, minHeight: 112, padding: 14, backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.border },
+});
+
+/** Everything played, in the main currency, with the curve as a sparkline. Other currencies are left out, and it says so. */
+function TotalTile({ sessions }: { sessions: Session[] }) {
+  const tot = useMemo(() => totals(sessions), [sessions]);
+  const pts = useMemo(() => curve(sessions, tot.currency).map((p) => p.v), [sessions, tot.currency]);
   return (
-    <ListItem
-      icon={mtt ? 'trophy-outline' : 'cash-outline'}
-      iconColor={mtt ? C.warn : C.info}
-      title={s.name || s.venue || (mtt ? t('Torneio') : 'Cash')}
-      subtitle={[shortDate(s.startedAt), duration(playedMs(s)), s.name ? s.venue : ''].filter(Boolean).join(' · ')}
-      right={
-        <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
-          {plus(p) + money(p, s.currency)}
-        </T>
-      }
-      chevron={false}
+    <Tile
+      icon="stats-chart-outline"
+      label={t('Resultado total')}
+      value={<Amount value={tot.profit} text={money(tot.profit, tot.currency)} v="monoL" fit />}
+      sub={tot.otherCurrencies.length ? t('Sem {list}', { list: tot.otherCurrencies.join(', ') }) : undefined}
+      onPress={() => router.navigate('/bankroll')}>
+      {pts.length > 2 ? <LineChart values={pts} height={34} zeroLine={false} /> : null}
+    </Tile>
+  );
+}
+
+function RateTile({ sessions }: { sessions: Session[] }) {
+  const tot = useMemo(() => totals(sessions), [sessions]);
+  const shown = rateShown(tot.hours);
+  return (
+    <Tile
+      icon="time-outline"
+      label={t('Por hora')}
+      value={shown ? <Amount value={tot.hourly} text={t('{amount}/h', { amount: money(Math.round(tot.hourly), tot.currency) })} v="monoL" fit /> : '—'}
+      sub={t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 0 }) })}
       onPress={() => router.navigate('/bankroll')}
     />
   );
 }
 
-/** The last notes about players at the table, with one tap to write a new one. */
-function NotesSection({ notes, total }: { notes: ReturnType<typeof useStore>['players']; total: number }) {
+/** Hands this week, what waits for review, and on the free plan today's free hands (the paywall's way in). */
+function HandsTile({ week, toReview, handsLeft, cta, onPro }: { week: number; toReview: number; handsLeft: number | null; cta: string; onPro: () => void }) {
+  const out = handsLeft === 0;
   return (
-    <Section title={t('Notas')} action={total > notes.length ? t('Ver todas') : undefined} onAction={() => router.push('/notes')}>
-      {notes.length ? (
-        <ListGroup>
-          {notes.map((p) => (
-            <ListItem
-              key={p.id}
-              left={<Avatar name={p.name || '?'} size={32} />}
-              title={p.name || t('Sem nome')}
-              subtitle={p.notes || p.look || (p.tags.length ? p.tags.map((x) => t(x)).join(' · ') : undefined)}
-              numberOfLines={1}
-              onPress={() => router.push({ pathname: '/notes', params: { id: p.id } })}
-            />
-          ))}
-          <ListItem icon="add" iconColor={C.accent} title={t('Nova nota')} onPress={() => router.push({ pathname: '/notes', params: { id: 'new' } })} />
-        </ListGroup>
-      ) : (
-        <Card style={{ gap: S.sm }}>
-          <T v="small">{t('Quem é quem, como joga e as mãos que tiveste contra ele. Na próxima vez que o vires, já sabes.')}</T>
-          <Button title={t('Nova nota')} icon="create-outline" kind="secondary" size="md" onPress={() => router.push({ pathname: '/notes', params: { id: 'new' } })} />
-        </Card>
-      )}
-    </Section>
+    <Tile
+      icon="albums-outline"
+      label={t('Mãos')}
+      value={
+        <Row gap={6} style={{ alignItems: 'baseline' }}>
+          <T v="monoL">{week}</T>
+          <T v="tiny">{t('esta semana')}</T>
+        </Row>
+      }
+      onPress={out ? onPro : () => router.navigate('/hands')}
+      sub={
+        out ? (
+          <T v="small" numberOfLines={1} color={C.accent} style={{ fontFamily: ff(800) }}>
+            {cta}
+          </T>
+        ) : handsLeft !== null ? (
+          <Row gap={6} accessible accessibilityLabel={handsLeft === 1 ? t('Falta 1 mão grátis hoje') : t('Faltam {n} mãos grátis hoje', { n: handsLeft })}>
+            <T v="small">{t('Grátis hoje')}</T>
+            <Row gap={3}>
+              {[0, 1, 2].map((i) => (
+                <View key={i} style={{ width: 10, height: 5, borderRadius: 3, backgroundColor: i < 3 - handsLeft ? C.accent : C.surface3 }} />
+              ))}
+            </Row>
+          </Row>
+        ) : toReview ? (
+          t('{n} por rever', { n: toReview })
+        ) : undefined
+      }
+    />
   );
 }
 
 function Shortcut({ icon, label, onPress }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [shortSt.tile, pressed && { backgroundColor: C.surface2 }]}>
-      <Ionicons name={icon} size={22} color={C.accent} />
-      <T v="small" numberOfLines={2} style={{ textAlign: 'center', color: C.text, fontFamily: ff(600) }}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [shortSt.chip, pressed && { backgroundColor: C.surface2 }]}>
+      <Ionicons name={icon} size={16} color={C.accent} />
+      <T v="small" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: C.text, fontFamily: ff(600), flexShrink: 1 }}>
         {label}
       </T>
     </Pressable>
@@ -293,7 +474,7 @@ function Shortcut({ icon, label, onPress }: { icon: React.ComponentProps<typeof 
 }
 
 const shortSt = StyleSheet.create({
-  tile: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 84, paddingVertical: 12, paddingHorizontal: 8, backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.border },
+  chip: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10, backgroundColor: C.surface, borderRadius: R.pill, borderWidth: 1, borderColor: C.border },
 });
 
 /** A brand-new install: what the app does, and the two ways to start. */
@@ -319,96 +500,9 @@ function FirstRun() {
       <View style={{ gap: S.sm }}>
         <Button title={t('Registar a primeira mão')} icon="add" onPress={() => router.push('/hand/new')} />
         <Button title={t('Começar uma sessão')} icon="timer-outline" kind="secondary" size="md" onPress={() => router.navigate('/session')} />
+        <Button title={t('Já jogaste? Regista a última sessão')} icon="time-outline" kind="secondary" size="md" onPress={() => router.navigate({ pathname: '/bankroll', params: { add: 'session' } })} />
         <Button title={t('Ver uma mão de exemplo')} kind="ghost" size="md" onPress={() => router.push({ pathname: '/hand/[id]', params: { id: 'sample' } })} />
       </View>
     </Card>
   );
 }
-
-/**
- * The home verdict as one row of numbers: this month, the weekly streak and
- * the free hands left today. Each cell opens where the number comes from.
- */
-function HomeSummary({ sessions, streak, handsLeft, cta, onPro }: { sessions: Session[]; streak: boolean; handsLeft: number | null; cta: string; onPro: () => void }) {
-  const [now] = useState(() => Date.now());
-  const start = new Date(now);
-  start.setDate(1);
-  start.setHours(0, 0, 0, 0);
-  const done = sessions.filter((x) => x.endedAt);
-  const cur = mainCurrency(done, '€');
-  const month = done.filter((x) => (x.endedAt ?? 0) >= start.getTime() && x.currency === cur);
-  const net = month.reduce((a, x) => a + profit(x), 0);
-  const cells: React.ReactNode[] = [];
-  if (done.length) {
-    cells.push(
-      <Pressable
-        key="month"
-        accessibilityRole="button"
-        accessibilityLabel={month.length ? `${t('Este mês')}: ${money(net, cur)}, ${month.length === 1 ? t('em 1 sessão') : t('em {n} sessões', { n: month.length })}` : t('Ainda sem sessões este mês')}
-        onPress={() => router.navigate('/bankroll')}
-        hitSlop={6}
-        style={({ pressed }) => [sumSt.cell, { opacity: pressed ? 0.7 : 1 }]}>
-        {/* Three cells in a row: at large text the caption stops at 130% and shrinks, or it read "ESTE M…". */}
-        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3}>
-          {t('Este mês')}
-        </T>
-        {month.length ? <Amount value={net} text={money(net, cur)} v="mono" fit /> : <T v="mono" color={C.muted}>—</T>}
-      </Pressable>,
-    );
-  }
-  if (streak)
-    cells.push(
-      <View key="streak" style={sumSt.cell}>
-        <StreakStat />
-      </View>,
-    );
-  if (handsLeft !== null) {
-    const total = 3;
-    cells.push(
-      <Pressable
-        key="free"
-        accessibilityRole="button"
-        accessibilityLabel={`${handsLeft === 0 ? t('Mãos grátis de hoje esgotadas') : handsLeft === 1 ? t('Falta 1 mão grátis hoje') : t('Faltam {n} mãos grátis hoje', { n: handsLeft })}. ${cta}`}
-        onPress={onPro}
-        hitSlop={6}
-        style={({ pressed }) => [sumSt.cell, { opacity: pressed ? 0.7 : 1 }]}>
-        <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} maxFontSizeMultiplier={1.3} color={handsLeft === 0 ? C.accent : undefined}>
-          {/* Out of free hands, the caption says so: next to "3 dias grátis" it read like an offer. */}
-          {handsLeft === 0 ? t('Esgotadas hoje') : t('Grátis hoje')}
-        </T>
-        {handsLeft === 0 ? (
-          <T v="small" numberOfLines={1} color={C.accent} style={{ fontFamily: ff(800), lineHeight: 20 }}>
-            {cta}
-          </T>
-        ) : (
-          <Row gap={6}>
-            <Row gap={3}>
-              {Array.from({ length: total }, (_, i) => (
-                <View key={i} style={[sumSt.dot, { backgroundColor: i < total - handsLeft ? C.accent : C.surface3 }]} />
-              ))}
-            </Row>
-            <T v="mono">{handsLeft}</T>
-          </Row>
-        )}
-      </Pressable>,
-    );
-  }
-  if (!cells.length) return null;
-  return (
-    <View style={[sumSt.wrap, handsLeft === 0 && { borderColor: C.accentLine }]}>
-      {cells.map((c, i) => (
-        <React.Fragment key={i}>
-          {i > 0 ? <View style={sumSt.divider} /> : null}
-          {c}
-        </React.Fragment>
-      ))}
-    </View>
-  );
-}
-
-const sumSt = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.border, paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
-  cell: { flex: 1, gap: 2 },
-  divider: { width: 1, alignSelf: 'stretch', backgroundColor: C.border },
-  dot: { width: 10, height: 5, borderRadius: 3 },
-});
