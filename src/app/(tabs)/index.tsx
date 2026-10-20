@@ -308,7 +308,11 @@ function WeekStrip({ sessions, hands, now }: { sessions: Session[]; hands: Hand[
     return days.map((d) => f.format(d.at));
   }, [days]);
   return (
-    <View style={heroSt.week} accessible accessibilityLabel={t('Dias com sessões esta semana: {n}.', { n: days.filter((d) => d.played).length })}>
+    <View style={heroSt.week} accessible accessibilityLabel={[
+        t('Dias com sessões esta semana: {n}.', { n: days.filter((d) => d.played).length }),
+        t('Dias a ganhar: {n}.', { n: days.filter((d) => d.played && d.net > 0).length }),
+        t('Dias a perder: {n}.', { n: days.filter((d) => d.played && d.net < 0).length }),
+      ].join(' ')}>
       {days.map((d, i) => (
         <View key={i} style={{ alignItems: 'center', gap: 6, flex: 1 }}>
           <T v="tiny" color={i === today ? C.text : C.muted} style={i === today ? { fontFamily: ff(800) } : null}>
@@ -322,7 +326,7 @@ function WeekStrip({ sessions, hands, now }: { sessions: Session[]; hands: Hand[
               d.played && d.net < 0 && { backgroundColor: 'transparent', borderWidth: 2, borderColor: C.bad },
               d.played && d.net === 0 && { backgroundColor: C.textDim, borderWidth: 0 },
               // Hands but no finished session: a small grey dot, never a ring (a ring is a loss).
-              !d.played && d.hands > 0 && { backgroundColor: C.textDim, width: 8, height: 8, margin: 3 },
+              !d.played && d.hands > 0 && { backgroundColor: C.text, width: 6, height: 6, margin: 4 },
             ]}
           />
         </View>
@@ -508,6 +512,7 @@ function HandsTile({ week, toReview, handsLeft, cta, onPro }: { week: number; to
                 <View key={i} style={{ width: 10, height: 5, borderRadius: 3, backgroundColor: i < handsLeft ? C.accent : C.surface3 }} />
               ))}
             </Row>
+            <T v="tiny" style={{ fontFamily: ff(700) }}>{`${handsLeft}/3`}</T>
           </Row>
         ) : toReview ? (
           t('{n} por rever', { n: toReview })

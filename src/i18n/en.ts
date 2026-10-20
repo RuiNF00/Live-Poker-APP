@@ -3520,6 +3520,8 @@ const en: Record<string, string> = {
   'Joga bem e com regularidade': 'Plays well and plays often',
   'Só entra com mãos fortes': 'Only plays strong hands',
   'Abre muito e pressiona': 'Opens a lot and keeps the pressure on',
+  'Dias a ganhar: {n}.': 'Winning days: {n}.',
+  'Dias a perder: {n}.': 'Losing days: {n}.',
 };
 
 export default en;

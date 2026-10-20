@@ -265,6 +265,7 @@ function NoteRow({ p, first, last, hands, seen, vpip, onPress }: { p: PlayerNote
         ) : null}
       </View>
       <View style={big ? st.numsBig : { alignItems: 'flex-end', gap: 2 }}>
+        {vpip?.hands ? <T v="tiny" color={C.muted}>VPIP/PFR</T> : null}
         {vpip?.hands ? (
           <T v="monoS" color={C.textDim} accessibilityLabel={`VPIP ${pct(vpip.vpip, vpip.hands)}%, PFR ${pct(vpip.pfr, vpip.hands)}%`}>
             {`${pct(vpip.vpip, vpip.hands)}/${pct(vpip.pfr, vpip.hands)}`}

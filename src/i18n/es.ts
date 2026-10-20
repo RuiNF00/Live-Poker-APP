@@ -3514,6 +3514,8 @@ const es: Record<string, string> = {
   'Joga bem e com regularidade': 'Juega bien y con frecuencia',
   'Só entra com mãos fortes': 'Solo entra con manos fuertes',
   'Abre muito e pressiona': 'Abre mucho y presiona',
+  'Dias a ganhar: {n}.': 'Días ganando: {n}.',
+  'Dias a perder: {n}.': 'Días perdiendo: {n}.',
 };
 
 export default es;
