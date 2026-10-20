@@ -875,7 +875,7 @@ function TableReads({ roster }: { roster: string[] }) {
     .filter((x) => x.name && x.name.toLowerCase() !== 'hero' && x.name !== settings.nickname && x.note && (x.note.tags.length || x.note.notes || x.note.look));
   if (!known.length) return null;
   return (
-    <Section title={t('Na tua mesa')} action={t('Notas')} onAction={() => router.push('/players')}>
+    <Section title={t('Na tua mesa')} action={t('Notas')} onAction={() => router.push('/notes')}>
       <ListGroup>
         {known.map(({ seat, name, note }) => (
           <ListItem
