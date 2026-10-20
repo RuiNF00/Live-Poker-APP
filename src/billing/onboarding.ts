@@ -82,6 +82,28 @@ function proFor(a: Answers): string[] {
   return [...new Set(out)].slice(0, 2);
 }
 
+export type FirstAction = 'past' | 'festival' | 'hand';
+
+/** Portuguese keys for the plan screen's button, one per first action. */
+export const FIRST_ACTION_LABEL: Record<FirstAction, string> = {
+  past: 'Registar a última sessão',
+  festival: 'Escolher torneios do festival',
+  hand: 'Registar a primeira mão',
+};
+
+/**
+ * Where the plan screen's button goes: the first thing worth saving for what
+ * they just told us. Most installs happen away from the table, so a past
+ * session (20 seconds, a first result) comes before a live one. Hands first
+ * only for those who came for hands alone; tournament players plan a festival
+ * (free). Never staking: it is Pro, a wall in the first minute.
+ */
+export function firstAction(a: Answers): FirstAction {
+  if (a.goals.length && a.goals.every((g) => g === 'discuss' || g === 'leaks')) return 'hand';
+  if (isMtt(a.plays)) return 'festival';
+  return 'past';
+}
+
 export type StartStep = 'hand' | 'session' | 'bankroll' | 'festival' | 'share';
 
 /** The first-week checklist on the hands list. Portuguese keys; show with t(). */

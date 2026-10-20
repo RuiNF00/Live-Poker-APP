@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, findNodeHandle, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FIRST_CURRENCIES, GOALS, isMtt, ONBOARDING_KEY, planFor, PLAYS, VOLUMES, type Answers, type Goal } from '@/billing/onboarding';
+import { FIRST_ACTION_LABEL, FIRST_CURRENCIES, firstAction, GOALS, isMtt, ONBOARDING_KEY, planFor, PLAYS, VOLUMES, type Answers, type FirstAction, type Goal } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
 import { InvitePaste } from '@/components/InvitePaste';
 import { Replayer } from '@/components/Replayer';
@@ -59,15 +59,28 @@ export default function Welcome() {
   useEffect(() => () => void AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(answers.current)).catch(() => {}), []);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const finish = () => {
+  const open = (go: FirstAction) => {
+    if (go === 'past') router.navigate({ pathname: '/bankroll', params: { add: 'session' } });
+    else if (go === 'festival') router.push('/festival');
+    else router.push('/hand/new');
+  };
+  // The plan ends on its first action, not on an empty list; «Ver a app primeiro» is the plain way out.
+  // A second tap would stack the destination twice: the first one wins.
+  const done = useRef(false);
+  const finish = (go?: FirstAction) => {
+    if (done.current) return;
+    done.current = true;
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
-    track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
+    track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '', next: go ?? 'app' });
     // No paywall here: the trial is offered once, at the first live session or
     // the first saved hand (TrialFollowUp, useWelcomeOffer), so its days are spent playing.
     router.back();
+    if (go) setTimeout(() => open(go), 350);
   };
   // At the table, or skipping: close with no paywall. The questions don't block anyone.
   const close = (path: 'sessao' | 'mesa' | 'saltar') => {
+    if (done.current) return;
+    done.current = true;
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
     setSkipped(true);
     track('onboarding_step', { step: path === 'sessao' ? 'session' : path === 'mesa' ? 'table' : 'skip', index: step, path });
@@ -268,7 +281,12 @@ export default function Welcome() {
               next();
             }}
           /> : null}
-        {at === 'plan' ? <Button title={t('Continuar')} iconRight="chevron-forward" onPress={finish} /> : null}
+        {at === 'plan' ? (
+          <View style={{ gap: S.xs }}>
+            <Button title={t(FIRST_ACTION_LABEL[firstAction(a)])} iconRight="chevron-forward" onPress={() => finish(firstAction(a))} lines={2} />
+            <Button kind="ghost" size="sm" title={t('Ver a app primeiro')} onPress={() => finish()} />
+          </View>
+        ) : null}
       </View>
     </View>
   );

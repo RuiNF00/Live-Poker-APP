@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
@@ -22,6 +22,7 @@ import { WinRateCard } from '@/components/WinRate';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
+import { track } from '@/lib/events';
 import { chips, duration, minus, money, plus, shortDate } from '@/poker/format';
 import {
   activeFilters,
@@ -88,6 +89,17 @@ function BankrollTab() {
   const [custom, setCustom] = useState<DateRange>({});
   const [pickedStakes, setStakes] = useState<string[]>([]);
   const [sheet, setSheet] = useState<SheetState>(null);
+  // «Já joguei» on Resumo lands here with the past-session form open.
+  // Read during render (not in an effect), once per arrival; the param is then cleared so the next tap opens it again.
+  const { add } = useLocalSearchParams<{ add?: string }>();
+  const [addSeen, setAddSeen] = useState<string | undefined>(undefined);
+  if (add !== addSeen) {
+    setAddSeen(add);
+    if (add === 'session') setSheet({ type: 'session', s: 'new' });
+  }
+  useEffect(() => {
+    if (add) router.setParams({ add: undefined });
+  }, [add]);
   const locked = !isPro && !FREE.bankrollFilters;
 
   // Apagar acts in one tap: the session leaves every total at once and "Desfazer" stays a few
@@ -513,6 +525,8 @@ function BankrollTab() {
             onSubmit={(s) => {
               // A new past session always gets a fresh id; an edit keeps its own.
               saveSession(sheet.s === 'new' ? { ...s, id: uid('s_') } : s);
+              // Same event as a live session closed, marked past: for most new players, their first result.
+              if (sheet.s === 'new') track('session_closed', { kind: s.kind, past: true });
               setSheet(null);
             }}
           />
