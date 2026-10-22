@@ -6,7 +6,7 @@ import { t } from '@/i18n';
 import { storedCurrency } from '@/store/currencies';
 import type { Session, Withholding } from '@/store/types';
 
-import { readTable, type Table } from './csv';
+import { finish, readTable, readTableAsync, type Steps, type Table } from './csv';
 import { type DecimalMark, NO_VALUE, parseNum } from './num';
 import { detectSource, FIELDS, knownHeader, mappingFor, TIME_ONLY, type Field, type Mapping, type SourceId } from './mapping';
 
@@ -73,7 +73,16 @@ export interface Prepared {
 }
 
 export function prepare(text: string): Prepared {
-  const table = readTable(text, knownHeader);
+  return prepared(text, readTable(text, knownHeader));
+}
+
+/** prepare with the text read in steps, for a big file: see parseCsvAsync. Null when cancelled. */
+export async function prepareAsync(text: string, progress?: Steps): Promise<Prepared | null> {
+  const table = await readTableAsync(text, knownHeader, progress);
+  return table && prepared(text, table);
+}
+
+function prepared(text: string, table: Table): Prepared {
   const source = detectSource(text, table);
   return { text, table, source, mapping: byValues(table, mappingFor(source, table.headers, table.rows)) };
 }
@@ -178,10 +187,16 @@ function splitDateOnce(raw: string): DateParts | null {
 
 /** dd/mm or mm/dd: a first number over 12 means day first, a second one over 12 means month first. */
 export function guessOrder(values: string[], fallback: DateOrder = 'dmy'): DateOrder {
+  return finish(orderSteps(values, fallback));
+}
+
+/** guessOrder, yielding (0 rows done) every 2,000 dates: on a cheap phone the whole look took most of a second. */
+function* orderSteps(values: string[], fallback: DateOrder = 'dmy'): Generator<number, DateOrder> {
   let dmy = 0;
   let mdy = 0;
-  for (const v of values) {
-    const p = splitDate(v);
+  for (let i = 0; i < values.length; i++) {
+    const p = splitDate(values[i]);
+    if (i % 2000 === 1999) yield 0;
     if (!p || p.ymd) continue;
     if (p.a > 12) dmy++;
     else if (p.b > 12) mdy++;
@@ -324,10 +339,19 @@ const MONEY_FIELDS: Field[] = ['profit', 'buyIn', 'cashOut', 'rebuyCost', 'addOn
  * makes "10.000" ten thousand; "12.50" anywhere makes "1,500" fifteen hundred. A file that says
  * neither leaves a bare "10.000" or "1,500" unread (the row fails) rather than guess.
  */
-function moneyReader(table: Table, get: (r: string[], f: Field) => string): (v: string) => number | null {
-  const cells = table.rows.flatMap((r) => MONEY_FIELDS.map((f) => get(r, f))).filter(Boolean);
-  const comma = cells.some((v) => /\d,\d{1,2}\D*$/.test(v));
-  const point = cells.some((v) => /\d\.\d{1,2}\D*$/.test(v));
+function* moneyReader(table: Table, get: (r: string[], f: Field) => string): Generator<number, (v: string) => number | null> {
+  // Every amount in the file is looked at, in steps (0 rows done) like the other looks over the whole file.
+  let comma = false;
+  let point = false;
+  for (let i = 0; i < table.rows.length && !(comma && point); i++) {
+    for (const f of MONEY_FIELDS) {
+      const v = get(table.rows[i], f);
+      if (!v) continue;
+      comma ||= /\d,\d{1,2}\D*$/.test(v);
+      point ||= /\d\.\d{1,2}\D*$/.test(v);
+    }
+    if (i % 2000 === 1999) yield 0;
+  }
   const mark: DecimalMark | undefined = comma && !point ? 'comma' : point && !comma ? 'point' : !comma && !point && table.sep === ';' ? 'comma' : undefined;
   return (v) => {
     if (!mark && /^\(?[-−]?\d{1,3}([.,]\d{3})+\)?$/.test(v.trim())) return null;
@@ -372,7 +396,8 @@ export async function toSessionsAsync(
     if (step.done) return step.value;
     // Each pause costs a redraw, so pause only once the screen has waited long enough to notice.
     if (Date.now() - since < (progress?.sliceMs ?? SLICE_MS)) continue;
-    progress?.onProgress?.(step.value, table.rows.length);
+    // The looks over the whole file before the first row (0 rows done) only pause, the bar stays as it is.
+    if (step.value > 0) progress?.onProgress?.(step.value, table.rows.length);
     await new Promise((r) => setTimeout(r, 0));
     if (progress?.cancelled?.()) return null;
     since = Date.now();
@@ -382,9 +407,12 @@ export async function toSessionsAsync(
 /** Yields how many rows are done every CHUNK rows; returns the result. */
 function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator<number, ImportResult> {
   const get = (r: string[], f: Field) => (mapping[f] === undefined ? '' : (r[mapping[f]!] ?? '').trim());
-  const order = opt.order ?? guessOrder(table.rows.flatMap((r) => [get(r, 'start'), get(r, 'end')]));
+  // Each look over the whole file is a step of its own: on a cheap phone, together they were most of a second.
+  const order = opt.order ?? (yield* orderSteps(table.rows.flatMap((r) => [get(r, 'start'), get(r, 'end')])));
+  yield 0;
   // A "type" column that holds Casino/Club, not cash or tournament, says nothing about the kind.
   const kindUseful = mapping.kind !== undefined && table.rows.some((r) => kindOf(get(r, 'kind')) !== null);
+  yield 0;
   // No type column, but a "Jogo" column that says Torneio or Cash: that's the type.
   const gameKind = (r: string[]) => {
     const x = kindOf(get(r, 'game'));
@@ -399,7 +427,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
   const failed: FailedRow[] = [];
   const preview = (r: string[]) => r.filter(Boolean).join(' · ').slice(0, 60);
   const bankrollNames: Record<string, string> = {};
-  const money = moneyReader(table, get);
+  const money = yield* moneyReader(table, get);
   // Columns that hold money: a row that stops before one of them was cut in two (a line break in a cell).
   const moneyCols = (['buyIn', 'cashOut', 'profit'] as const).map((f) => mapping[f]).filter((c): c is number => c !== undefined);
   const short = (x: string[] | undefined): x is string[] => !!x && x.length < table.headers.length && moneyCols.some((c) => c >= x.length);
@@ -606,7 +634,13 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
   }
-  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful || gameAsKind, bankrollNames, ambiguousDates: table.rows.some((r) => isAmbiguous(get(r, 'start'))) };
+  // Another look over the whole file, in steps too (0: the bar stays where it is).
+  let ambiguousDates = false;
+  for (let i = 0; i < table.rows.length && !ambiguousDates; i++) {
+    ambiguousDates = isAmbiguous(get(table.rows[i], 'start'));
+    if (i % 2000 === 1999) yield 0;
+  }
+  return { sessions, moves, transfers, unreadable, failed, order, kindKnown: kindUseful || gameAsKind, bankrollNames, ambiguousDates };
 }
 
 const TAX_FORMS: NonNullable<Withholding['form']>[] = ['W-2G', '1042-S', 'other'];
