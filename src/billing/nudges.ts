@@ -5,6 +5,7 @@
 // schedules them on the phone.
 
 import { locale, t } from '@/i18n';
+import { type DrillState } from '@/poker/drill';
 import { needsReview } from '@/poker/review';
 import type { Hand } from '@/poker/types';
 import { weekStart } from '@/store/streak';
@@ -83,6 +84,8 @@ export interface NudgeInput {
   streakWeeks?: number;
   /** The day the player said they play next, from the session summary («Quando voltas a jogar?»). */
   plan?: PlayPlan | null;
+  /** When each hand's «O que fazes aqui?» comes back (poker/drill): due ones count as hands to review. */
+  drill?: DrillState;
 }
 
 /** «Quando voltas a jogar?»: the start of the day the player picked. */
@@ -130,7 +133,7 @@ const count = (n: number, one: string, many: string) => (n === 1 ? t(one) : t(ma
  * "lost": it reaches the lock screen, and it is about the habit, not the result.
  * With hands waiting it opens the review queue (pure, tested).
  */
-export function weekNotice(p: Pick<NudgeInput, 'now' | 'hands' | 'sessions' | 'streakWeeks'>): Nudge | null {
+export function weekNotice(p: Pick<NudgeInput, 'now' | 'hands' | 'sessions' | 'streakWeeks' | 'drill'>): Nudge | null {
   const at = weekNoticeAt(p.now);
   if (at <= p.now + 60_000) return null;
   // The 1st is the month's recap day (lib/month-recap): one notice that day.
@@ -139,7 +142,9 @@ export function weekNotice(p: Pick<NudgeInput, 'now' | 'hands' | 'sessions' | 's
   const sessions = p.sessions.filter((s) => s.endedAt && s.endedAt >= from && s.endedAt < at).length;
   const hands = p.hands.filter((h) => h.createdAt >= from && h.createdAt < at).length;
   if (!sessions && !hands) return null;
-  const waiting = p.hands.filter((h) => needsReview({ ...h, tags: h.tags ?? [] } as Hand)).length;
+  const drill = p.drill ?? {};
+  // Waiting for a first review, or due again by Sunday (a reviewed hand's question comes back).
+  const waiting = p.hands.filter((h) => (h.id && drill[h.id] ? drill[h.id].due <= at : needsReview({ ...h, tags: h.tags ?? [] } as Hand))).length;
   const logged = [sessions ? count(sessions, '1 sessão', '{n} sessões') : '', hands ? count(hands, '1 mão', '{n} mãos') : ''].filter(Boolean);
   const week = logged.length === 2 ? t('{a} e {b} esta semana.', { a: logged[0], b: logged[1] }) : t('{a} esta semana.', { a: logged[0] });
   const next = waiting
@@ -149,7 +154,7 @@ export function weekNotice(p: Pick<NudgeInput, 'now' | 'hands' | 'sessions' | 's
     : (p.streakWeeks ?? 0) >= 2
       ? t('{n} semanas seguidas a registar.', { n: p.streakWeeks! })
       : t('Toca para veres as tuas mãos.');
-  return { id: 'week', at, title: t('A tua semana no póquer'), body: `${week} ${next}`, url: waiting ? 'sweatbook://hands?review=1' : 'sweatbook://hands' };
+  return { id: 'week', at, title: t('A tua semana no póquer'), body: `${week} ${next}`, url: waiting ? 'sweatbook://train' : 'sweatbook://hands' };
 }
 
 /** The same clock time `days` calendar days later (a day is not always 24 h). */

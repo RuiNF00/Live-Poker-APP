@@ -3601,6 +3601,11 @@ const en: Record<string, string> = {
   'Quando voltas a jogar?': 'When do you play next?',
   'Nesse dia lembramos-te de abrir a sessão e, se ficar por registar, no dia seguinte. Podes mudar quando quiseres.': 'That day we\'ll remind you to start the session, and the next day if it wasn\'t logged. You can change it any time.',
   'Ainda não sei': 'Not sure yet',
+  // «O que fazes aqui?» with the player's own hands.
+  '1 mão voltou para treinar': '1 hand is back for practice',
+  '{n} mãos voltaram para treinar': '{n} hands are back for practice',
+  'Responde antes de veres o que fizeste.': 'Answer before you see what you did.',
+  'Treinar': 'Practise',
 };
 
 export default en;

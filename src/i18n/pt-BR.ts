@@ -1881,6 +1881,11 @@ const ptBR: Record<string, string> = {
   'Quando voltas a jogar?': 'Quando você volta a jogar?',
   'Nesse dia lembramos-te de abrir a sessão e, se ficar por registar, no dia seguinte. Podes mudar quando quiseres.': 'Nesse dia lembramos você de abrir a sessão e, se ficar sem registro, no dia seguinte. Você pode mudar quando quiser.',
   'Ainda não sei': 'Ainda não sei',
+  // «O que fazes aqui?» with the player's own hands.
+  '1 mão voltou para treinar': '1 mão voltou para treinar',
+  '{n} mãos voltaram para treinar': '{n} mãos voltaram para treinar',
+  'Responde antes de veres o que fizeste.': 'Responda antes de ver o que você fez.',
+  'Treinar': 'Treinar',
 };
 
 export default ptBR;

@@ -10,9 +10,11 @@ import { VoiceNotePlayer } from '@/components/audio';
 import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
 import { sameTable } from '@/poker/factory';
-import { reviewQueue } from '@/poker/review';
+import { drillQueue, DRILL_MAX, isDue } from '@/poker/drill';
+import { markReviewed, reviewQueue } from '@/poker/review';
 import { sampleHand } from '@/poker/sample';
 import { unfinished } from '@/poker/unfinished';
+import { drillAnswered, useDrill } from '@/store/drill-store';
 import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
@@ -62,24 +64,44 @@ export default function HandScreen() {
   const [termsSheet, acceptUgcTerms] = useUgcTerms();
   // `c`: how many new comments brought you here (from "Mãos partilhadas"); the replay opens on the newest one's street.
   // `f`: this hand was just finished in the editor; the next unfinished one is offered.
-  // `q`: opened from a review queue (a session id, or "all"); once reviewed, the next one is offered.
-  const { id, c: fresh, f: justFinished, q: queueOf } = useLocalSearchParams<{ id: string; c?: string; f?: string; q?: string }>();
+  // `q`: opened from a review queue (a session id, "all", or "train" for «Treino da semana» with `k`
+  // hands still to go); once reviewed, the next one is offered.
+  const { id, c: fresh, f: justFinished, q: queueOf, k: trainLeft } = useLocalSearchParams<{ id: string; c?: string; f?: string; q?: string; k?: string }>();
   const { hands, saveHand, deleteHand, settings, setSettings, activeSession } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
   const isSample = id === 'sample';
   const sample = useMemo(() => (isSample ? sampleHand('sample') : undefined), [isSample]);
   const hand = sample ?? hands.find((h) => h.id === id);
+  // The replay doesn't start over when only the review state changes: answering its question saves that.
+  const playedKey = useMemo(() => {
+    if (!hand) return '';
+    const { review: _r, reviewedAt: _ra, reviewNote: _rn, updatedAt: _u, ...played } = hand;
+    return JSON.stringify(played);
+  }, [hand]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const replayHand = useMemo(() => hand, [playedKey]);
   const nextLeft = useMemo(() => {
     if (!justFinished) return null;
     const left = unfinished(hands).filter((h) => h.id !== id);
     return left.length ? { n: left.length, id: left[0].id } : null;
   }, [justFinished, hands, id]);
+  const drill = useDrill();
+  // From a queue, a hand waiting for review (or due again) stops at hero's decision and asks first.
+  // Once asked it stays a question for this visit, even after the answer moves it out of the queue.
+  const [openedAt] = useState(() => Date.now());
+  const [quizFor, setQuizFor] = useState<string | null>(null);
+  if (queueOf && hand && !isSample && quizFor !== hand.id && isDue(hand, drill, openedAt)) setQuizFor(hand.id);
+  const quiz = !!hand && quizFor === hand.id;
+  const trainBudget = Math.max(0, Number(trainLeft ?? DRILL_MAX) - 1);
   const reviewNext = useMemo(() => {
     if (!queueOf) return null;
-    const queue = reviewQueue(hands, queueOf === 'all' ? undefined : queueOf).filter((h) => h.id !== id);
+    const queue =
+      queueOf === 'train'
+        ? drillQueue(hands, drill, openedAt, DRILL_MAX + 1).filter((h) => h.id !== id).slice(0, trainBudget)
+        : reviewQueue(hands, queueOf === 'all' ? undefined : queueOf).filter((h) => h.id !== id);
     return { left: queue.length, next: queue[0] };
-  }, [queueOf, hands, id]);
+  }, [queueOf, hands, id, drill, trainBudget, openedAt]);
   const [busy, setBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   // Shown at the top of the link; only before the link exists.
@@ -483,7 +505,22 @@ ${link}`;
             <VoiceNotePlayer uri={hand.voiceNote} />
           </React.Suspense>
         ) : null}
-        <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <Replayer
+          hand={replayHand ?? hand}
+          source="own"
+          initialInBB={settings.inBB}
+          onInBB={(inBB) => setSettings({ inBB })}
+          icm={!!settings.icm}
+          onStreet={setStreet}
+          seek={seek}
+          streetNotes={hand.streetNotes}
+          quiz={quiz}
+          // Answering is the review: the hand counts for this week and comes back in 3 days, then a week.
+          onVote={() => {
+            saveHand(markReviewed(hand));
+            void drillAnswered(hand.id);
+          }}
+        />
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard
@@ -491,8 +528,8 @@ ${link}`;
           hand={hand}
           onChange={saveHand}
           left={reviewNext?.left}
-          inQueue={queueOf ? (queueOf === 'all' ? 'all' : 'session') : undefined}
-          onNext={reviewNext?.next ? () => router.replace({ pathname: '/hand/[id]', params: { id: reviewNext.next!.id, q: queueOf } }) : undefined}
+          inQueue={queueOf ? (queueOf === 'all' || queueOf === 'train' ? 'all' : 'session') : undefined}
+          onNext={reviewNext?.next ? () => router.replace({ pathname: '/hand/[id]', params: { id: reviewNext.next!.id, q: queueOf, ...(queueOf === 'train' ? { k: String(trainBudget) } : {}) } }) : undefined}
         />
 
 

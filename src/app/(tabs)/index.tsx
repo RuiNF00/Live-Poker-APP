@@ -26,10 +26,12 @@ import { Amount, Banner, Button, Card, IconButton, Row, ScreenHeader, Section, T
 import { locale, t } from '@/i18n';
 import { useCoach } from '@/lib/coach-api';
 import { useSharedHands } from '@/lib/friend-hands';
+import { drillQueue } from '@/poker/drill';
 import { duration, money, plus } from '@/poker/format';
 import { useReduceMotion } from '@/lib/motion';
 import { needsReview } from '@/poker/review';
 import type { Hand } from '@/poker/types';
+import { useDrill } from '@/store/drill-store';
 import { monthKey, monthName, monthRecap, prevKey } from '@/store/month-recap';
 import { verdict } from '@/store/results-math';
 import { curve, isPaused, playedMs, profit, rateShown, totals } from '@/store/session-math';
@@ -80,6 +82,9 @@ export default function HomeScreen() {
     return hands.filter((h) => needsReview(h, sent)).sort((a, b) => a.createdAt - b.createdAt);
   }, [hands, coach]);
   const toReview = review.length;
+  // Reviewed hands whose «O que fazes aqui?» is due again (poker/drill).
+  const drill = useDrill();
+  const dueAgain = useMemo(() => drillQueue(hands, drill, now, Infinity).filter((h) => !needsReview(h)).length, [hands, drill, now]);
   const weekHands = useMemo(() => hands.filter((h) => h.createdAt >= weekStart(now)).length, [hands, now]);
   const lastNote = useMemo(() => players.reduce<PlayerNote | null>((a, p) => (!a || p.updatedAt > a.updatedAt ? p : a), null), [players]);
   const fresh = hands.length === 0 && sessions.length === 0;
@@ -134,6 +139,14 @@ export default function HomeScreen() {
       body={t('Enquanto ainda te lembras de tudo.')}
       action={t('Rever')}
       onPress={() => router.push({ pathname: '/hand/[id]', params: { id: review[0].id, q: 'all' } })}
+    />
+  ) : dueAgain ? (
+    <Banner
+      icon="barbell-outline"
+      title={dueAgain === 1 ? t('1 mão voltou para treinar') : t('{n} mãos voltaram para treinar', { n: dueAgain })}
+      body={t('Responde antes de veres o que fizeste.')}
+      action={t('Treinar')}
+      onPress={() => router.push('/train')}
     />
   ) : checklist && !fresh ? (
     // The first week's steps come before news and the backup tip: they're what brings a new player back.
