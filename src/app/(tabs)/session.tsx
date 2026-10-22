@@ -24,7 +24,6 @@ import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
 import { useSwapEnd } from '@/components/swaps/SwapEndRow';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { StakeFields } from '@/components/StakeFields';
-import { CoachMarks, type CoachStep, type ViewRef } from '@/components/CoachMarks';
 import { FestivalItem, PlannedNow } from '@/components/FestivalItem';
 import { AfterFestivalSession, Day2Remind } from '@/components/AfterFestivalSession';
 import { sessionFromEvent, sessionName, useStartEvent } from '@/components/useStartEvent';
@@ -497,22 +496,6 @@ function Live({ s }: { s: Session }) {
   }, [params.do, params.id, lockUp]);
 
   const [bar, onBarLayout] = useBarHeight();
-  // First live session: a three-step tour of what matters between hands.
-  const stackRef = useRef<ViewRef>(null);
-  const barRef = useRef<ViewRef>(null);
-  const handRef = useRef<ViewRef>(null);
-  const tour = useMemo<CoachStep[]>(
-    () => [
-      { target: stackRef, title: t('O teu stack'), body: t('Toca para o atualizar entre mãos. As bb e o gráfico acompanham sozinhos.') },
-      { target: barRef, title: t('Tudo ao alcance do polegar'), body: t('Pausa, rebuy e uma nota da sessão sem saíres deste ecrã.') },
-      {
-        target: handRef,
-        title: t('Regista uma mão'),
-        body: mtt ? t('Já vem com o torneio, as blinds e o teu stack. Se fores chamado, fica guardada a meio.') : t('Já vem com o jogo, as blinds e o teu stack. Se fores chamado, fica guardada a meio.'),
-      },
-    ],
-    [mtt],
-  );
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -529,7 +512,7 @@ function Live({ s }: { s: Session }) {
         <RegularsHere s={s} />
 
         <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
-          <View ref={stackRef} collapsable={false} style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
           {/* The card opens the stack pad; the share icon sits on top of it, not inside, so the two taps aren't a button in a button. */}
           <Card style={{ flex: 1 }}>
             <Pressable onPress={() => setPad('stack')} accessibilityRole="button"
@@ -554,6 +537,12 @@ function Live({ s }: { s: Session }) {
                   </T>
                 ) : null}
               </Row>
+              {/* Until the first update, the card says what a tap does: this replaced the first-session tour. */}
+              {!delta ? (
+                <T v="small" color={C.accent}>
+                  {t('Toca para atualizar')}
+                </T>
+              ) : null}
             </Pressable>
             {mtt ? (
               // The chip-count post of a festival day: card + text, chips only.
@@ -781,17 +770,16 @@ function Live({ s }: { s: Session }) {
       ) : null}
       {/* Everything you do between hands, within reach of the thumb. */}
       <View style={styles.thumbBar} onLayout={onBarLayout}>
-        <View ref={barRef} collapsable={false} style={{ flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
+        <View style={{ flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
         <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
         </View>
-        <View ref={handRef} collapsable={false} style={{ flex: 2 }}>
+        <View style={{ flex: 2 }}>
           {/* "Nueva mano" / "Nova mão" at 200%: two lines rather than "Nueva m…". */}
           <Button size="md" title={t('Nova mão')} icon="add" lines={2} style={{ paddingHorizontal: 12, gap: 6 }} onPress={() => router.push('/hand/new')} />
         </View>
       </View>
-      <CoachMarks id="live-session" steps={tour} />
       <NoteSheet
         visible={noteOpen}
         value={s.notes}
