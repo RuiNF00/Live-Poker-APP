@@ -22,7 +22,6 @@ import { shortDate } from '@/poker/format';
 import { MAX_NAME_LENGTH } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 import { handCounts, opponentStats, type OpponentStats } from '@/store/queries';
-import { regularsAt } from '@/store/regulars';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
 import { C, R, S, SHADOW, ff } from '@/theme';
@@ -49,8 +48,7 @@ export default function NotesScreen() {
   const { players, savePlayer, deletePlayer, hands, sessions, activeSession } = useStore();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
-  // From a live session ("Tens notas sobre N regulares daqui"): only the regulars of that room.
-  const { id, venue } = useLocalSearchParams<{ id?: string; venue?: string }>();
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const blank = (): PlayerNote => ({ id: uid('p_'), name: '', look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
   // From the Resumo: straight into the note that was tapped, or a new one.
   const [edit, setEdit] = useState<PlayerNote | null>(() => (id === 'new' ? blank() : (players.find((p) => p.id === id) ?? null)));
@@ -104,19 +102,18 @@ export default function NotesScreen() {
     return PLAYER_TAGS.filter((x) => m.has(x)).map((x) => ({ tag: x, n: m.get(x)! }));
   }, [players]);
 
-  const regulars = useMemo(() => (venue ? regularsAt(venue, hands, sessions, players) : null), [venue, hands, sessions, players]);
   const rows = useMemo(() => {
     const qq = q.trim().toLowerCase();
-    // The room's regulars keep their order: the one met there most recently first.
-    return (regulars ?? [...players].sort((a, b) => Math.max(b.updatedAt, seen.get(b.id) ?? 0) - Math.max(a.updatedAt, seen.get(a.id) ?? 0)))
+    return [...players]
+      .sort((a, b) => Math.max(b.updatedAt, seen.get(b.id) ?? 0) - Math.max(a.updatedAt, seen.get(a.id) ?? 0))
       .filter((p) => !tag || p.tags.includes(tag))
       // Tags are stored in pt-PT and shown translated: either matches ('Agressivo', 'Aggressive').
       .filter((p) => !qq || [p.name, p.look, p.notes, ...p.tags, ...p.tags.map((x) => t(x))].join(' ').toLowerCase().includes(qq));
-  }, [players, regulars, q, tag, seen]);
+  }, [players, q, tag, seen]);
 
   const counts = useMemo(() => handCounts(hands, players), [hands, players]);
   const stats = useMemo(() => opponentStats(hands, players), [hands, players]);
-  const filtered = !!tag || !!q.trim() || !!venue;
+  const filtered = !!tag || !!q.trim();
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -131,11 +128,6 @@ export default function NotesScreen() {
             <View style={{ gap: S.md, marginBottom: S.md }}>
               {table && !filtered ? <TableStrip {...table} onOpen={setEdit} /> : null}
               <SearchField value={q} onChange={setQ} placeholder={t('Nome, aspeto, tag…')} />
-              {venue ? (
-                <Row>
-                  <Chip icon="close" label={t('Regulares de {venue}', { venue })} active onPress={() => router.setParams({ venue: undefined })} />
-                </Row>
-              ) : null}
               {inUse.length > 1 ? (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }} style={{ marginHorizontal: -S.gutter }}>
                   <View style={{ width: S.gutter - 6 }} />
