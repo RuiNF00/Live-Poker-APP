@@ -44,7 +44,9 @@ export function Replayer({
   initialInBB = true,
   autoPlay = false,
   quiz = false,
+  playToQuiz = false,
   onVote,
+  onQuiz,
   onStreet,
   seek,
   streetNotes,
@@ -65,7 +67,11 @@ export function Replayer({
   compact?: boolean;
   /** Stop before hero's last decision and ask "what do you do?". */
   quiz?: boolean;
+  /** With quiz and autoPlay: play from preflop up to hero's decision, then ask (first run). */
+  playToQuiz?: boolean;
   onVote?: (choice: string) => void;
+  /** Called once the question is laid out (its top and height inside the replayer), so a short screen can bring it into view. */
+  onQuiz?: (top: number, height: number) => void;
   /** Called with the street on screen whenever it changes (comments mark "you are here"). */
   onStreet?: (street: Street) => void;
   /** Jump to the start of a street; bump `n` to jump again to the same one. */
@@ -93,9 +99,10 @@ export function Replayer({
   const locked = quizAt > 0 && !answered;
   const last = locked ? quizAt - 1 : steps.length - 1;
   // A challenge opens straight on hero's decision; a saved hand opens on its result.
-  const start = locked || !autoPlay ? last : 0;
+  // The first run plays up to the decision instead: the question lands after the story so far.
+  const start = (locked && !playToQuiz) || !autoPlay ? last : 0;
   const [i, setI] = useState(start);
-  const [playing, setPlaying] = useState(autoPlay && !locked);
+  const [playing, setPlaying] = useState(autoPlay && (!locked || playToQuiz));
   const [inBB, setInBB] = useState(initialInBB);
   const [reveal, setReveal] = useState(false);
   const [speed, setSpeed] = useState(0);
@@ -120,7 +127,7 @@ export function Replayer({
 
   useEffect(() => {
     setI(start);
-    setPlaying(autoPlay && !locked);
+    setPlaying(autoPlay && (!locked || playToQuiz));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hand, autoPlay]);
 
@@ -280,6 +287,7 @@ export function Replayer({
       {locked && k === last ? (
         <QuizPanel
           state={steps[k].state}
+          onShow={onQuiz}
           onPick={(c) => {
             tap('medium');
             setAnswered(c);
@@ -558,7 +566,7 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
             disabled={future}
             onPress={() => onPick(it.k)}
             accessibilityRole="button"
-            accessibilityLabel={it.spoken}
+            accessibilityLabel={future && !street ? undefined : it.spoken}
             accessibilityState={{ selected: on }}
             style={{ width: ITEM_W, alignItems: 'center', opacity: future ? 0.25 : idx > at ? 0.55 : 1 }}>
             <View style={{ height: 20, justifyContent: 'center' }}>
@@ -574,10 +582,11 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
                 }}
               />
             </View>
+            {/* Past the question, only the dots: the names and sizes would give the answer away. */}
             <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
-              {it.label}
+              {future && !street ? ' ' : it.label}
             </Text>
-            {it.detail ? (
+            {it.detail && !future ? (
               <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
                 {it.detail}
               </Text>
@@ -589,13 +598,22 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
   );
 }
 
-function QuizPanel({ state, onPick }: { state: ReturnType<typeof replay>['steps'][number]['state']; onPick: (c: string) => void }) {
+function QuizPanel({ state, onPick, onShow }: { state: ReturnType<typeof replay>['steps'][number]['state']; onPick: (c: string) => void; onShow?: (top: number, height: number) => void }) {
+  // With autoPlay the question appears on its own: VoiceOver says so instead of leaving the user on the table.
+  useEffect(() => AccessibilityInfo.announceForAccessibility(t('O que fazes aqui?')), []);
+  const shown = useRef(false);
   const l = legal(state);
   if (!l) return null;
   const opts = [l.canCall ? 'Fold' : null, l.canCheck ? 'Check' : 'Call', l.canBet || l.canRaise ? raiseName(state) : null].filter(Boolean) as string[];
   return (
-    <View style={{ backgroundColor: '#14100D', borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
-      <Text style={{ color: C.text, fontFamily: ff(800), fontSize: 18, textAlign: 'center' }}>{t('O que fazes aqui?')}</Text>
+    <View
+      onLayout={(e) => {
+        if (shown.current) return;
+        shown.current = true;
+        onShow?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height);
+      }}
+      style={{ backgroundColor: '#14100D', borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
+      <Text accessibilityRole="header" style={{ color: C.text, fontFamily: ff(800), fontSize: 18, textAlign: 'center' }}>{t('O que fazes aqui?')}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {opts.map((o) => (
           <Pressable

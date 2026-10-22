@@ -40,9 +40,10 @@ export function useStartChecklist() {
   const logged = sessions.filter((s) => s.endedAt && (!isMtt(plays) || s.kind === 'mtt')).length;
   const done = startProgress({ hands, sessions: logged, deposits: transfers.filter((x) => x.kind === 'deposit').length, festivalPicks: festivalPicks(plans) });
   const count = START_STEPS.filter((s) => done[s.key]).length;
-  // First week means it: players whose first hand is older than two weeks don't need it.
-  const first = hands.length ? Math.min(...hands.map((h) => h.createdAt)) : 0;
-  if (hidden || hands.length === 0 || count === START_STEPS.length || now - first > FORTNIGHT) return null;
+  // First week means it: two weeks from the first hand or session. Someone who began with a session
+  // sees it too (it used to wait for a first hand); before anything at all, Resumo shows its own start.
+  const first = Math.min(...hands.map((h) => h.createdAt), ...sessions.map((s) => s.startedAt));
+  if (hidden || !Number.isFinite(first) || count === START_STEPS.length || now - first > FORTNIGHT) return null;
   const next = START_STEPS.find((s) => !done[s.key])!;
 
   const go = (k: StartStep) => {
@@ -53,7 +54,8 @@ export function useStartChecklist() {
     else if (k === 'festival') router.push('/festival');
     else {
       const last = [...hands].sort((a, b) => b.createdAt - a.createdAt)[0];
-      router.push({ pathname: '/hand/[id]', params: { id: last.id } });
+      if (last) router.push({ pathname: '/hand/[id]', params: { id: last.id } });
+      else router.push('/hand/new');
     }
   };
   const hide = () => {

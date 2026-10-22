@@ -13,14 +13,34 @@ import { C, R, S } from '@/theme';
 
 export interface SoftAsk {
   /** Where it was asked, for the notify_permission event. */
-  where: 'session' | 'festival' | 'trial' | 'swap' | 'coach' | 'comments' | 'month' | 'staking';
+  where: 'session' | 'festival' | 'trial' | 'swap' | 'coach' | 'comments' | 'month' | 'staking' | 'week' | 'plan';
   /** Why the player wants this, in one line. */
   title: string;
+  /** What they get, when the generic line isn't enough. */
+  body?: string;
   /** The notification they will get, drawn the way iOS shows it. */
   preview: { title: string; body: string };
 }
 
 const SOFT_NO_KEY = 'rl.notify.soft-no.v1';
+
+/**
+ * What an ask would do now: 'granted' (nothing to ask), 'ask' (the sheet shows) or
+ * 'no' (web, refused in the system, or "Agora não" less than 30 days ago).
+ */
+export async function softAskState(): Promise<'granted' | 'ask' | 'no'> {
+  const n = notifications();
+  if (!n) return 'no';
+  try {
+    const cur = await n.getPermissionsAsync();
+    if (cur.granted) return 'granted';
+    if (!cur.canAskAgain) return 'no';
+    const lastNo = Number(await AsyncStorage.getItem(SOFT_NO_KEY)) || null;
+    return softAskAllowed(lastNo) ? 'ask' : 'no';
+  } catch {
+    return 'no';
+  }
+}
 
 /**
  * The system prompt can be answered once. Before it, show the notification the
@@ -33,17 +53,8 @@ export function useNotifySoftAsk(): [React.ReactNode, (ask: SoftAsk) => Promise<
   const done = useRef<((ok: boolean) => void) | null>(null);
 
   const request = useCallback(async (a: SoftAsk) => {
-    const n = notifications();
-    if (!n) return false;
-    try {
-      const cur = await n.getPermissionsAsync();
-      if (cur.granted) return true;
-      if (!cur.canAskAgain) return false;
-      const lastNo = Number(await AsyncStorage.getItem(SOFT_NO_KEY)) || null;
-      if (!softAskAllowed(lastNo)) return false;
-    } catch {
-      return false;
-    }
+    const state = await softAskState();
+    if (state !== 'ask') return state === 'granted';
     return new Promise<boolean>((resolve) => {
       done.current = resolve;
       noteOverlay(true);
@@ -91,7 +102,7 @@ export function SoftAskSheet({ ask, onAnswer }: { ask: SoftAsk | null; onAnswer:
             <View style={{ gap: S.sm }}>
               <T v="h1">{ask.title}</T>
               <T v="body" style={{ color: C.textDim }}>
-                {t('Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.')}
+                {ask.body ?? t('Só avisos que pediste. Nada de publicidade. Podes escolher quais nas Definições da Sweatbook.')}
               </T>
             </View>
             <View style={{ gap: S.sm }}>

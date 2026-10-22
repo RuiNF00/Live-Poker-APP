@@ -24,6 +24,7 @@ export const SAO_PAULO_NOV_2026: Festival = {
   // flight 1A; satellites carry the guaranteed seat pools listed on the schedule; #52 ends on a final day on 21/11 14:00;
   // #57 Day 2 takes new entries (R$ 250,000, 500,000 stack, late reg until 17:50); so does #52's final day (R$ 6,000,
   // late reg until 14:00). Night flights of #1 (25 min) and #11 1C (20 min) are shorter too.
+  // 2026-10-20, from the per-event structure sheet: #83 plays 25-min levels ("25 Min", reg 14:00 to 18:40), not 20.
   source: { label: 'calendário oficial do organizador', checked: '2026-10-19' },
   notes: ['Super High Roller: o Dia 2 também aceita inscrições até às 17:50.', 'Mixed Games: o dia final também aceita inscrições até às 14:00.'],
   events: [
@@ -152,7 +153,7 @@ export const SAO_PAULO_NOV_2026: Festival = {
     { id: '78-1B', number: 78, name: 'Deepstack', flight: '1B', game: 'NLH', buyIn: 2500, guarantee: 0, start: '2026-11-25T12:00', stack: 150000, levelMinutes: 30, lateRegMin: 330 },
     { id: '82-1A', number: 82, name: 'Mini High Roller', flight: '1A', game: 'NLH', buyIn: 6000, guarantee: 0, start: '2026-11-25T12:00', stack: 100000, levelMinutes: 40, lateRegMin: 560 },
     { id: '59-2', number: 59, name: 'High Roller', flight: '2', day2: true, game: 'NLH', buyIn: 0, guarantee: 15_000_000, start: '2026-11-25T13:00' },
-    { id: '83', number: 83, name: 'PKO', game: 'NLH', buyIn: 1500, guarantee: 0, start: '2026-11-25T14:00', stack: 30000, levelMinutes: 20, lateRegMin: 280 },
+    { id: '83', number: 83, name: 'PKO', game: 'NLH', buyIn: 1500, guarantee: 0, start: '2026-11-25T14:00', stack: 30000, levelMinutes: 25, lateRegMin: 280 },
     { id: '84', number: 84, name: 'PLO Main Event', game: 'PLO', buyIn: 10000, guarantee: 0, start: '2026-11-25T14:00', stack: 40000, levelMinutes: 60 },
     { id: '85', number: 85, name: 'Mixed Games', game: 'Mix', buyIn: 2500, guarantee: 0, start: '2026-11-25T15:00', stack: 50000, levelMinutes: 30, lateRegMin: 330 },
     { id: '86', number: 86, name: "No Limit Hold'em", game: 'NLH', buyIn: 500, guarantee: 0, start: '2026-11-25T18:00', stack: 25000, levelMinutes: 20, lateRegMin: 175 },

@@ -46,7 +46,14 @@ Checked against `claude/live-poker-app-mvp-kdke3g` @ 22e4870. ✓ = OK in code, 
 
 ## Over-the-air updates (8147048, #146)
 - expo-updates with EAS Update, `runtimeVersion` policy fingerprint, checked on launch. Allowed by Apple 3.3.1(b)/2.5.2 and Google Play's device-and-network-abuse policy only for JavaScript and asset fixes that don't change the app's purpose or add features that skip review: any new feature, price or Pro change goes through a store build. Rule for every thread: OTA only for fixes.
+- 2.5.19 (16 Oct 2026): nothing in the binary is hidden or dormant waiting to be switched on later; new features always arrive in a reviewed build. QA confirms on the submitted build: no `EXPO_PUBLIC_LOCAL_PRO` (only on the command line for Rui's own iPhone); #328 ships with the App Group off (`extra.appGroup`) and is never switched on by OTA or by the server (only by a new build); no server flag turns on a feature after approval (1st-update items included). No `eas update` to the production channel between submission and approval, because the reviewer gets it too.
 - No new data: EAS Update downloads the bundle from Expo's CDN and sends only the runtime version, platform and channel; nothing to add to the privacy label, the manifest or Data safety. The privacy policy's provider list doesn't need Expo, as no personal data is processed for the app.
 
 ## Android exact alarms (#170)
 - `SCHEDULE_EXACT_ALARM` only, requested in context with an inexact fallback; never `USE_EXACT_ALARM` (Play limits it to alarm-clock/calendar apps with a declaration). Details in `privacy-forms.md`. Before the Play upload, check the merged manifest has no `USE_EXACT_ALARM` from a library.
+
+## Screenshots, 2.3.3 guidance (5 Oct 2026) and 2.3.14 (checked 19 Oct on frames.json at 8121ea7d)
+- "More than half of screenshots show the app in use": all 10 frames, in every language (PT-PT, pt-BR, es, en), are real app screens rendered from the app (`render.mjs`). Frames 4 and 9 show the in-app Story share card, which is still the app's own screen; without them it is 8/10. The two-line caption sits above the phone frame and never covers the screen (`render.mjs` html(): caption block, then the phone below it).
+- No prices, discounts or "free trial" text in any image: captions have no amounts, %, currency or "grátis/free"; money screens use `hideAmounts`. The only badge is "Pro" on frame 2.
+- Same check for the 1st-update set (Marketing's captions, option A): same layout, so it holds; recount when rendered.
+

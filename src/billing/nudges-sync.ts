@@ -1,6 +1,6 @@
 // Puts the planned Pro nudges (nudges.ts) on the phone as local notifications.
 // Local notifications work in Expo Go too. Each sync cancels and re-plans all
-// three, so counts, dates and the come-back day follow the latest data.
+// of them, so counts, dates and the come-back day follow the latest data.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -12,6 +12,9 @@ import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
 import { kindInfo } from '@/lib/notify-policy';
 
 import { comebackSeen, NUDGE_KIND, NUDGE_IDS, planNudges, type ComebackState, type NudgeInput, type Trial } from './nudges';
+import { readDrill } from '@/store/drill-store';
+
+import { readPlayPlan } from './play-plan';
 import { getTrial } from './purchases';
 
 const COMEBACK = 'rl.comeback.v1';
@@ -70,12 +73,14 @@ async function sync(input: Omit<NudgeInput, 'trial' | 'store'>): Promise<void> {
     const trial = input.isPro ? await currentTrial() : null;
     const comeback = comebackSeen(await readComeback(), input.now);
     // Reminders the player switched off are not planned; the notice before a charge always is.
-    const planned = planNudges({ ...input, trial, store, comeback, festivalAt: (ts) => festivalOn(ts) }).filter((x) => notifyKindOn(NUDGE_KIND[x.id]));
+    const plan = await readPlayPlan();
+    const drill = await readDrill();
+    const planned = planNudges({ ...input, trial, store, comeback, plan, drill, festivalAt: (ts) => festivalOn(ts) }).filter((x) => notifyKindOn(NUDGE_KIND[x.id]));
     for (const x of planned) {
       const kind = NUDGE_KIND[x.id];
       await n.scheduleNotificationAsync({
         identifier: `sweatbook-${x.id}`,
-        content: { title: x.title, body: x.body, data: { url: URL } },
+        content: { title: x.title, body: x.body, data: { url: x.url ?? URL }, interruptionLevel: kindInfo(kind).interruption },
         trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: notifyAt(kind, x.at), channelId: kindInfo(kind).channel },
       });
     }

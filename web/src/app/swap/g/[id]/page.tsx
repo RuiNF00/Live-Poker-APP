@@ -28,6 +28,8 @@ export async function generateMetadata({ params, searchParams }: Params & Search
     description: c.groupMetaDescription,
     robots: { index: false },
     referrer: 'no-referrer',
+    // Each seat confirms here without the app: no store banner on group swaps.
+    itunes: null,
     openGraph: { title, description: c.groupMetaDescription, type: 'website', url: `${brand.siteUrl}/swap/g/${id}`, siteName: brand.name, locale: ogLocale(locale), images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Sweatbook' }] },
   };
 }

@@ -25,6 +25,9 @@ export interface WidgetProps {
   stackBB: string;
   level: string;
   blinds: string;
+  /** Pause or resume and a rebuy, one tap from the medium widget (see lockAction). */
+  pauseUrl: string;
+  rebuyUrl: string;
   // No session (live = false)
   week: string;
   /** "+$1,240", "−$300", "•••" with amounts hidden, "—" with nothing played. */
@@ -33,7 +36,7 @@ export interface WidgetProps {
   weekSub: string;
   streak: string;
   streakOn: boolean;
-  labels: { time: string; stack: string; newHand: string };
+  labels: { time: string; stack: string; newHand: string; pause: string; rebuy: string };
 }
 
 export interface WidgetInput {
@@ -77,6 +80,8 @@ export function widgetProps(x: WidgetInput, now = Date.now()): WidgetProps {
     stackBB: lp?.stackBB ?? '',
     level: lp?.level ?? '',
     blinds: lp?.blinds ?? '',
+    pauseUrl: lp?.pauseUrl ?? '',
+    rebuyUrl: lp?.rebuyUrl ?? '',
     week: t('Esta semana'),
     result,
     tone: !week.length || hidden || net === 0 ? 'flat' : net > 0 ? 'up' : 'down',
@@ -85,6 +90,6 @@ export function widgetProps(x: WidgetInput, now = Date.now()): WidgetProps {
       : (week.length === 1 ? t('1 sessão') : t('{n} sessões', { n: week.length })) + ' · ' + duration(hours),
     streak: st.weeks === 1 ? t('1 semana seguida') : t('{n} semanas seguidas', { n: st.weeks }),
     streakOn: st.loggedThisWeek && !st.paused,
-    labels: { time: t('Tempo'), stack: 'Stack', newHand: t('Nova mão') },
+    labels: { time: t('Tempo'), stack: 'Stack', newHand: t('Nova mão'), pause: lp?.labels.pause ?? t('Pausa'), rebuy: lp?.labels.rebuy ?? 'Rebuy' },
   };
 }

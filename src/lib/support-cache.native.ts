@@ -26,4 +26,12 @@ export function dropSupportCopies(): void {
     const d = new Directory(Paths.cache, 'ImagePicker');
     if (d.exists) d.delete();
   } catch {}
+  try {
+    // expo-audio's raw recordings: hand voice notes (copied out to voice/, see voice-note), story
+    // voice notes and cancelled ones. ExpoAudio on iOS, Audio on Android.
+    for (const name of ['ExpoAudio', 'Audio']) {
+      const d = new Directory(Paths.cache, name);
+      if (d.exists) d.delete();
+    }
+  } catch {}
 }

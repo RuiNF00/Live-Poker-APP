@@ -41,6 +41,12 @@ function nextWeek(w: number) {
   return d.getTime();
 }
 
+/** What counts as logging: a hand (or reviewing one), a session with a note, a player note (by when it was last touched). */
+export function streakActivity(hands: { createdAt: number; reviewedAt?: number }[], sessions: { startedAt: number; notes: string }[], players: { updatedAt: number }[]): number[] {
+  // Reviewing a hand (answering its «O que fazes aqui?») keeps the week too: practice without playing.
+  return [...hands.flatMap((h) => (h.reviewedAt ? [h.createdAt, h.reviewedAt] : [h.createdAt])), ...sessions.filter((x) => x.notes.trim()).map((x) => x.startedAt), ...players.map((p) => p.updatedAt)];
+}
+
 export function computeStreak(activity: number[], pauses: Pause[], now: number, recentWeeks = 12): Streak {
   const current = weekStart(now);
   const logged = new Set(activity.map(weekStart));

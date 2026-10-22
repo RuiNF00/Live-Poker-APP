@@ -48,7 +48,9 @@ export async function POST(req: Request) {
   for (const key of PRIVATE_FIELDS) delete hand[key];
   if (hand.game && typeof hand.game === 'object') hand.game = withoutPrivateGame(hand).game;
   // The player's own notebook ids for the people at the table stay on the phone.
-  if (Array.isArray(hand.players)) hand.players = hand.players.map((p) => (p && typeof p === 'object' ? (({ playerId: _, ...rest }) => rest)(p as Record<string, unknown>) : p));
+  // A name at the table is public text too: an offensive one becomes '' and the page shows the position instead.
+  const dropOffensiveName = (p: Record<string, unknown>) => (typeof p.name === 'string' && isOffensive(p.name) ? { ...p, name: '' } : p);
+  if (Array.isArray(hand.players)) hand.players = hand.players.map((p) => (p && typeof p === 'object' ? dropOffensiveName((({ playerId: _, ...rest }) => rest)(p as Record<string, unknown>)) : p));
   if (typeof hand.notes === 'string' && isOffensive(hand.notes)) hand.notes = '';
   if (typeof hand.title === 'string' && isOffensive(hand.title)) hand.title = '';
   // "O que queres saber?": one line at the top of the page, through the same filter.

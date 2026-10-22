@@ -26,13 +26,13 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { inFestivalPackage, offerPackageIds, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
+import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -129,16 +129,42 @@ function BackerScreen() {
 
   // Nothing to settle in the deal's currency (festival action apart, if any, can't be settled without a rate).
   const square = Math.abs(l.balance) < 0.01;
-  // Settle the whole balance in one payment, the way Splitwise's "settle up" does.
+  // Festival pieces in the balance: paid with it, so their package says so too (QA P2). The payment keeps the rest.
+  const piecesPaid = () =>
+    linesSettledWith(
+      offers,
+      backer.id,
+      (fid) => planFestival(allFestivals(), fid),
+      (fid) => getPlan(fid).sessions,
+      (o, c) => (c === cur ? 1 : (rate(fx.table, c, cur, o.createdAt, fx.manual) ?? savedOfferRate(payments, backer.id, o.id, cur))),
+      // Its unpaid stakes on sessions already started, at each session's rate, as the ledger counted them.
+      (line) =>
+        l.rows
+          .filter((r) => r.stake.unpaid && r.stake.packageId === line.packageId)
+          .reduce((a, r) => {
+            const c = r.session.currency;
+            return a + Math.round(r.cost * (!c || c === cur ? 1 : (rate(fx.table, c, cur, r.session.startedAt, fx.manual) ?? 1)) * 100) / 100;
+          }, 0),
+    );
+  // Settle the whole balance in one payment, the way Splitwise's "settle up" does. A session or payment
+  // with no rate counts 1:1 in the balance: recorded as paid, that guess would stay (QA P2, 19 Oct).
   const markPaid = () =>
-    confirm(
+    l.missing.length
+      ? tell(t('Falta o câmbio de {list}', { list: l.missing.map(curName).join(', ') }), t('Para enviar as contas ou registar o pagamento, falta o câmbio de {list}.', { list: l.missing.map(curName).join(', ') }))
+      : confirm(
       t('Marcar como pago?'),
       l.balance > 0
         ? t('Pagaste {amount} a {name} e ficam acertados.', { amount: money(l.balance, cur), name: backer.name })
         : t('{name} pagou-te {amount} e ficam acertados.', { amount: money(-l.balance, cur), name: backer.name }),
       () => {
         const now = Date.now();
-        savePayment({ id: uid('y_'), backerId: backer.id, amount: Math.round(l.balance * 100) / 100, at: now, note: '', createdAt: now, fx: ratesNow() });
+        const pieces = piecesPaid();
+        const rest = Math.round((l.balance + pieces.reduce((a, x) => a + x.due, 0)) * 100) / 100;
+        if (Math.abs(rest) >= 0.01) savePayment({ id: uid('y_'), backerId: backer.id, amount: rest, at: now, note: '', createdAt: now, fx: ratesNow(), currency: cur });
+        // Skipped events with no session stay unpaid for (never refunded); the started ones' stakes become paid.
+        const before = offerPackageIds(getOffers());
+        for (const x of pieces) setLinePaid(x.offerId, x.lineId, true, getPlan(x.festivalId).sessions);
+        for (const fid of new Set(pieces.map((x) => x.festivalId))) for (const s of offerStakeChanges(sessions, getOffers(), fid, getPlan(fid).sessions, before)) saveSession(s);
         tap('medium');
         // Store-review moment C (design/pedido-avaliacao.md): the balance is now "Acertado".
         if (!apart.length) void maybeAskForReview('settled');
@@ -478,9 +504,9 @@ function BackerScreen() {
                     iconColor={h.p.amount > 0 ? C.warn : C.good}
                     title={h.p.amount > 0 ? t('Pagaste') : t('Recebeste')}
                     subtitle={[shortDate(h.p.at), h.p.note].filter(Boolean).join(' · ')}
-                    value={money(Math.abs(h.p.amount), cur)}
+                    value={money(Math.abs(h.p.amount), l.payCurrency[h.p.id] ?? cur)}
                     chevron={false}
-                    onPress={gate(() => confirm(t('Apagar pagamento?'), money(Math.abs(h.p.amount), cur), () => deletePayment(h.p.id), t('Apagar')))}
+                    onPress={gate(() => confirm(t('Apagar pagamento?'), money(Math.abs(h.p.amount), l.payCurrency[h.p.id] ?? cur), () => deletePayment(h.p.id), t('Apagar')))}
                   />
                 ) : (
                   <ListItem

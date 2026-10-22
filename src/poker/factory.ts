@@ -67,13 +67,16 @@ export function newHand(opts: {
   last?: Hand | null;
   tableSize?: number;
   currency?: string;
+  /** Outside a session: the last session played. When it ended after the last hand, its game is the one the player plays now. */
+  recent?: Session | null;
 }): Hand {
-  const { session, last } = opts;
+  const { session, last, recent } = opts;
   let game: GameInfo;
   let n: number;
   let stack: number;
   let names: string[] = [];
   const carry = sameTable(last, session);
+  const lastAt = last?.createdAt ?? 0;
   if (session) {
     game = {
       kind: session.kind,
@@ -91,6 +94,21 @@ export function newHand(opts: {
     n = session.tableSize;
     stack = session.stack;
     names = session.roster;
+  } else if (recent && !carry && (recent.endedAt ?? recent.startedAt) > lastAt) {
+    // Cash or tournament, blinds and table from that session; a tournament starts again on its first stack.
+    game = {
+      kind: recent.kind,
+      name: recent.name,
+      venue: recent.venue,
+      sb: recent.sb,
+      bb: recent.bb,
+      ante: recent.ante,
+      anteType: recent.anteType,
+      currency: recent.currency,
+      buyIn: recent.buyIn,
+    };
+    n = recent.tableSize;
+    stack = recent.kind === 'mtt' ? (recent.stackLog[0]?.stack ?? recent.stack) : recent.buyIn;
   } else if (last) {
     // Straddles and bomb pots belong to one hand, never carried over.
     game = { ...last.game, straddles: undefined, straddleFrom: undefined, bombPot: undefined };

@@ -36,7 +36,7 @@ export default function Packs() {
         icon="albums-outline"
         title={t('Ainda sem links de várias mãos')}
         body={t('Seleciona mãos na lista (toque longo) e toca em Partilhar num só link.')}
-        action={<Button title={t('Ir para as mãos')} kind="secondary" size="md" onPress={() => router.navigate('/')} />}
+        action={<Button title={t('Ir para as mãos')} kind="secondary" size="md" onPress={() => router.navigate('/hands')} />}
       />
     );
   return (

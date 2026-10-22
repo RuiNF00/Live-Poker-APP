@@ -2,22 +2,23 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, findNodeHandle, Platform, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, findNodeHandle, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FIRST_CURRENCIES, GOALS, isMtt, ONBOARDING_KEY, planFor, PLAYS, VOLUMES, type Answers, type Goal } from '@/billing/onboarding';
+import { FIRST_ACTION_LABEL, FIRST_CURRENCIES, firstAction, fourWeeks, GOALS, ONBOARDING_KEY, planFor, PLAYS, VOLUMES, type Answers, type FirstAction, type Goal } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
 import { InvitePaste } from '@/components/InvitePaste';
 import { Replayer } from '@/components/Replayer';
-import { Button, Pill, Row, T, tap, type IconName } from '@/components/ui';
+import { Button, Chip, ChipRow, Row, T, tap, type IconName } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { chips, money } from '@/poker/format';
+import { useReduceMotion } from '@/lib/motion';
 import { sampleHand } from '@/poker/sample';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
-const STEPS = ['hero', 'goals', 'plays', 'volume', 'currency', 'plan'] as const;
+// The currency is no longer a step: it comes from the phone's region and can be changed on the plan.
+const STEPS = ['hero', 'goals', 'plays', 'volume', 'plan'] as const;
 
 /**
  * First run: a sample hand replaying (the "aha" before anything else), four
@@ -36,6 +37,22 @@ export default function Welcome() {
   const volume = VOLUMES.find((v) => v.key === a.volume);
   const at = STEPS[step];
   const [skipped, setSkipped] = useState(false);
+  // A beat between the last answer and the plan (Opal's «calculating»): the answers visibly turn into something.
+  const [preparing, setPreparing] = useState(false);
+  const [pickingCur, setPickingCur] = useState(false);
+  const reduce = useReduceMotion();
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const viewH = useRef(0);
+  // Scroll only as far as needed for the whole question (the table above keeps the hand's context); the replayer sits at the top of the content.
+  const showQuiz = (top: number, height: number) => {
+    const y = Math.min(S.gutter + top - S.sm, S.gutter + top + height + S.md - viewH.current);
+    if (y > 0) scroll.current?.scrollTo({ y, animated: !reduce });
+  };
+  useEffect(() => {
+    if (!preparing) return;
+    const id = setTimeout(() => setPreparing(false), reduce ? 300 : 900);
+    return () => clearTimeout(id);
+  }, [preparing, reduce]);
   // One event per screen reached, so the funnel shows where people stop.
   useEffect(() => track('onboarding_step', { step: at, index: step }), [at, step]);
   // A tap moves to the next step at once: VoiceOver and TalkBack go to its question, not to a button that is gone.
@@ -59,15 +76,29 @@ export default function Welcome() {
   useEffect(() => () => void AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(answers.current)).catch(() => {}), []);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const finish = () => {
+  const open = (go: FirstAction) => {
+    if (go === 'past') router.navigate({ pathname: '/bankroll', params: { add: 'session' } });
+    else if (go === 'festival') router.push('/festival');
+    else router.push('/hand/new');
+  };
+  // The plan ends on its first action, not on an empty list; «Ver a app primeiro» is the plain way out.
+  // A second tap would stack the destination twice: the first one wins.
+  const done = useRef(false);
+  const finish = (go?: FirstAction) => {
+    if (done.current) return;
+    done.current = true;
+    pickCurrency(settings.currency);
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
-    track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '' });
+    track('onboarding_step', { step: 'done', index: STEPS.length, skipped, goals: a.goals.join(','), plays: a.plays ?? '', volume: a.volume ?? '', next: go ?? 'app' });
     // No paywall here: the trial is offered once, at the first live session or
     // the first saved hand (TrialFollowUp, useWelcomeOffer), so its days are spent playing.
     router.back();
+    if (go) setTimeout(() => open(go), 350);
   };
   // At the table, or skipping: close with no paywall. The questions don't block anyone.
   const close = (path: 'sessao' | 'mesa' | 'saltar') => {
+    if (done.current) return;
+    done.current = true;
     AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(a)).catch(() => {});
     setSkipped(true);
     track('onboarding_step', { step: path === 'sessao' ? 'session' : path === 'mesa' ? 'table' : 'skip', index: step, path });
@@ -117,16 +148,18 @@ export default function Welcome() {
         </Row>
       ) : null}
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: S.gutter, gap: S.xl }}>
+      <ScrollView ref={scroll} onLayout={(e) => (viewH.current = e.nativeEvent.layout.height)} contentContainerStyle={{ flexGrow: 1, padding: S.gutter, gap: S.xl }}>
         {at === 'hero' ? (
           <>
             {/* Same side margin as the hand screen: the controls keep their rounded ends. */}
             <View style={{ marginHorizontal: S.md - S.gutter }}>
-              <Replayer hand={sample} autoPlay />
+              {/* Doing, not watching (Brilliant): the hand plays up to hero's decision and asks. */}
+              {/* On an iPhone SE, or with large text, the question lands under the buttons: scroll it into view. */}
+              <Replayer hand={sample} autoPlay quiz playToQuiz onQuiz={showQuiz} onVote={(c) => track('onboarding_step', { step: 'hero_quiz', index: 0, choice: c })} />
             </View>
             <View style={{ gap: S.sm }}>
               <T v="title">{t('A tua mão, revista em 30 segundos')}</T>
-              <T v="callout">{t('Regista entre mãos. Revê rua a rua.')}</T>
+              <T v="callout">{t('Decide o que farias e vê o resto da mão. É assim que revês as tuas.')}</T>
             </View>
             {/* Invited on an iPhone: the code survives the App Store through the clipboard, then straight to the first hand. */}
             <InvitePaste onClaimed={() => close('mesa')} />
@@ -136,7 +169,7 @@ export default function Welcome() {
         {at === 'goals' ? (
           <Question head={head} title={t('O que queres da Sweatbook?')} hint={t('Escolhe uma ou mais.')}>
             {GOALS.map((g) => (
-              <Option key={g.key} icon={g.icon as IconName} label={t(g.label)} active={a.goals.includes(g.key)} multi onPress={() => toggle(g.key)} />
+              <Option key={g.key} icon={g.icon as IconName} label={t(g.label)} sub={a.goals.includes(g.key) ? t(g.sub) : undefined} active={a.goals.includes(g.key)} multi onPress={() => toggle(g.key)} />
             ))}
           </Question>
         ) : null}
@@ -174,6 +207,7 @@ export default function Welcome() {
                 active={a.volume === v.key}
                 onPress={() => {
                   setA((x) => ({ ...x, volume: v.key }));
+                  setPreparing(true);
                   next();
                 }}
               />
@@ -181,46 +215,51 @@ export default function Welcome() {
           </Question>
         ) : null}
 
-        {at === 'currency' ? (
-          <Question head={head} title={t('Em que moeda jogas?')}>
-            {FIRST_CURRENCIES.map((c) => (
-              <Option
-                key={c.code}
-                compact
-                badge={c.sym}
-                label={t(c.name)}
-                active={settings.currency === c.code}
-                onPress={() => {
-                  pickCurrency(c.code);
-                  next();
-                }}
-              />
-            ))}
-          </Question>
+        {at === 'plan' && preparing ? (
+          <View accessible accessibilityLiveRegion="polite" accessibilityLabel={t('A preparar o teu plano')} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: S.md }}>
+            <ActivityIndicator color={C.accent} />
+            <T v="callout">{t('A preparar o teu plano')}</T>
+          </View>
         ) : null}
 
-        {at === 'plan' ? (
+        {at === 'plan' && !preparing ? (
           <View style={{ gap: S.xl }}>
-            <View style={{ gap: S.sm }}>
-              <View ref={head} accessible accessibilityRole="header" style={{ gap: S.sm }}>
-                <T v="label" color={C.accent}>
-                  {t('O teu plano está pronto')}
-                </T>
-                <T v="title">{t(plan.title)}</T>
-              </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.xs }}>
-                {[
-                  play ? t(play.label) : null,
-                  volume ? t(volume.label) : null,
-                  FIRST_CURRENCIES.find((c) => c.code === settings.currency)?.sym ?? settings.currency,
-                ]
-                  .filter((x): x is string => !!x)
-                  .map((x) => (
-                    <Pill key={x} label={x} />
-                  ))}
-              </View>
+            <View ref={head} accessible accessibilityRole="header" style={{ gap: S.sm }}>
+              <T v="label" color={C.accent}>
+                {t('O teu plano está pronto')}
+              </T>
+              <T v="title">{t(plan.title)}</T>
             </View>
-            <Preview mtt={isMtt(a.plays)} currency={settings.currency} plays={a.plays} />
+            {/* The plan in three lines, one per answer (Runna). The currency came from the phone's region: changed here, not in a step of its own. */}
+            <View style={{ gap: S.md }}>
+              {play ? <Line icon="layers-outline" label={t('Jogo')} value={t(play.label)} /> : null}
+              {volume ? <Line icon="calendar-outline" label={t('Ritmo')} value={t(volume.label)} /> : null}
+              <Line
+                icon="cash-outline"
+                label={t('Moeda')}
+                value={FIRST_CURRENCIES.find((c) => c.code === settings.currency)?.sym ?? settings.currency}
+                action={t('Mudar')}
+                open={pickingCur}
+                onPress={() => setPickingCur((x) => !x)}
+              />
+              {pickingCur ? (
+                <ChipRow>
+                  {FIRST_CURRENCIES.map((c) => (
+                    <Chip
+                      key={c.code}
+                      label={c.sym}
+                      active={settings.currency === c.code}
+                      onPress={() => {
+                        pickCurrency(c.code);
+                        setPickingCur(false);
+                      }}
+                    />
+                  ))}
+                </ChipRow>
+              ) : null}
+            </View>
+            {fourWeeks(a.volume) ? <Forecast n={fourWeeks(a.volume)!} /> : null}
+            <T v="label">{t('Porquê este plano')}</T>
             <View style={{ gap: S.md }}>
               {plan.points.map((p) => (
                 <Row key={p} gap={S.md}>
@@ -254,21 +293,20 @@ export default function Welcome() {
         {at === 'hero' ? (
           <View style={{ gap: S.xs }}>
             {/* One main action, the fastest to something useful: a live session (its start is also where the trial is offered). */}
-            <Button title={t('Começar sessão')} icon="play" onPress={() => close('sessao')} />
-            <Button kind="secondary" icon="flash-outline" title={t('Registar uma mão')} onPress={() => close('mesa')} />
+            {/* One main action (Ladder): three questions to a plan that ends on a first action. At the table, one tap to the session. */}
+            <Button title={t('Criar o meu plano')} iconRight="chevron-forward" onPress={next} lines={2} />
             {/* Stacked, full width: side by side they broke into two lines at 320 px and at large text. */}
-            <Button kind="ghost" size="sm" title={t('Responder a 4 perguntas')} onPress={next} lines={2} />
+            <Button kind="ghost" size="sm" icon="play" title={t('Estou à mesa agora')} onPress={() => close('sessao')} lines={2} />
             <Button kind="ghost" size="sm" title={t('Vens de outra app?')} onPress={switchApp} lines={2} />
           </View>
         ) : null}
         {at === 'goals' ? <Button title={t('Continuar')} disabled={!a.goals.length} onPress={next} /> : null}
-        {/* The currency is already set (from the phone's region): one tap to keep it. */}
-        {at === 'currency' ? <Button title={t('Continuar')} onPress={() => {
-              pickCurrency(settings.currency);
-              next();
-            }}
-          /> : null}
-        {at === 'plan' ? <Button title={t('Continuar')} iconRight="chevron-forward" onPress={finish} /> : null}
+        {at === 'plan' ? (
+          <View style={{ gap: S.xs }}>
+            <Button title={t(FIRST_ACTION_LABEL[firstAction(a)])} iconRight="chevron-forward" onPress={() => finish(firstAction(a))} lines={2} />
+            <Button kind="ghost" size="sm" title={t('Ver a app primeiro')} onPress={() => finish()} />
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -324,55 +362,44 @@ function Option({ label, sub, icon, badge, active, multi, compact, onPress }: { 
   );
 }
 
-/** Example numbers at the stakes the player just picked: a 5/10 example after choosing 1/2 read as someone else's game. */
-const EXAMPLE: Record<string, { stakes?: string; profit?: number; buyIn?: number }> = {
-  cash1: { stakes: '1/2', profit: 240 },
-  cash2: { stakes: '5/10', profit: 1240 },
-  cash3: { stakes: '10/20', profit: 2480 },
-  cash4: { stakes: '50/100', profit: 12400 },
-  mtt1: { buyIn: 330 },
-  mtt2: { buyIn: 1100 },
-  mtt3: { buyIn: 10300 },
-};
-
-/** The screen they'll use most, as it will look: a live session for cash, a tournament for MTT. Example numbers, labelled. */
-function Preview({ mtt, currency, plays }: { mtt: boolean; currency: string; plays?: string | null }) {
-  const ex = EXAMPLE[plays ?? ''] ?? {};
-  const rows: [string, string][] = mtt
-    ? [
-        [t('Buy-in'), money(ex.buyIn ?? 1100, currency)],
-        [t('Dia'), '2'],
-        [t('Stack'), chips(184000)],
-      ]
-    : [
-        [t('Stakes'), ex.stakes ?? '5/10'],
-        [t('Tempo'), '4h 12m'],
-        [t('Mãos'), '6'],
-      ];
+/** One answer of the plan: icon, what it is, the answer; the currency line can be changed. */
+function Line({ icon, label, value, action, open, onPress }: { icon: IconName; label: string; value: string; action?: string; open?: boolean; onPress?: () => void }) {
   return (
-    <View style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: S.lg, gap: S.md }}>
-      <Row gap={S.sm}>
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.good }} />
-        <T v="h3" style={{ flex: 1 }}>
-          {mtt ? t('Torneio a decorrer') : t('Sessão a decorrer')}
-        </T>
+    <Row gap={S.md}>
+      <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+        <Ionicons name={icon} size={18} color={C.accent} />
+      </View>
+      {/* One stop for VoiceOver: «Jogo: Cash 1/2 a 2/5», not the label and the answer apart. */}
+      <View accessible accessibilityLabel={`${label}: ${value}`} style={{ flex: 1, gap: 2 }}>
         <T v="tiny" color={C.muted}>
-          {t('Exemplo')}
+          {label}
         </T>
-      </Row>
-      <T v="monoL" color={C.good}>
-        {mtt ? t('Top {n}', { n: 38 }) : '+' + money(ex.profit ?? 1240, currency)}
+        <T v="h3">{value}</T>
+      </View>
+      {action && onPress ? (
+        <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${action}: ${label}`} accessibilityState={{ expanded: !!open }} style={{ minHeight: 44, justifyContent: 'center' }}>
+          <T v="small" color={C.accent}>
+            {action}
+          </T>
+        </Pressable>
+      ) : null}
+    </Row>
+  );
+}
+
+/** The effect of the answers as one number (Opal), worked out from the pace they gave, never invented. */
+function Forecast({ n }: { n: number }) {
+  const says = [`${n} ${t('sessões nas próximas 4 semanas, ao teu ritmo')}`, t('Chega para a tua curva de resultados começar a dizer alguma coisa.'), t('Segundo as tuas respostas')];
+  return (
+    <View accessible accessibilityLabel={says.join('. ')} style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: S.lg, gap: S.xs }}>
+      <T v="monoXL" color={C.accent}>
+        {n}
       </T>
-      <Row gap={S.lg}>
-        {rows.map(([k, v]) => (
-          <View key={k} style={{ gap: 2 }}>
-            <T v="tiny" color={C.muted}>
-              {k}
-            </T>
-            <T v="mono">{v}</T>
-          </View>
-        ))}
-      </Row>
+      <T v="h3">{t('sessões nas próximas 4 semanas, ao teu ritmo')}</T>
+      <T v="small">{t('Chega para a tua curva de resultados começar a dizer alguma coisa.')}</T>
+      <T v="tiny" color={C.muted} style={{ paddingTop: S.xs }}>
+        {t('Segundo as tuas respostas')}
+      </T>
     </View>
   );
 }

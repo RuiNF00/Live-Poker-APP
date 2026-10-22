@@ -16,11 +16,12 @@ export interface Answers {
 }
 
 /** Portuguese keys; show with t(). */
-export const GOALS: { key: Goal; icon: string; label: string }[] = [
-  { key: 'results', icon: 'trending-up', label: 'Ver os meus resultados' },
-  { key: 'leaks', icon: 'search', label: 'Encontrar leaks' },
-  { key: 'backers', icon: 'people', label: 'Gerir backers' },
-  { key: 'discuss', icon: 'chatbubbles', label: 'Guardar mãos para discutir' },
+/** `sub` says what the app does with the answer, shown once it is picked (Fitbod). */
+export const GOALS: { key: Goal; icon: string; label: string; sub: string }[] = [
+  { key: 'results', icon: 'trending-up', label: 'Ver os meus resultados', sub: 'Cada sessão entra na tua curva de bankroll' },
+  { key: 'leaks', icon: 'search', label: 'Encontrar leaks', sub: 'Cada mão revista rua a rua, para veres onde perdes' },
+  { key: 'backers', icon: 'people', label: 'Gerir backers', sub: 'Contas com cada backer e makeup, no Pro' },
+  { key: 'discuss', icon: 'chatbubbles', label: 'Guardar mãos para discutir', sub: 'Um link por mão para os amigos dizerem o que fariam' },
 ];
 
 /** The whole ladder, up to the high stakes the app is built for. `label` is a Portuguese key for the plan screen. */
@@ -36,6 +37,16 @@ export const PLAYS: { key: Plays; group: 'Cash' | 'Torneios'; stakes: string; la
 
 /** Tournament player? Also reads answers saved before the ladder (mttLow, mttHigh). */
 export const isMtt = (p: string | null | undefined) => !!p && p.startsWith('mtt');
+
+/** The game a first past session opens on, from what they said they play: a cash player isn't handed a tournament form. */
+export function firstKind(saved: string | null): 'cash' | 'mtt' | null {
+  try {
+    const plays = saved ? (JSON.parse(saved) as { plays?: string | null }).plays : null;
+    return plays ? (isMtt(plays) ? 'mtt' : 'cash') : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Currencies offered on first run, with a name so "$" isn't ambiguous. `code` is what's stored. */
 export const FIRST_CURRENCIES: { code: string; sym: string; name: string }[] = [
@@ -53,6 +64,14 @@ export const VOLUMES: { key: Volume; label: string }[] = [
   { key: 'some', label: '5 a 10 por mês' },
   { key: 'lots', label: 'Mais de 10 por mês' },
 ];
+
+/**
+ * Sessions in the next four weeks at the pace they told us: the plan's one number, derived
+ * only from the answer (Opal shows the effect of the answers; never an invented figure).
+ */
+export function fourWeeks(v: Volume | null): number | null {
+  return v === 'few' ? 4 : v === 'some' ? 8 : v === 'lots' ? 12 : null;
+}
 
 /** What the plan screen promises, in Portuguese keys. Every point is something the app does today. */
 export function planFor(a: Answers): { title: string; points: string[]; pro: string[] } {
@@ -80,6 +99,28 @@ function proFor(a: Answers): string[] {
   if (a.goals.includes('discuss') || a.goals.includes('leaks')) out.push('Várias mãos de uma vez para o solver');
   out.push('Mãos sem limite: o grátis fica pelas 3 por dia', 'Stories com voz, sem marca de água');
   return [...new Set(out)].slice(0, 2);
+}
+
+export type FirstAction = 'past' | 'festival' | 'hand';
+
+/** Portuguese keys for the plan screen's button, one per first action. */
+export const FIRST_ACTION_LABEL: Record<FirstAction, string> = {
+  past: 'Registar a última sessão',
+  festival: 'Escolher torneios do festival',
+  hand: 'Registar a primeira mão',
+};
+
+/**
+ * Where the plan screen's button goes: the first thing worth saving for what
+ * they just told us. Most installs happen away from the table, so a past
+ * session (20 seconds, a first result) comes before a live one. Hands first
+ * only for those who came for hands alone; tournament players plan a festival
+ * (free). Never staking: it is Pro, a wall in the first minute.
+ */
+export function firstAction(a: Answers): FirstAction {
+  if (a.goals.length && a.goals.every((g) => g === 'discuss' || g === 'leaks')) return 'hand';
+  if (isMtt(a.plays)) return 'festival';
+  return 'past';
 }
 
 export type StartStep = 'hand' | 'session' | 'bankroll' | 'festival' | 'share';

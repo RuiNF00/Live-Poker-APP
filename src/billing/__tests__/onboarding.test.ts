@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { festivalPicks, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
+import { festivalPicks, firstAction, firstKind, fourWeeks, GOALS, isMtt, planFor, PLAYS, startProgress, startSteps } from '../onboarding';
 
 test('plan follows what they play and want', () => {
   const p = planFor({ goals: ['results', 'backers'], plays: 'mtt3', volume: 'lots' });
@@ -39,4 +39,32 @@ test('the festival step counts picks on any festival, not only the first one shi
   assert.equal(festivalPicks({}), 0);
   assert.equal(festivalPicks({ 'lisboa-nov-2026': { picked: ['e1', 'e2'] }, 'bahamas-dez-2026': { picked: [] } }), 2);
   assert.equal(festivalPicks({ a: { picked: ['x'] }, b: { picked: ['y'] }, c: undefined }), 2);
+});
+
+test('the plan ends on a first action that fits the answers, never staking', () => {
+  assert.equal(firstAction({ goals: ['discuss'], plays: 'mtt2', volume: null }), 'hand');
+  assert.equal(firstAction({ goals: ['leaks', 'discuss'], plays: 'cash1', volume: null }), 'hand');
+  assert.equal(firstAction({ goals: ['results', 'discuss'], plays: 'mtt1', volume: null }), 'festival');
+  assert.equal(firstAction({ goals: ['backers'], plays: 'cash3', volume: null }), 'past');
+  assert.equal(firstAction({ goals: [], plays: null, volume: null }), 'past');
+});
+
+test("the plan's one number comes from the pace they gave, never invented", () => {
+  assert.equal(fourWeeks('few'), 4);
+  assert.equal(fourWeeks('some'), 8);
+  assert.equal(fourWeeks('lots'), 12);
+  assert.equal(fourWeeks(null), null);
+});
+
+test('every goal says what the app does with it, and staking says it is Pro', () => {
+  for (const g of GOALS) assert.ok(g.sub.length > 0, g.key);
+  assert.match(GOALS.find((g) => g.key === 'backers')!.sub, /Pro/);
+});
+
+test('a first past session opens on the game they said they play', () => {
+  assert.equal(firstKind(JSON.stringify({ plays: 'cash1' })), 'cash');
+  assert.equal(firstKind(JSON.stringify({ plays: 'mtt2' })), 'mtt');
+  assert.equal(firstKind('{}'), null);
+  assert.equal(firstKind(null), null);
+  assert.equal(firstKind('not json'), null);
 });

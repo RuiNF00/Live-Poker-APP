@@ -32,6 +32,8 @@ export async function generateMetadata({ params, searchParams }: Params & Search
     description: c.metaDescription,
     robots: { index: false },
     referrer: 'no-referrer',
+    // Confirming never waits on the app (marketing/estrategia-lancamento.md 3.1): no store banner until then.
+    ...(rec.confirmedAt ? {} : { itunes: null }),
     openGraph: { title, description: c.metaDescription, type: 'website', url: `${brand.siteUrl}/swap/${id}`, siteName: brand.name, locale: ogLocale(locale), images: [image] },
     twitter: { card: 'summary_large_image', title, description: c.metaDescription, images: [image.url] },
   };

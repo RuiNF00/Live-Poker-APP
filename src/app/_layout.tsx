@@ -16,6 +16,7 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ProProvider } from '@/billing/pro';
+import { AgeGate } from '@/components/AgeGate';
 import { AppLock } from '@/components/AppLock';
 import { Deferred } from '@/components/Deferred';
 import { OfflineBadge, useOffline } from '@/components/NetStatus';
@@ -114,6 +115,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="hand/new" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="hand/[id]" options={{ title: t('Mão') }} />
+            <Stack.Screen name="train" options={{ headerShown: false, animation: 'none' }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="trial" options={{ headerShown: false, presentation: 'modal' }} />
@@ -124,16 +126,18 @@ export default function RootLayout() {
             <Stack.Screen name="festival-card/[id]" options={{ title: t('Partilhar festival'), presentation: 'modal', ...sheetClose }} />
             <Stack.Screen name="festival-carousel/[id]" options={{ title: t('Carrossel do festival'), presentation: 'modal', ...sheetClose }} />
             <Stack.Screen name="settings" options={{ title: t('Definições') }} />
+            <Stack.Screen name="notes" options={{ title: t('Notas') }} />
             <Stack.Screen name="chop" options={{ title: t('Calculadora de deal') }} />
             <Stack.Screen name="variance" options={{ title: t('Variância') }} />
             <Stack.Screen name="summary/[id]" options={{ title: t('Resumo da sessão') }} />
             <Stack.Screen name="festival" options={{ title: 'Festival' }} />
+            <Stack.Screen name="festival-event" options={{ title: t('Torneio') }} />
             <Stack.Screen name="festivals" options={{ title: t('Festivais') }} />
             <Stack.Screen name="festival-new" options={{ title: t('Adicionar o meu festival'), presentation: 'modal', ...sheetClose }} />
             <Stack.Screen name="tournament" options={{ title: t('Modo torneio') }} />
             <Stack.Screen name="tournament-stats" options={{ title: t('Torneios') }} />
             <Stack.Screen name="tournament-card" options={{ title: t('Currículo de torneios'), presentation: 'modal', ...sheetClose }} />
-            <Stack.Screen name="odds" options={{ title: t('Calculadora de odds') }} />
+            <Stack.Screen name="odds" options={{ title: t('Calculadora de equity') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
             <Stack.Screen name="profile" options={{ title: t('Perfil público') }} />
             <Stack.Screen name="coach/index" options={{ title: t('Links para o coach') }} />
@@ -147,6 +151,8 @@ export default function RootLayout() {
             <Stack.Screen name="live/[id]" options={{ headerShown: false }} />
           </Stack>
           <AppLock />
+          {/* After the lock, so it sits on top: no app (and no lock) until the age check allows it. */}
+          <AgeGate />
           </ProProvider>
         </StoreProvider>
       </ThemeProvider>

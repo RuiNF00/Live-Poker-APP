@@ -54,17 +54,19 @@ export interface Report {
 }
 
 function group(list: Session[], key: (s: Session) => string): Breakdown[] {
-  const m = new Map<string, Breakdown>();
+  const m = new Map<string, Breakdown & { timed: number }>();
   for (const s of list) {
     const k = key(s);
     if (!k) continue;
-    const b = m.get(k) ?? { key: k, sessions: 0, profit: 0, hours: 0, hourly: 0, mtts: 0, roi: null };
+    const b = m.get(k) ?? { key: k, sessions: 0, profit: 0, hours: 0, hourly: 0, mtts: 0, roi: null, timed: 0 };
     b.sessions++;
     b.profit += profit(s);
     b.hours += playedMs(s) / 3600000;
+    // Sessions with no hours (imported with a date only) count in the profit, never in €/h.
+    if (playedMs(s) > 0) b.timed += profit(s);
     m.set(k, b);
   }
-  return [...m.values()].map((b) => ({ ...b, hourly: b.hours > 0 ? b.profit / b.hours : 0 }));
+  return [...m.values()].map(({ timed, ...b }) => ({ ...b, hourly: b.hours > 0 ? timed / b.hours : 0 }));
 }
 
 const byProfit = (a: Breakdown, b: Breakdown) => b.profit - a.profit;

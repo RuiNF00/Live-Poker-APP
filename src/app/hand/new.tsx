@@ -45,6 +45,7 @@ import { MAX_NOTES_LENGTH } from '@/poker/privacy';
 import { DEFAULT_TAGS, STAGES, type Hand, type HandAction, type Player } from '@/poker/types';
 import { displayName, seatViews } from '@/poker/view';
 import { opponentStats, sessionsSeen } from '@/store/queries';
+import { lastEnded } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import { BRAND, C, R, S, SHADOW, ff, posColor } from '@/theme';
 import { crashProbe } from '@/lib/crash-probe';
@@ -86,8 +87,10 @@ export default function NewHand() {
     const last = hands[0] ?? null;
     // A tournament's clock may have moved on since the session screen last saved: the hand gets today's level and blinds.
     const live = activeSession && { ...activeSession, ...levelsDue(activeSession) };
-    // Same table as the last hand: seats, stacks and the moved button are already right.
-    return { hand: newHand({ id: uid('h_'), session: live, last, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: sameTable(last, live) };
+    // Same table as the last hand: seats, stacks and the moved button are already right. Outside a
+    // session, a session played since that hand gives the game (cash 1/2 doesn't open on «Torneio»).
+    const recent = live ? null : lastEnded(store.sessions);
+    return { hand: newHand({ id: uid('h_'), session: live, last, recent, currency: settings.currency, tableSize: settings.defaultTableSize }), posChosen: sameTable(last, live) };
   });
   const [history, setHistory] = useState<Draft[]>([]);
   const [ctxOpen, setCtxOpen] = useState(false);
@@ -113,7 +116,7 @@ export default function NewHand() {
 
   // The very first hand: tournament or cash, and the stakes, from the first-run answers.
   useEffect(() => {
-    if (isEdit || store.draft || hands.length || activeSession) return;
+    if (isEdit || store.draft || hands.length || activeSession || lastEnded(store.sessions)) return;
     let live = true;
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then((raw) => {

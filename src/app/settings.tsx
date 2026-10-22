@@ -22,6 +22,7 @@ import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
 import { saveTextFile } from '@/lib/files';
 import { notice } from '@/lib/notice';
+import { lockScreenAvailable } from '@/lib/lock-screen';
 import { openStoreReviewPage, storeReviewUrl } from '@/lib/review';
 import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { crashReportsAvailable } from '@/lib/crash-report';
@@ -202,7 +203,10 @@ export default function SettingsScreen() {
         <Section title={t('Privacidade')}>
           <ListGroup>
             <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
-            <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, mostra •••: o ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
+            {/* Only where the build has a home widget (no App Group on iOS: none). */}
+            {lockScreenAvailable ? (
+              <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, mostra •••: o ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
+            ) : null}
             {lockSupported ? <AppLockSetting /> : null}
           </ListGroup>
         </Section>
@@ -237,7 +241,7 @@ export default function SettingsScreen() {
             <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
             <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
             <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Recebem os dois {pct}% no primeiro mês do Pro', { pct: INVITE.pct })} onPress={() => router.push('/invite')} />
-            <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de odds')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
+            <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de equity')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
             <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
           </ListGroup>
           <InviteCodeField />

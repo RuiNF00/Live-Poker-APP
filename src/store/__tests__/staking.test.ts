@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { addOfferDue, backerLedger, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, offerRatesNow, packageDefaults, packageStates, savedOfferRate, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
+import { addOfferDue, backerLedger, paymentCurrency, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, offerRatesNow, packageDefaults, packageStates, savedOfferRate, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 import { rate } from '../fx-math';
@@ -625,4 +625,40 @@ test('a payment keeps the rates it settled at: with none later, the backer stays
   assert.equal(savedOfferRate([{ ...pay, fx: { 'o2>$': -1 } }], 'b1', 'o2', '$'), null);
   assert.equal(savedOfferRate([pay, { ...pay, at: 20, fx: { 'o2>$': 1.2 } }], 'b1', 'o2', '$'), 1.2);
   assert.equal(savedOfferRate([pay], 'b2', 'o2', '$'), null);
+});
+
+// QA P1, 19 Oct: a 909,09€ payment read as 909,09$ once a bigger $ session moved the deal to $.
+test('a payment stays in its own currency when a bigger session in another one moves the deal', () => {
+  const dec3 = Date.UTC(2026, 11, 3, 18);
+  const eur = usd({ currency: '€', buyIn: 1000, startedAt: Date.UTC(2026, 11, 3, 10), endedAt: Date.UTC(2026, 11, 3, 11), stakes: [{ backerId: 'b1', share: 50, markup: 1, unpaid: true }] });
+  const big = usd({ buyIn: 4000, startedAt: Date.UTC(2026, 11, 4, 12), endedAt: Date.UTC(2026, 11, 5, 12) });
+  const fx = { table: fxTable, fallback: '€' };
+  const pay = (over: Partial<BackerPayment> = {}): BackerPayment => ({ id: 'y1', backerId: 'b1', amount: -500, at: dec3, note: '', createdAt: dec3, ...over });
+  // Before the $ session: a € deal, square.
+  assert.equal(backerLedger('b1', [eur], [], [pay({ currency: '€' })], undefined, fx).balance, 0);
+  for (const p of [pay({ currency: '€' }), pay()]) {
+    const l = backerLedger('b1', [eur, big], [], [p], undefined, fx);
+    assert.equal(l.currency, '$');
+    // 500€ unpaid and 500€ paid, both at 1,1: still square, never 500$ against 550$.
+    assert.equal(l.unpaid, 550);
+    assert.equal(l.paid, -550);
+    assert.equal(l.balance, 0);
+    assert.equal(l.payCurrency.y1, '€');
+  }
+  // An older payment with no currency: the deal's as it stood that day.
+  assert.equal(paymentCurrency(pay(), backerLedger('b1', [eur, big], [], [], undefined, fx).rows, '$'), '€');
+  // Paid after the $ session: in $.
+  assert.equal(paymentCurrency(pay({ at: Date.UTC(2026, 11, 6) }), backerLedger('b1', [eur, big], [], [], undefined, fx).rows, '€'), '$');
+  // No rate for the payment's currency: said, like a session's.
+  assert.deepEqual(backerLedger('b1', [eur, big], [], [pay({ currency: '€' })], undefined, { table: {}, fallback: '€' }).missing, ['€']);
+});
+
+test('festival action only: payments count in the festival currency, new and older ones alike', () => {
+  const p: BackerPayment = { id: 'y1', backerId: 'b1', amount: -1000, at: Date.UTC(2026, 11, 3, 18), note: '', createdAt: 0 };
+  for (const x of [p, { ...p, currency: '$' }]) {
+    const l = backerLedger('b1', [], [], [x], undefined, { table: fxTable, fallback: '€', deal: '$' });
+    assert.equal(l.currency, '$');
+    assert.equal(l.paid, -1000);
+    assert.equal(l.payCurrency.y1, '$');
+  }
 });
