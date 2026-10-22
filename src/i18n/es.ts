@@ -3581,6 +3581,20 @@ const es: Record<string, string> = {
   'Ao domingo, a tua semana': 'El domingo, tu semana',
   'Dizemos-te o que registaste nessa semana e quantas mãos tens para rever. Sem valores e sem publicidade. Cada aviso desliga-se nas Definições da Sweatbook.': 'Te contamos lo que registraste esa semana y cuántas manos tienes por revisar. Sin importes y sin publicidad. Cada aviso se desactiva en los Ajustes de Sweatbook.',
   'Toca para as ligar nas definições do telemóvel. A app funciona igual sem elas.': 'Toca para activarlas en los ajustes del teléfono. La app funciona igual sin ellas.',
+  // «Quando voltas a jogar?» on the session summary and its two notices.
+  'Chegaste à mesa?': '¿Ya estás en la mesa?',
+  'Abre a sessão com um toque: o jogo e as blinds já vêm preenchidos.': 'Abre la sesión con un toque: el juego y las ciegas ya vienen rellenados.',
+  'Jogaste ontem?': '¿Jugaste ayer?',
+  'Regista a sessão em 20 segundos, enquanto te lembras de tudo.': 'Registra la sesión en 20 segundos, mientras aún lo recuerdas todo.',
+  'Amanhã': 'Mañana',
+  'Um aviso no dia em que jogas': 'Un aviso el día que juegas',
+  'Só para abrires a sessão quando chegares, e para a registares no dia seguinte se ficou por registar. Sem valores e sem publicidade.': 'Solo para abrir la sesión al llegar, y para registrarla al día siguiente si quedó sin registrar. Sin importes y sin publicidad.',
+  'Combinado: {day}': 'Anotado: {day}',
+  'Os avisos estão desligados, por isso fica só anotado.': 'Los avisos están desactivados, así que solo queda anotado.',
+  'Às {time} lembramos-te de abrir a sessão.': 'A las {time} te recordamos abrir la sesión.',
+  'Quando voltas a jogar?': '¿Cuándo vuelves a jugar?',
+  'Nesse dia lembramos-te de abrir a sessão e, se ficar por registar, no dia seguinte. Podes mudar quando quiseres.': 'Ese día te recordamos abrir la sesión y, si queda sin registrar, al día siguiente. Puedes cambiarlo cuando quieras.',
+  'Ainda não sei': 'Todavía no lo sé',
 };
 
 export default es;

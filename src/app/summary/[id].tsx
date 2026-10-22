@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { softAskState, useNotifySoftAsk } from '@/components/NotifySoftAsk';
+import { NextPlayCard } from '@/components/NextPlayCard';
 import { CardRow } from '@/components/PlayingCard';
 import { SessionEndPro } from '@/components/SessionEndPro';
 import { Banner, Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
@@ -161,6 +162,9 @@ export default function SessionSummary() {
           onPress={() => router.push({ pathname: '/hand/[id]', params: { id: toReview[0].id, q: s.id } })}
         />
       ) : null}
+
+      {/* Only for the session that just ended, and only when reminders are on. */}
+      {s.endedAt && Date.now() - s.endedAt < 12 * 3_600_000 && kindOn(settings, 'tips') && !sessions.some((x) => x.startedAt > s.startedAt) ? <NextPlayCard sessions={sessions} ask={askNotify} /> : null}
 
       <Card padded={false}>
         <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Para mostrar ou tirar print sem dinheiro à vista')} value={hideMoney} onChange={setHideMoney} />

@@ -1869,6 +1869,18 @@ const ptBR: Record<string, string> = {
   'Ao domingo, a tua semana': 'No domingo, sua semana',
   'Dizemos-te o que registaste nessa semana e quantas mãos tens para rever. Sem valores e sem publicidade. Cada aviso desliga-se nas Definições da Sweatbook.': 'Contamos o que você registrou naquela semana e quantas mãos tem para revisar. Sem valores e sem publicidade. Cada aviso pode ser desligado nos Ajustes do Sweatbook.',
   'Toca para as ligar nas definições do telemóvel. A app funciona igual sem elas.': 'Toque para ativá-las nos ajustes do celular. O app funciona igual sem elas.',
+  // «Quando voltas a jogar?» on the session summary and its two notices.
+  'Chegaste à mesa?': 'Chegou à mesa?',
+  'Abre a sessão com um toque: o jogo e as blinds já vêm preenchidos.': 'Abra a sessão com um toque: o jogo e os blinds já vêm preenchidos.',
+  'Jogaste ontem?': 'Jogou ontem?',
+  'Regista a sessão em 20 segundos, enquanto te lembras de tudo.': 'Registre a sessão em 20 segundos, enquanto ainda se lembra de tudo.',
+  'Um aviso no dia em que jogas': 'Um aviso no dia em que você joga',
+  'Só para abrires a sessão quando chegares, e para a registares no dia seguinte se ficou por registar. Sem valores e sem publicidade.': 'Só para você abrir a sessão quando chegar, e para registrá-la no dia seguinte se ficou sem registro. Sem valores e sem publicidade.',
+  'Os avisos estão desligados, por isso fica só anotado.': 'Os avisos estão desligados, então fica só anotado.',
+  'Às {time} lembramos-te de abrir a sessão.': 'Às {time} lembramos você de abrir a sessão.',
+  'Quando voltas a jogar?': 'Quando você volta a jogar?',
+  'Nesse dia lembramos-te de abrir a sessão e, se ficar por registar, no dia seguinte. Podes mudar quando quiseres.': 'Nesse dia lembramos você de abrir a sessão e, se ficar sem registro, no dia seguinte. Você pode mudar quando quiser.',
+  'Ainda não sei': 'Ainda não sei',
 };
 
 export default ptBR;
