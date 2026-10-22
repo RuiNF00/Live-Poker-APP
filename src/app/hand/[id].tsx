@@ -93,6 +93,8 @@ export default function HandScreen() {
   const [quizFor, setQuizFor] = useState<string | null>(null);
   if (queueOf && hand && !isSample && quizFor !== hand.id && isDue(hand, drill, openedAt)) setQuizFor(hand.id);
   const quiz = !!hand && quizFor === hand.id;
+  // Until answered, the header keeps hero's result to itself.
+  const [quizDone, setQuizDone] = useState(false);
   const trainBudget = Math.max(0, Number(trainLeft ?? DRILL_MAX) - 1);
   const reviewNext = useMemo(() => {
     if (!queueOf) return null;
@@ -470,7 +472,7 @@ ${link}`;
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled">
         <View style={{ paddingHorizontal: 4 }}>
-          <HandHeader hand={hand} inBB={settings.inBB} />
+          <HandHeader hand={hand} inBB={settings.inBB} quiz={quiz && !quizDone} />
         </View>
         {/* The next hand from the one just saved: one tap, not back and then "Nova mão". */}
         <Row gap={S.sm}>
@@ -517,6 +519,7 @@ ${link}`;
           quiz={quiz}
           // Answering is the review: the hand counts for this week and comes back in 3 days, then a week.
           onVote={() => {
+            setQuizDone(true);
             saveHand(markReviewed(hand));
             void drillAnswered(hand.id);
           }}
