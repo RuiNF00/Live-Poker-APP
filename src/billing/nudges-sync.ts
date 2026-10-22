@@ -12,6 +12,8 @@ import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
 import { kindInfo } from '@/lib/notify-policy';
 
 import { comebackSeen, NUDGE_KIND, NUDGE_IDS, planNudges, type ComebackState, type NudgeInput, type Trial } from './nudges';
+import { readDrill } from '@/store/drill-store';
+
 import { readPlayPlan } from './play-plan';
 import { getTrial } from './purchases';
 
@@ -72,7 +74,8 @@ async function sync(input: Omit<NudgeInput, 'trial' | 'store'>): Promise<void> {
     const comeback = comebackSeen(await readComeback(), input.now);
     // Reminders the player switched off are not planned; the notice before a charge always is.
     const plan = await readPlayPlan();
-    const planned = planNudges({ ...input, trial, store, comeback, plan, festivalAt: (ts) => festivalOn(ts) }).filter((x) => notifyKindOn(NUDGE_KIND[x.id]));
+    const drill = await readDrill();
+    const planned = planNudges({ ...input, trial, store, comeback, plan, drill, festivalAt: (ts) => festivalOn(ts) }).filter((x) => notifyKindOn(NUDGE_KIND[x.id]));
     for (const x of planned) {
       const kind = NUDGE_KIND[x.id];
       await n.scheduleNotificationAsync({

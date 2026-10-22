@@ -115,6 +115,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="hand/new" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="hand/[id]" options={{ title: t('Mão') }} />
+            <Stack.Screen name="train" options={{ headerShown: false, animation: 'none' }} />
             <Stack.Screen name="h/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="paywall" options={{ headerShown: false, presentation: 'modal' }} />
             <Stack.Screen name="trial" options={{ headerShown: false, presentation: 'modal' }} />

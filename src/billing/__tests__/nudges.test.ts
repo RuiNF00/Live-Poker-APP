@@ -111,7 +111,7 @@ test('week notice: hands waiting for review open the queue; never an amount', ()
   const hands = [hand(mon + 2 * 3_600_000, { tags: ['Rever'] }), hand(mon + 3 * 3_600_000, { review: 'pending' }), hand(mon + 4 * 3_600_000), hand(mon - 9 * 86_400_000, { review: 'pending' })];
   const n = weekNotice({ ...free, sessions, hands })!;
   assert.equal(n.body, '2 sessões e 3 mãos esta semana. Tens 3 mãos para rever: toca para começar.');
-  assert.equal(n.url, 'sweatbook://hands?review=1');
+  assert.equal(n.url, 'sweatbook://train', 'opens «Treino da semana» on the first hand');
   assert.doesNotMatch(n.body, /[€$]|\d+[.,]\d{2}|ganh|perd/i);
   const one = weekNotice({ ...free, sessions: [], hands: [hand(mon + 3_600_000, { review: 'pending' })] })!;
   assert.equal(one.body, '1 mão esta semana. Tens 1 mão para rever: toca para começar.');
@@ -185,4 +185,15 @@ test('play plan: in the plan, not during a session, and the come-back nudge step
   assert.ok(ids.includes('play-arrive') && ids.includes('play-log'));
   assert.ok(!ids.includes('comeback'), 'the come-back nudge (4 days on, the 22nd) is within 2 days of the plan');
   assert.deepEqual(planNudges({ ...p, sessionActive: true }).filter((x) => x.id.startsWith('play-')), []);
+});
+
+test('week notice: a reviewed hand whose question is due again by Sunday counts as one to review', () => {
+  const tue2 = new Date(2026, 9, 13, 20).getTime();
+  const reviewed = { id: 'h1', createdAt: tue2 - 3_600_000, review: 'reviewed' as const, tags: [] };
+  const sunday = weekNoticeAt(tue2);
+  const due = weekNotice({ now: tue2, hands: [reviewed], sessions: [], drill: { h1: { due: sunday - 1, done: 1 } } });
+  assert.match(due!.body, /1 mão para rever/);
+  assert.equal(due!.url, 'sweatbook://train');
+  const later = weekNotice({ now: tue2, hands: [reviewed], sessions: [], drill: { h1: { due: sunday + 1, done: 1 } } });
+  assert.doesNotMatch(later!.body, /para rever/);
 });

@@ -59,7 +59,7 @@ export default function HandsScreen() {
   const { paywall, isPro } = usePro();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
-  // The Sunday notice (sweatbook://hands?review=1) opens the list on "Por rever".
+  // «Por rever» from a link (sweatbook://hands?review=1) opens the list on that filter.
   const { review: openReview } = useLocalSearchParams<{ review?: string }>();
   const [opened, setOpened] = useState(false);
   if (!!openReview !== opened) {
