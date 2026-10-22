@@ -6,7 +6,7 @@ import { isMtt } from '@/billing/onboarding';
 import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
 import { chips } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { addDays, atClock, lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
+import { addDays, atClock, lastPlayed, lastTimeAt, nextLive, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly';
@@ -65,6 +65,12 @@ export function firstSession(plays: string | null | undefined, currency: string,
   }
   const buyIn = g.bb * 100;
   return { ...blankSession('cash', currency, tableSize), sb: g.sb, bb: g.bb, buyIn, stack: buyIn };
+}
+
+/** A new live session, on the last game played in this currency (see `nextLive`). */
+export function nextSession(sessions: Session[], currency: string, tableSize = 9): Session {
+  const next = nextLive(currency, sessions);
+  return { ...blankSession(next.kind ?? sessions[0]?.kind ?? 'mtt', currency, tableSize), ...next };
 }
 
 /** Start a live session, or log a past one (`past`). */
