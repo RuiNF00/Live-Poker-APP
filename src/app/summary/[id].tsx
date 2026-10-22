@@ -53,6 +53,7 @@ export default function SessionSummary() {
   const toReview = useMemo(() => reviewQueue(mine), [mine]);
   // Off when screenshotting at the table: no money on screen.
   const [hideMoney, setHideMoney] = useState(false);
+  const [openedAt] = useState(() => Date.now());
 
   // Right after a session, with the result seen: the moment the Sunday notice makes sense.
   const endedAt = s?.endedAt;
@@ -164,7 +165,7 @@ export default function SessionSummary() {
       ) : null}
 
       {/* Only for the session that just ended, and only when reminders are on. */}
-      {s.endedAt && Date.now() - s.endedAt < 12 * 3_600_000 && kindOn(settings, 'tips') && !sessions.some((x) => x.startedAt > s.startedAt) ? <NextPlayCard sessions={sessions} ask={askNotify} /> : null}
+      {s.endedAt && openedAt - s.endedAt < 12 * 3_600_000 && kindOn(settings, 'tips') && !sessions.some((x) => x.startedAt > s.startedAt) ? <NextPlayCard sessions={sessions} ask={askNotify} /> : null}
 
       <Card padded={false}>
         <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Para mostrar ou tirar print sem dinheiro à vista')} value={hideMoney} onChange={setHideMoney} />
