@@ -41,14 +41,14 @@ export const WEEK_DAY = 0;
 /** No come-back nudge this close to the week's notice: one of them is enough. */
 const WEEK_COMEBACK_GAP = 2 * DAY;
 
-export type NudgeId = 'trial-end' | 'comeback' | 'week';
+export type NudgeId = 'trial-end' | 'comeback' | 'week' | 'play-arrive' | 'play-log';
 /** Notification kind (lib/notify-policy): only the notice before a charge is 'billing', which can't be switched off. */
-export const NUDGE_KIND: Record<NudgeId, 'billing' | 'week' | 'tips'> = { 'trial-end': 'billing', comeback: 'tips', week: 'week' };
+export const NUDGE_KIND: Record<NudgeId, 'billing' | 'week' | 'tips'> = { 'trial-end': 'billing', comeback: 'tips', week: 'week', 'play-arrive': 'tips', 'play-log': 'tips' };
 /**
  * Old ids, still cancelled so a reminder planned by an older version never fires.
  * 'trial-recap' went because notifications never sell Pro (design/notificacoes.md).
  */
-export const NUDGE_IDS: (NudgeId | 'trial-day5' | 'trial-recap')[] = ['trial-end', 'comeback', 'week', 'trial-day5', 'trial-recap'];
+export const NUDGE_IDS: (NudgeId | 'trial-day5' | 'trial-recap')[] = ['trial-end', 'comeback', 'week', 'play-arrive', 'play-log', 'trial-day5', 'trial-recap'];
 
 export interface Nudge {
   id: NudgeId;
@@ -81,6 +81,13 @@ export interface NudgeInput {
   festivalAt?: (ts: number) => boolean;
   /** Weeks in a row with something logged (store/streak), for the week's notice. */
   streakWeeks?: number;
+  /** The day the player said they play next, from the session summary («Quando voltas a jogar?»). */
+  plan?: PlayPlan | null;
+}
+
+/** «Quando voltas a jogar?»: the start of the day the player picked. */
+export interface PlayPlan {
+  day: number;
 }
 
 /** `hour`:00 local time on the calendar day of `ts`. */
@@ -145,6 +152,47 @@ export function weekNotice(p: Pick<NudgeInput, 'now' | 'hands' | 'sessions' | 's
   return { id: 'week', at, title: t('A tua semana no póquer'), body: `${week} ${next}`, url: waiting ? 'sweatbook://hands?review=1' : 'sweatbook://hands' };
 }
 
+/** The same clock time `days` calendar days later (a day is not always 24 h). */
+function addDays(ts: number, days: number): number {
+  const d = new Date(ts);
+  d.setDate(d.getDate() + days);
+  return d.getTime();
+}
+
+/** The hour the player usually sits down: the median of the last 10 sessions, between 12:00 and 22:00; 19:00 with none. */
+export function usualStartHour(sessions: { startedAt: number; endedAt?: number }[]): number {
+  const hours = sessions
+    .filter((s) => s.endedAt)
+    .sort((a, b) => b.startedAt - a.startedAt)
+    .slice(0, 10)
+    .map((s) => new Date(s.startedAt).getHours())
+    .sort((a, b) => a - b);
+  if (!hours.length) return 19;
+  return Math.min(22, Math.max(12, hours[Math.floor(hours.length / 2)]));
+}
+
+/**
+ * The two notices of a play plan, both about logging, never about going to play: on the day, at
+ * the usual hour, «Chegaste à mesa?» opens the session; the next day at 13:00, if nothing was
+ * logged that day, «Jogaste ontem?» opens a past session. A session started on the day (live or
+ * logged after) ends the plan (pure, tested).
+ */
+export function playNotices(plan: PlayPlan | null | undefined, sessions: { startedAt: number; endedAt?: number }[], now: number): Nudge[] {
+  if (!plan) return [];
+  const soon = now + 60_000;
+  if (sessions.some((s) => s.startedAt >= plan.day)) return [];
+  const out: Nudge[] = [];
+  const arrive = atHour(plan.day, usualStartHour(sessions));
+  if (arrive > soon) {
+    out.push({ id: 'play-arrive', at: arrive, title: t('Chegaste à mesa?'), body: t('Abre a sessão com um toque: o jogo e as blinds já vêm preenchidos.'), url: 'sweatbook://session' });
+  }
+  const log = atHour(addDays(plan.day, 1), NUDGE_HOUR);
+  if (log > soon) {
+    out.push({ id: 'play-log', at: log, title: t('Jogaste ontem?'), body: t('Regista a sessão em 20 segundos, enquanto te lembras de tudo.'), url: 'sweatbook://bankroll?add=session' });
+  }
+  return out;
+}
+
 export function planNudges(p: NudgeInput): Nudge[] {
   const out: Nudge[] = [];
   const soon = p.now + 60_000;
@@ -170,11 +218,15 @@ export function planNudges(p: NudgeInput): Nudge[] {
   const week = p.sessionActive ? null : weekNotice(p);
   if (week && !p.festivalAt?.(week.at) && !out.some((n) => Math.abs(n.at - week.at) < 12 * HOUR)) out.push(week);
 
+  // The day the player said they play next: the notices they asked for.
+  const play = p.sessionActive ? [] : playNotices(p.plan, p.sessions, p.now);
+  out.push(...play);
+
   // Back after a few days away, only for someone who has logged something to come back to.
   const cb = p.comeback ?? { ignored: 0 };
   if (!p.sessionActive && p.hands.length + p.sessions.length > 0 && cb.ignored < COMEBACK_MAX_IGNORED) {
     const at = atHour(Math.max(p.now + COMEBACK_DAYS * DAY, (cb.last ?? 0) + COMEBACK_GAP_DAYS * DAY), NUDGE_HOUR);
-    const near = out.some((n) => Math.abs(n.at - at) < (n.id === 'week' ? WEEK_COMEBACK_GAP : 12 * HOUR));
+    const near = out.some((n) => Math.abs(n.at - at) < (n.id === 'week' || n.id.startsWith('play-') ? WEEK_COMEBACK_GAP : 12 * HOUR));
     if (!near && !p.festivalAt?.(at)) {
       out.push({ id: 'comeback', at, title: t('Jogaste esta semana?'), body: t('Regista a sessão e a mão que te ficou na cabeça.') });
     }
