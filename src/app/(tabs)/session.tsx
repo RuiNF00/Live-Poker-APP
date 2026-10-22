@@ -17,7 +17,7 @@ import { useNow } from '@/components/useNow';
 import { StopLossBanner } from '@/components/BankrollRules';
 import { RegularsHere } from '@/components/RegularsHere';
 import { LineChart } from '@/components/LineChart';
-import { blankSession, firstSession, SessionForm } from '@/components/SessionForm';
+import { firstSession, nextSession, SessionForm } from '@/components/SessionForm';
 import { canReadReceipts } from '@/lib/receipt-ocr';
 import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
@@ -234,7 +234,7 @@ export default function SessionScreen() {
           key={plays ?? ''}
           initial={{
             ...((!sessions.length && firstSession(plays, defaultBankroll.currency, settings.defaultTableSize)) ||
-              blankSession(sessions[0]?.kind ?? 'mtt', defaultBankroll.currency, settings.defaultTableSize)),
+              nextSession(sessions, defaultBankroll.currency, settings.defaultTableSize)),
             format: sessions[0]?.format,
             bankrollId: defaultBankroll.id,
           }}
