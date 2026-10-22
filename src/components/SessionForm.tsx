@@ -116,6 +116,9 @@ export function SessionForm({
   const [timeText, setTimeText] = useState(initTime);
   const startMin = parseClock(timeText);
   const [mindOpen, setMindOpen] = useState(!!initial.mind);
+  // A new past session shows what everyone fills (result, buy-in, when, how long); the rest is one
+  // tap away, as at the end of a live session. Editing one shows everything.
+  const [more, setMore] = useState(!past || !!initial.endedAt);
   const [repeat, setRepeat] = useState(false);
   const [repeatTime, setRepeatTime] = useState(() => roundedClock());
   const repeatMin = parseClock(repeatTime);
@@ -205,19 +208,23 @@ export function SessionForm({
             <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} selectOnFocus />
             <NumField money label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} autoFocus={fresh} selectOnFocus />
           </Row>
-          <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-            <NumField money label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} selectOnFocus />
-            <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} selectOnFocus />
-          </Row>
+          {more && (
+            <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+              <NumField money label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} selectOnFocus />
+              <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={s.tips ?? 0} onChange={(tips) => set({ tips: tips || undefined })} selectOnFocus />
+            </Row>
+          )}
           {mtt && (
             <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
               <NumField label={t('Lugar')} value={s.finish ?? 0} onChange={(finish) => set({ finish: finish || undefined })} selectOnFocus />
               <NumField label={t('Inscritos')} value={s.field ?? 0} onChange={(field) => set({ field: field || undefined })} selectOnFocus />
             </Row>
           )}
-          <Row>
-            <NumField label={t('Mãos jogadas (opcional)')} value={s.handsDealt ?? 0} onChange={(handsDealt) => set({ handsDealt: handsDealt || undefined })} />
-          </Row>
+          {more && (
+            <Row>
+              <NumField label={t('Mãos jogadas (opcional)')} value={s.handsDealt ?? 0} onChange={(handsDealt) => set({ handsDealt: handsDealt || undefined })} />
+            </Row>
+          )}
         </Card>
       )}
       <Card style={{ gap: S.lg }}>
@@ -254,7 +261,7 @@ export function SessionForm({
         </Row>
       </Card>
       {mtt && !past && weekly ? <Repeat weekly={weekly} s={s} on={repeat} setOn={setRepeat} time={repeatTime} setTime={setRepeatTime} /> : null}
-      {(!past || !mtt) && (
+      {(!past || (!mtt && more)) && (
         <Section title={past ? 'Stakes' : 'Blinds'}>
           <ChipRow>
             {levels.map(([sb, bb]) => (
@@ -294,29 +301,31 @@ export function SessionForm({
             />
             {day < addDays(dayStart(Date.now()), -6) ? <T v="tiny">{fullDay(day)}</T> : null}
           </Section>
-          <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-            <Field
-              label={t('Começou às')}
-              style={{ flex: 1 }}
-              value={timeText}
-              onChangeText={(v) => setTimeText(v.slice(0, 5))}
-              placeholder="20:00"
-              keyboardType="numbers-and-punctuation"
-              hint={timeText && startMin === null ? t('Escreve como 20:30') : undefined}
-            />
-            <Field
-              label={t('Outra duração')}
-              style={{ flex: 1 }}
-              value={minsText}
-              onChangeText={(v) => {
-                setMinsText(v.slice(0, 5));
-                const m = parseDuration(v);
-                if (m !== null) setMins(m);
-              }}
-              placeholder="4h30"
-              keyboardType="numbers-and-punctuation"
-            />
-          </Row>
+          {more && (
+            <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+              <Field
+                label={t('Começou às')}
+                style={{ flex: 1 }}
+                value={timeText}
+                onChangeText={(v) => setTimeText(v.slice(0, 5))}
+                placeholder="20:00"
+                keyboardType="numbers-and-punctuation"
+                hint={timeText && startMin === null ? t('Escreve como 20:30') : undefined}
+              />
+              <Field
+                label={t('Outra duração')}
+                style={{ flex: 1 }}
+                value={minsText}
+                onChangeText={(v) => {
+                  setMinsText(v.slice(0, 5));
+                  const m = parseDuration(v);
+                  if (m !== null) setMins(m);
+                }}
+                placeholder="4h30"
+                keyboardType="numbers-and-punctuation"
+              />
+            </Row>
+          )}
           <Section title={t('Duração')}>
             <ChipRow>
               {[...new Set([60, 120, 180, 240, 300, 360, 480, 600, 720, mins])]
@@ -336,9 +345,12 @@ export function SessionForm({
           </Section>
         </>
       )}
-      <StakeFields s={s} onChange={set} expenses={!!past} />
-      {past && <TaxFields s={s} onChange={set} />}
-      {!past ? null : mindOpen ? (
+      {more ? null : (
+        <Button kind="plain" size="sm" title={t('Mais detalhes')} iconRight="chevron-down" haptic={false} onPress={() => setMore(true)} style={{ alignSelf: 'flex-start' }} />
+      )}
+      {more && <StakeFields s={s} onChange={set} expenses={!!past} />}
+      {past && more && <TaxFields s={s} onChange={set} />}
+      {!past || !more ? null : mindOpen ? (
         <Section title={t('Diário mental')}>
           <React.Suspense fallback={null}><MindBefore value={s.mind} onChange={(mind) => set({ mind })} /></React.Suspense>
           <React.Suspense fallback={null}><MindAfter value={s.mind} onChange={(mind) => set({ mind })} /></React.Suspense>
