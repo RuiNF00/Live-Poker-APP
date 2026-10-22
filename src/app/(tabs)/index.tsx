@@ -41,8 +41,6 @@ import { C, R, S, SHADOW, ff } from '@/theme';
 const BackupHealthBanner = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.BackupHealthBanner })));
 const BackupSuggestion = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.BackupSuggestion })));
 
-const DAY = 86400000;
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const win = useWindowDimensions();
@@ -67,7 +65,6 @@ export default function HomeScreen() {
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
   // Once there's something to lose: the first saved hand or closed session.
   const suggest = useBackupSuggestion(hands.length > 0 || lastEnd > 0);
-  const idleDays = lastEnd ? Math.floor((now - lastEnd) / DAY) : 0;
   // Discarding a draft is one tap, so keep it for a few seconds behind an undo.
   const [discarded, setDiscarded] = useState<Hand | null>(null);
   useEffect(() => {
@@ -93,7 +90,8 @@ export default function HomeScreen() {
 
   // At most one card: the next thing to do (a live session shows above it). At the table only what's
   // about the play (a hand to finish, a charge coming): the rest waits until the session ends. Away from
-  // the table: money to settle, comments, hands to review, then news and the first-week steps.
+  // the table: money to settle, comments, hands to review, then the first-week steps and news. Never a
+  // nudge to go and play.
   // `Começar sessão · Já joguei` under it is always the last next step.
   const card = hasDraft ? (
     <Banner
@@ -137,18 +135,17 @@ export default function HomeScreen() {
       action={t('Rever')}
       onPress={() => router.push({ pathname: '/hand/[id]', params: { id: review[0].id, q: 'all' } })}
     />
+  ) : checklist && !fresh ? (
+    // The first week's steps come before news and the backup tip: they're what brings a new player back.
+    <StartChecklist state={checklist} />
   ) : news.item ? (
     <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
   ) : suggest.show ? (
     <React.Suspense fallback={null}>
       <BackupSuggestion onDone={suggest.dismiss} />
     </React.Suspense>
-  ) : checklist && !fresh ? (
-    <StartChecklist state={checklist} />
   ) : moment ? (
     <ProMoment state={moment} />
-  ) : idleDays >= 7 ? (
-    <Banner icon="timer-outline" title={t('Sem sessões há {n} dias', { n: idleDays })} action={t('Começar')} onPress={() => router.navigate('/session')} />
   ) : null;
 
   return (
