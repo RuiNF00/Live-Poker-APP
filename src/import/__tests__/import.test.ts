@@ -356,7 +356,7 @@ test('Sweatbook CSV round trip: export, import, and import again into the same p
   assert.equal(back.transfers[0].bankrollId, 'b2');
   assert.equal(mergeById(list, back.sessions).added, 0, 'importing it again adds nothing');
   // A file from before the exact-time columns still reads.
-  const old = sessionsCsv([mk(3, { venue: 'Estoril', notes: '' })]).trim().split('\n').map((l) => l.split(',').slice(0, -4).join(','));
+  const old = sessionsCsv([mk(3, { venue: 'Estoril', notes: '' })]).trim().split('\n').map((l) => l.split(',').slice(0, -5).join(','));
   assert.equal(run(old.join('\n')).sessions[0].startedAt, mk(3).startedAt - 17_000, 'to the minute, as before');
 });
 
