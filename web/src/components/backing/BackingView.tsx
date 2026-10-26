@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Mark, Wordmark } from '@/components/Brand';
 import { StoreButtons } from '@/components/landing/StoreButtons';
-import { landingCopy } from '@/components/landing/copy';
+import { INVITE_DISCOUNT_PUBLIC, landingCopy } from '@/components/landing/copy';
 import { checkStatement, decodeStatement, encodeStatement, type Statement } from '@/lib/backing';
 import { openSealed, sealedRef, type Sealed } from '@/lib/sealed';
 import { intlTag, numberTag, formatMoney, type Locale } from '@/lib/i18n';
@@ -29,6 +29,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
   const [st, setSt] = useState<Statement | null | undefined>(undefined);
   const [data, setData] = useState('');
   const android = useAndroid();
+  const [ios, setIos] = useState(false);
   // "Recebi" / "Paguei" for this statement: when they told the player, kept on this phone only.
   const [told, setTold] = useState<number | null>(null);
   // A fixed link: the player turned it off, and when the page last changed.
@@ -85,6 +86,7 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
     document.addEventListener('visibilitychange', back);
     track('share_viewed', { kind: 'backer_statement' });
     if (invite) writeLocal('invite', invite);
+    setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent));
     return () => {
       seq++;
       clearTimeout(timer);
@@ -268,7 +270,11 @@ export function BackingView({ locale, invite }: { locale: Locale; invite: string
           {c.save}
         </a>
         <p className="bk-noapp">{c.noApp}</p>
-        <StoreButtons c={landingCopy(locale)} stores={stores} from="backer_statement" fallback="/" />
+        {invite && <p className="cta-invite">🎁 {c.invite(st.pl, INVITE_DISCOUNT_PUBLIC)}</p>}
+        {/* On iPhone the App Store keeps no referrer: tapping a store button copies the invite link, which the app's first screen offers to paste (as on /r/<code>). */}
+        <div onClickCapture={invite && ios ? (e) => (e.target as HTMLElement).closest('a') && void navigator.clipboard?.writeText(`${location.origin}/r/${invite}`).catch(() => {}) : undefined}>
+          <StoreButtons c={landingCopy(locale)} stores={stores} from="backer_statement" fallback="/" />
+        </div>
       </section>
       <p className="live-updated">{c.privacy}</p>
     </main>

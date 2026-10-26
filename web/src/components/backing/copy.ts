@@ -27,6 +27,8 @@ const pt = {
   saveBody: 'Guarda estas contas na Sweatbook: vês a ação em aberto, o que te devem, o makeup e as sessões em direto de cada jogador, num só sítio.',
   save: 'Guardar na minha Sweatbook',
   noApp: 'Ainda não tens a app?',
+  invite: (player: string, pct: number) =>
+    `${player ? `${player} convidou-te` : 'Vens por convite'}: instala a app, guarda a tua primeira mão e recebem os dois ${pct}% no primeiro mês do Pro.`,
   year: (y: number) => `O ano de ${y}`,
   outside: 'Fora de pacote',
   yearSub: (n: number, cost: string, back: string) => `${n === 1 ? '1 sessão' : `${n} sessões`} · buy-ins ${cost} · recebeste ${back}`,
@@ -70,6 +72,8 @@ const en: typeof pt = {
   saveBody: 'Save this statement in Sweatbook: open action, what you are owed, makeup and live sessions for every player, in one place.',
   save: 'Save to my Sweatbook',
   noApp: "Don't have the app yet?",
+  invite: (player: string, pct: number) =>
+    `${player ? `${player} invited you` : "You're invited"}: install the app, save your first hand and you both get ${pct}% off your first month of Pro.`,
   year: (y: number) => `Your ${y}`,
   outside: 'Outside a package',
   yearSub: (n: number, cost: string, back: string) => `${n === 1 ? '1 session' : `${n} sessions`} · buy-ins ${cost} · you got ${back}`,
@@ -113,6 +117,8 @@ const ptBR: typeof pt = {
   saveBody: 'Salve estas contas no Sweatbook: você vê a ação em aberto, o que devem a você, o makeup e as sessões ao vivo de cada jogador, num só lugar.',
   save: 'Salvar no meu Sweatbook',
   noApp: 'Ainda não tem o app?',
+  invite: (player: string, pct: number) =>
+    `${player ? `${player} convidou você` : 'Você veio por convite'}: instale o app, salve sua primeira mão e vocês dois recebem ${pct}% no primeiro mês do Pro.`,
   year: (y: number) => `O ano de ${y}`,
   outside: 'Fora de pacote',
   yearSub: (n: number, cost: string, back: string) => `${n === 1 ? '1 sessão' : `${n} sessões`} · buy-ins ${cost} · você recebeu ${back}`,
@@ -156,6 +162,8 @@ const es: typeof pt = {
   saveBody: 'Guarda estas cuentas en Sweatbook: ves la acción abierta, lo que te deben, el makeup y las sesiones en vivo de cada jugador, en un solo lugar.',
   save: 'Guardar en mi Sweatbook',
   noApp: '¿Aún no tienes la app?',
+  invite: (player: string, pct: number) =>
+    `${player ? `${player} te ha invitado` : 'Vienes por invitación'}: instala la app, guarda tu primera mano y los dos reciben un ${pct}% en el primer mes de Pro.`,
   year: (y: number) => `Tu ${y}`,
   outside: 'Fuera de paquete',
   yearSub: (n: number, cost: string, back: string) => `${n === 1 ? '1 sesión' : `${n} sesiones`} · buy-ins ${cost} · recibiste ${back}`,
