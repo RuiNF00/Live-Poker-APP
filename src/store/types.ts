@@ -81,6 +81,11 @@ export interface Session {
   withheld?: Withholding;
   /** Receipts and tax forms, kept as files next to the app's data. */
   docs?: SessionDoc[];
+  /**
+   * Brought in from a list of tournament results (import/results.ts). Those lists hold only the
+   * cashes, never the busts, so these stay out of every result unless Settings.countCashLists.
+   */
+  cashList?: true;
   updatedAt?: number;
 }
 
@@ -338,6 +343,8 @@ export interface Settings {
   fxManual?: Record<string, number>;
   /** Count swaps in results (Session.swapNet). Missing = yes. */
   includeSwaps?: boolean;
+  /** Count the sessions from results lists (Session.cashList: only cashes) in results. Missing = no. */
+  countCashLists?: boolean;
   /** Logging-streak pauses (trips, breaks): those weeks never break it. */
   streakPauses?: { from: number; to?: number }[];
   /** Haptic feedback; on unless turned off in Settings. */

@@ -286,7 +286,7 @@ function tableSizeOf(raw: string, fallback: number): number {
   return n >= 2 && n <= 10 ? n : fallback;
 }
 
-function hash(s: string): string {
+export function hash(s: string): string {
   // FNV-1a, twice with different seeds: short, stable, no crypto needed.
   let a = 0x811c9dc5;
   let b = 0x01000193 ^ 0x5bd1e995;
