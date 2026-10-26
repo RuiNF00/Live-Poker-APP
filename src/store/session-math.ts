@@ -332,3 +332,11 @@ export function lastPlayed(currency: string, sessions: Session[], kind?: Session
     stack: p.kind === 'mtt' ? (p.stackLog[0]?.stack ?? p.stack) : p.buyIn,
   };
 }
+
+/**
+ * What the results count: sessions from a list of tournament results (Session.cashList) hold only
+ * cashes, so they stay out unless the player turned them on. The same array when nothing is left out.
+ */
+export function countedSessions(sessions: Session[], countCashLists: boolean): Session[] {
+  return countCashLists || !sessions.some((s) => s.cashList) ? sessions : sessions.filter((s) => !s.cashList);
+}

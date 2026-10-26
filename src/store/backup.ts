@@ -61,6 +61,8 @@ export function buildBackup(
   d: {
     hands: Hand[];
     sessions: Session[];
+    /** Every session, those from results lists left out of `sessions` included (the store's). */
+    allSessions?: Session[];
     players: PlayerNote[];
     bankrolls?: Bankroll[];
     transfers?: Transfer[];
@@ -85,7 +87,7 @@ export function buildBackup(
     v: 1,
     exportedAt: now,
     hands: d.hands,
-    sessions: d.sessions,
+    sessions: d.allSessions ?? d.sessions,
     players: d.players,
     bankrolls: d.bankrolls ?? [],
     transfers: d.transfers ?? [],
@@ -327,6 +329,7 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('bankrollId', isStr),
     ...pick('hideAmounts', isBool),
     ...pick('includeSwaps', isBool),
+    ...pick('countCashLists', isBool),
     ...pick('mindAsk', isBool),
     ...pick('widgetResult', isBool),
     ...pick('haptics', isBool),

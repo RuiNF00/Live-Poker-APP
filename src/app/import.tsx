@@ -29,7 +29,8 @@ import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
 
 // Poker Ledger has no tile: its file is recognised from the header when picked as CSV.
-type Pick = Exclude<SourceId, 'generic' | 'pokerledger'> | 'csv';
+// 'results': past tournament results pasted from a results page (import-results.tsx).
+type Pick = Exclude<SourceId, 'generic' | 'pokerledger'> | 'csv' | 'results';
 
 const SOURCES: { id: Pick; name: string; sub: string; icon: React.ComponentProps<typeof Ionicons>['name']; color: string }[] = [
   { id: 'pbt', name: 'Poker Bankroll Tracker', sub: t('Sessões cash e torneios'), icon: 'stats-chart', color: '#5AA9FF' },
@@ -37,6 +38,7 @@ const SOURCES: { id: Pick; name: string; sub: string; icon: React.ComponentProps
   { id: 'pokeranalytics', name: 'Poker Analytics', sub: t('Sessões em CSV'), icon: 'analytics', color: '#4ADE80' },
   { id: 'csv', name: t('Outra app ou Excel'), sub: t('Qualquer CSV, escolhes as colunas'), icon: 'grid', color: '#F5B83D' },
   { id: 'sweatbook', name: t('Cópia do Sweatbook'), sub: t('Ficheiro .json ou .csv exportado daqui'), icon: 'refresh-circle', color: '#FF6A3D' },
+  { id: 'results', name: t('Resultados de torneios'), sub: t('Colados de uma página de resultados: só prémios'), icon: 'trophy', color: '#F472B6' },
 ];
 
 const STEPS: Record<Pick, string[]> = {
@@ -61,6 +63,11 @@ const STEPS: Record<Pick, string[]> = {
     t('No passo seguinte vês o que lemos e podes mudar a coluna de cada campo.'),
   ],
   sweatbook: [t('Escolhe um ficheiro exportado em Definições. Junta-se ao que já tens, não apaga nada.')],
+  results: [
+    t('Copia a tabela dos teus resultados numa página de torneios e cola-a no passo seguinte.'),
+    t('Data, torneio, lugar e prémio; o buy-in lê-se do nome («$1,500 No-Limit Hold\'em») ou escreves tu.'),
+    t('Estas páginas só mostram os prémios: entram marcados e fora do lucro e do ROI até decidires contá-los.'),
+  ],
 };
 
 const SOURCE_NAME: Record<SourceId, string> = {
@@ -258,7 +265,11 @@ export default function ImportScreen() {
           </ScrollView>
           <Dock bottom={insets.bottom}>
             <ReadProgress bar={progress} />
-            <Button title={busy ? t('A ler…') : t('Escolher ficheiro')} icon="document-attach" disabled={busy} onPress={choose} />
+            {source === 'results' ? (
+              <Button title={t('Colar resultados')} icon="clipboard-outline" onPress={() => router.push('/import-results')} />
+            ) : (
+              <Button title={busy ? t('A ler…') : t('Escolher ficheiro')} icon="document-attach" disabled={busy} onPress={choose} />
+            )}
           </Dock>
         </View>
       ) : step.at === 'review' ? (
@@ -370,7 +381,8 @@ const NO_DUP_MOVES = new Set<string>();
 
 function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Prepared; initial: ImportResult; picked: { name: string; uri: string } | null; bottom: number; onBack: () => void; onImport: (r: ImportResult, placement: Placement, skipped: { sessions: number; moves: number }) => void }) {
   const tight = useTight();
-  const { settings, sessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
+  // Every session, those from results lists left out of the totals included: a repeat is a repeat.
+  const { settings, allSessions: local, transfers: localTx, bankrolls, defaultBankroll } = useStore();
   const pro = usePro();
   const [mapping, setMapping] = useState<Mapping>(file.mapping);
   const [order, setOrder] = useState<DateOrder | undefined>(undefined);
