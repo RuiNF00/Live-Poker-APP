@@ -28,6 +28,8 @@ export interface AppHand {
     buyIn?: number;
     playersLeft?: number;
     venue?: string;
+    /** Pot-Limit Omaha; absent = hold'em. */
+    variant?: 'plo';
     /** Live straddles, each double the last: from UTG onwards, or one on the button. */
     straddles?: number;
     straddleFrom?: 'utg' | 'btn';
@@ -105,7 +107,7 @@ export function fromAppHand(a: AppHand): Converted {
   const g = a.game;
   const hand: HandRecord = {
     version: 1,
-    game: a.players.some((p) => (p.cards?.length ?? 0) > 2) ? 'PLO' : 'NLHE',
+    game: g.variant === 'plo' || a.players.some((p) => (p.cards?.length ?? 0) > 2) ? 'PLO' : 'NLHE',
     format: g.kind === 'mtt' ? 'tournament' : 'cash',
     currency: g.currency,
     blinds: {

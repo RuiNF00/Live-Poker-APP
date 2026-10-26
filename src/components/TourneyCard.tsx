@@ -15,7 +15,7 @@ import { MIN_SAMPLE } from '@/store/tourney-stats';
 import { C, F, ff } from '@/theme';
 import { ordinal } from '@/share/festival-card';
 
-import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './StoryCard';
+import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './story-brand';
 
 export interface TourneyCardProps {
   name: string;

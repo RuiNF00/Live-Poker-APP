@@ -122,3 +122,12 @@ test('the invite discount alert never opens by itself at the table or over the l
   // Kept news read just as a session opens goes back in the box, not lost.
   assert.match(p, /announceInviteOffer\(kept\.offer, kept\.side, plansRef\.current\);\n\s+else await inviteNews\.hold\(kept\);/);
 });
+
+test('the locked «Voz» of a live session opens its own paywall, about updating the session', async () => {
+  const live = src.find(([f]) => f === path.join('app', '(tabs)', 'session.tsx'))![1];
+  assert.match(live, /voiceLocked \? pro\.paywall\('voiceLive'\)/);
+  const { PAYWALL_COPY, featuresFor } = await import('../plans');
+  assert.match(PAYWALL_COPY.voiceLive.title, /mudou/);
+  assert.equal(featuresFor('voiceLive')[0].feature.key, 'voiceLive');
+  assert.equal(featuresFor('voiceLive')[0].highlight, true);
+});

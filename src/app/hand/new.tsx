@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
 import { FREE } from '@/billing/plans';
+import { voiceLocked, voicePlanName } from '@/billing/voice-access';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
@@ -31,14 +32,15 @@ import { SeatSheet } from '@/components/entry/SeatSheet';
 import { VoiceCapture, VoiceNotePlayer } from '@/components/audio';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
-import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
+import { Button, Chip, ChipRow, confirmAction, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { entrySeconds } from '@/lib/friction';
 import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, closingCall, foldsToCard, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { holeCount } from '@/poker/variant';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, foldsToCard, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -61,14 +63,14 @@ interface Draft {
 }
 
 // Loaded the first time the player opens it: the parser and the sheet stay out of the launch bundle.
-const VoiceHandSheet = React.lazy(() => import('@/components/entry/VoiceHandSheet').then((m) => ({ default: m.VoiceHandSheet })));
+const VoiceHandSheet = React.lazy(() => import('@/components/voice-chunk').then((m) => ({ default: m.VoiceHandSheet })));
 
 export default function NewHand() {
   crashProbe('hand');
   const insets = useSafeAreaInsets();
   // 568-pt phones (iPhone SE): the hero step has to fit without the voice button under the cards.
   const shortScreen = useWindowDimensions().height < 640;
-  const params = useLocalSearchParams<{ edit?: string }>();
+  const params = useLocalSearchParams<{ edit?: string; tell?: string }>();
   const store = useStore();
   const pro = usePro();
   const { activeSession, settings, hands } = store;
@@ -103,11 +105,22 @@ export default function NewHand() {
   const [toldOpened, setToldOpened] = useState(false);
   // Set once a hand came from "Contar a mão": the hand_saved event says so.
   const toldRef = useRef(false);
+  // «Contar por voz» on a hand saved half-done, after the hand: the tap that brought us here was
+  // the ask, so the sheet opens on arrival. Never the paywall: that only opens on a tap.
+  const toldOnArrival = useRef(false);
+  useEffect(() => {
+    if (params.tell !== '1' || toldOnArrival.current || voiceLocked(pro)) return;
+    toldOnArrival.current = true;
+    setToldOpened(true);
+    setTelling(true);
+  }, [params.tell, pro]);
 
   const hand = draft.hand;
   const n = hand.players.length;
   const pos = positions(n, hand.button);
   const heroCards = hand.players[hand.hero].cards ?? [];
+  // 4 in PLO, 2 in hold'em: how many hole cards hero (and a hand shown) needs.
+  const holes = holeCount(hand.game);
   const r = useMemo(() => replay(hand), [hand]);
   const s = r.final;
 
@@ -157,7 +170,7 @@ export default function NewHand() {
   // ── phase ─────────────────────────────────────────
   type Phase = 'hero' | 'action' | 'board' | 'board2' | 'showdown' | 'done';
   let phase: Phase;
-  if (!draft.posChosen || heroCards.length < 2) phase = 'hero';
+  if (!draft.posChosen || heroCards.length < holes) phase = 'hero';
   else if (s.needsBoard) phase = 'board';
   else if (r.needsBoard2) phase = 'board2';
   else if (s.toAct !== null) phase = 'action';
@@ -208,8 +221,8 @@ export default function NewHand() {
   const pickHeroCard = (c: string) => {
     let cards = [...heroCards];
     if (cards.includes(c)) cards = cards.filter((x) => x !== c);
-    else if (cards.length < 2) cards.push(c);
-    else cards = [cards[1], c];
+    else if (cards.length < holes) cards.push(c);
+    else cards = [...cards.slice(1), c];
     setPlayer(hand.hero, { ...hand.players[hand.hero], cards });
   };
   const setHeroPos = (label: string) => {
@@ -219,10 +232,18 @@ export default function NewHand() {
   };
   const openVoice = () => {
     tap();
-    // Plus (and Pro): telling the hand. Entering it with taps stays free.
-    if (!pro.can('voiceHand')) return pro.paywall('voiceHand');
+    // Telling the hand needs the voice's plan (voice-access). Entering it with taps stays free.
+    if (voiceLocked(pro)) return pro.paywall('voiceHand');
     setToldOpened(true);
     setTelling(true);
+  };
+  // PLO deals four cards: hero's hand and any shown hand start over, the action too.
+  const togglePLO = () => {
+    tap('select');
+    const { variant, ...g } = hand.game;
+    const game = variant ? g : { ...g, variant: 'plo' as const };
+    autoDone.current.clear();
+    update({ ...hand, game, players: hand.players.map(({ cards: _, ...p }) => p), actions: [], board: [], winners: undefined });
   };
   // Straddles change who acts first: the action starts over, as in the context sheet.
   const toggleStraddle = () => {
@@ -388,11 +409,16 @@ export default function NewHand() {
   // "Contar a mão": the told hand replaces this one (same id, session and voice note). What it
   // already has is kept as entered: no automatic folds on top of it, like a reopened draft.
   const fromWords = (told: Hand, posKnown: boolean) => {
-    setTelling(false);
-    const next = { ...told, id: hand.id, createdAt: hand.createdAt, sessionId: hand.sessionId, voiceNote: hand.voiceNote, tags: hand.tags, notes: hand.notes };
-    autoDone.current = new Set(Array.from({ length: next.actions.length + 1 }, (_, k) => stateKey(next, k)));
-    toldRef.current = true;
-    update(next, posKnown || next.actions.length > 0 || draft.posChosen);
+    const apply = () => {
+      setTelling(false);
+      const next = { ...told, id: hand.id, createdAt: hand.createdAt, sessionId: hand.sessionId, voiceNote: hand.voiceNote, tags: hand.tags, notes: hand.notes };
+      autoDone.current = new Set(Array.from({ length: next.actions.length + 1 }, (_, k) => stateKey(next, k)));
+      toldRef.current = true;
+      update(next, posKnown || next.actions.length > 0 || draft.posChosen);
+    };
+    // A half-saved hand told again: what was entered with taps goes, so ask first.
+    if (hand.actions.length) return confirmAction(t('Trocar pela mão contada?'), t('O que já estava nesta mão fica substituído pelo que contaste.'), t('Trocar'), apply);
+    apply();
   };
 
   const discard = () => {
@@ -446,7 +472,7 @@ export default function NewHand() {
   // Heads-up showdown: the picker for the opponent's cards is already open.
   const liveVillains = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
   // The picker opens on the first seat whose cards are still unknown (multiway too): a showdown is two taps per hand shown.
-  const sdSeat = showdownFor !== undefined ? showdownFor : (liveVillains.find((i) => (hand.players[i].cards?.length ?? 0) < 2) ?? null);
+  const sdSeat = showdownFor !== undefined ? showdownFor : (liveVillains.find((i) => (hand.players[i].cards?.length ?? 0) < holes) ?? null);
   const stage = STAGES.find((x) => x.id === hand.game.stage)?.label;
 
   const busy = hand.actions.length || heroCards.length || isEdit;
@@ -627,14 +653,15 @@ export default function NewHand() {
         {!capturing && phase === 'hero' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < 2 ? t('As tuas cartas') : ''}</T>
+              <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < holes ? t('As tuas cartas') : ''}</T>
               <Row gap={10}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
                 {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
                 {shortScreen && !hand.actions.length ? (
-                  <Chip label={!pro.can('voiceHand') ? t('Voz') + ' · Plus' : t('Voz')} icon={!pro.can('voiceHand') ? 'lock-closed' : 'mic'} onPress={openVoice} />
+                  <Chip label={voiceLocked(pro) ? `${t('Voz')} · ${voicePlanName()}` : t('Voz')} icon={voiceLocked(pro) ? 'lock-closed' : 'mic'} onPress={openVoice} />
                 ) : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
+                <Chip label="PLO" active={holes === 4} onPress={togglePLO} />
                 <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}>
                   <T v="small">
                     {t('Stack')} <T v="mono">{amount(hand.players[hand.hero].stack, hand, inBB)}</T>
@@ -679,14 +706,14 @@ export default function NewHand() {
             {!hand.actions.length && !shortScreen && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={!pro.can('voiceHand') ? `${t('Contar a mão por voz')}, Plus` : t('Contar a mão por voz')}
+                accessibilityLabel={voiceLocked(pro) ? `${t('Contar a mão por voz')}, ${voicePlanName()}` : t('Contar a mão por voz')}
                 onPress={openVoice}
                 style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
                 <Ionicons name="mic" size={16} color={C.accent} />
                 <T v="body" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
                   {t('Contar a mão por voz')}
                 </T>
-                {!pro.can('voiceHand') ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
+                {voiceLocked(pro) ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
               </Pressable>
             )}
             {!settings.onboarded && !isEdit ? (
@@ -711,7 +738,7 @@ export default function NewHand() {
                   </T>
                 ) : null}
                 <Chip
-                  label={`${displayName(hand, x.a.p, pos)} ${x.verb}${x.to !== undefined ? ' ' + amount(x.to, hand, inBB) : ''}`}
+                  label={`${displayName(hand, x.a.p, pos)} ${x.verb}${x.to !== undefined ? ' ' + amount(x.to, hand, inBB) : ''}${x.size ? ' · ' + x.size : ''}`}
                   onPress={() => {
                     const f = fixAt(hand, x.i);
                     update(f.hand, draft.posChosen, undefined, f.checkDownFrom);
@@ -894,7 +921,7 @@ export default function NewHand() {
                       </Row>
                     ))}
                   {/* Stays open after the first pick while someone's cards are unknown: a chop or a side pot needs a second tap, and a wrong tap can be undone. */}
-                  {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== 2)) && (
+                  {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== holes)) && (
                     <View style={{ gap: 6 }}>
                       {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
                         <View key={key} style={{ gap: 6 }}>
@@ -927,7 +954,7 @@ export default function NewHand() {
                           key={i}
                           big
                           active={sdSeat === i}
-                          label={`${displayName(hand, i, pos)} ${p.cards?.length === 2 ? comboLabel(p.cards) : '??'}`}
+                          label={`${displayName(hand, i, pos)} ${p.cards?.length === holes ? comboLabel(p.cards) : '??'}`}
                           onPress={() => setShowdownFor(sdSeat === i ? null : i)}
                         />
                       ),
@@ -941,11 +968,11 @@ export default function NewHand() {
                         const p = hand.players[sdSeat];
                         let cards = [...(p.cards ?? [])];
                         if (cards.includes(c)) cards = cards.filter((x) => x !== c);
-                        else if (cards.length < 2) cards.push(c);
-                        else cards = [cards[1], c];
+                        else if (cards.length < holes) cards.push(c);
+                        else cards = [...cards.slice(1), c];
                         setPlayer(sdSeat, { ...p, cards });
                         // Multiway: the next seat whose cards are still unknown opens by itself.
-                        if (cards.length === 2) setShowdownFor(liveVillains.find((i) => i !== sdSeat && (hand.players[i].cards?.length ?? 0) < 2) ?? null);
+                        if (cards.length === holes) setShowdownFor(liveVillains.find((i) => i !== sdSeat && (hand.players[i].cards?.length ?? 0) < holes) ?? null);
                       }}
                     />
                   )}
@@ -973,7 +1000,20 @@ export default function NewHand() {
 
       {toldOpened ? (
         <Suspense fallback={null}>
-          <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} Counted={TapCounted} />
+          <VoiceHandSheet
+            visible={telling}
+            base={hand}
+            onClose={() => setTelling(false)}
+            onDone={fromWords}
+            Counted={TapCounted}
+            note={
+              hand.voiceNote ? (
+                <Suspense fallback={null}>
+                  <VoiceNotePlayer uri={hand.voiceNote} />
+                </Suspense>
+              ) : undefined
+            }
+          />
         </Suspense>
       ) : null}
 
@@ -1051,6 +1091,7 @@ export default function NewHand() {
           initialInBB={inBB}
           min={pad === 'allin' ? undefined : l.minTo}
           max={pad === 'allin' ? undefined : l.maxTo}
+          sizeOf={pad === 'raise' ? (v) => sizeText(hand, s, v) : undefined}
           onClose={() => setPad(false)}
           onDone={(v) => {
             setPad(false);

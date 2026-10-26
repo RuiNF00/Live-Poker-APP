@@ -85,6 +85,8 @@ export const CASES: Case[] = [
   // ── «fold até…»: everyone before that seat folds, and only them.
   { lang: 'pt', text: 'Estou no botão com ás rei. Fold até ao cutoff, ele abre para 1000 e eu pago.', pos: 'BTN', cards: 'AK', line: 'CO r1000, BTN c' },
   { lang: 'pt', text: 'Fold até o cutoff, o cutoff abre para 1000, eu no botão pago com valete dez.', pos: 'BTN', cards: 'JT', line: 'CO r1000, BTN c' },
+  { lang: 'pt', text: 'Estou no botão com ás rei, o UTG abre para 1000, eu faço 3000, ele paga.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN r3000, UTG c' },
+  { lang: 'es', text: 'Estoy en el botón con as rey, el UTG sube a 1000, hago 3000, él paga.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN r3000, UTG c' },
   { lang: 'br', text: 'Tô no botão com dama dama. Fold até o cutoff, ele abre pra 1000, eu dou 3bet pra 3000, ele paga.', pos: 'BTN', cards: 'QQ', line: 'CO r1000, BTN r3000, CO c' },
   { lang: 'br', text: 'Todo mundo folda até mim no botão, abro pra 1000 com ás dama e o big paga.', pos: 'BTN', cards: 'AQ', line: 'BTN r1000, BB c' },
   { lang: 'es', text: 'Estoy en el botón con as rey. Todos foldean hasta el cutoff, sube a 1000 y yo pago.', pos: 'BTN', cards: 'AK', line: 'CO r1000, BTN c' },
@@ -202,6 +204,19 @@ export const CASES: Case[] = [
   { lang: 'pt', text: 'Estou no botão com ás rei e 25 mil. O UTG, com 12 mil, abre para 1000, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000, UTG: 12000 } },
   { lang: 'es', text: 'Estoy en el botón con as rey y 25 mil. El UTG, con 12 mil, sube a 1000, pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000, UTG: 12000 } },
   { lang: 'en', text: "I'm on the button with ace king and 25k. UTG, with 12k, opens to 1000, I call.", pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000, UTG: 12000 } },
+  // A seat's stack said later in the hand, and the hero's after their own action (Registo P3, 19 Oct).
+  { lang: 'pt', text: 'Estou no botão com ás rei. O UTG abre para 1000, o CO, com 45 mil, paga, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, CO c, BTN c', stacks: { CO: 45000 } },
+  { lang: 'br', text: 'Tô no botão com ás rei, o UTG abre pra 1000, o CO com 45 mil paga e eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, CO c, BTN c', stacks: { CO: 45000 } },
+  { lang: 'es', text: 'Estoy en el botón con as rey. El UTG sube a 1000, el CO con 45 mil paga, yo pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, CO c, BTN c', stacks: { CO: 45000 } },
+  { lang: 'en', text: "I'm on the button with ace king. UTG opens to 1000, the cutoff with 45k calls, I call.", pos: 'BTN', cards: 'AK', line: 'UTG r1000, CO c, BTN c', stacks: { CO: 45000 } },
+  { lang: 'pt', text: 'Estou no botão com ás rei. O UTG abre para 1000, eu pago, tenho 25 mil.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000 } },
+  { lang: 'es', text: 'Estoy en el botón con as rey. El UTG sube a 1000, yo pago, tengo 25 mil.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c', stacks: { BTN: 25000 } },
+  // Cards with their suit after «tenho/tengo» are cards, not a stack (Registo P3).
+  { lang: 'pt', text: 'Estou no botão, tenho 7 de copas e 6 de copas. O UTG abre para 1000, eu pago.', pos: 'BTN', cards: '7h6h', line: 'UTG r1000, BTN c' },
+  { lang: 'es', text: 'Estoy en el botón, tengo 7 de corazones y 6 de corazones. El UTG sube a 1000, pago.', pos: 'BTN', cards: '7h6h', line: 'UTG r1000, BTN c' },
+  // A bet said before its verb, with no «com», stays a bet.
+  { lang: 'pt', text: 'Estou no botão com ás rei. O UTG abre para 1000, eu pago. Flop ás 7 2. O UTG, 2000, aposta, eu pago.', pos: 'BTN', cards: 'AK', board: 'A72', stacks: { UTG: 40000 } },
+  { lang: 'pt', text: 'Estou no botão com ás rei. O UTG abre para 1000, o CO 3000 paga, eu pago.', pos: 'BTN', cards: 'AK', stacks: { CO: 40000 } },
   { lang: 'pt', text: 'Blinds 400/200. Estou no botão com ás rei, o UTG abre para 1000, eu pago.', pos: 'BTN', cards: 'AK', line: 'UTG r1000, BTN c' },
 ];
 

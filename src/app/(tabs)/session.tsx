@@ -6,8 +6,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 
 import { AmountPad } from '@/components/AmountPad';
 import { Avatar } from '@/components/Avatar';
@@ -40,6 +40,8 @@ import { eventDay } from '@/poker/festivals';
 import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
+import { usePro } from '@/billing/pro';
+import { voiceLocked as lockedForVoice } from '@/billing/voice-access';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
@@ -360,7 +362,15 @@ function Live({ s }: { s: Session }) {
   // The clock and stack first; the chart, money and staking a frame later.
   const full = useAfterFirstFrame();
   const [noteOpen, setNoteOpen] = useState(false);
-  const [finish, setFinish] = useState({ cashOut: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
+  const pro = usePro();
+  const voiceLocked = lockedForVoice(pro);
+  // Four buttons beside «Nova mão»: on a narrow phone they sit closer, so «Re-entry» keeps its size.
+  const tight = useWindowDimensions().width < 380;
+  // Mounted on first open, so the parser isn't loaded for players who never use it.
+  const [voice, setVoice] = useState<'closed' | 'open' | 'shut'>('closed');
+  // MTT: cashOut is the place's prize here, bounties apart; the session keeps their sum as its cashOut.
+  const [finish, setFinish] = useState({ cashOut: 0, bounties: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
+  const total = finish.cashOut + (s.kind === 'mtt' ? finish.bounties : 0);
   const swapEnd = useSwapEnd(s);
   const [more, setMore] = useState(false);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -371,7 +381,7 @@ function Live({ s }: { s: Session }) {
       const tr = s.tourney;
       const place = tr?.left || 0;
       const prize = (place && tr?.payouts?.[place - 1]) || 0;
-      setFinish({ cashOut: prize + (tr?.bounties || 0), place, field: tr?.entries || 0, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 });
+      setFinish({ cashOut: prize, bounties: s.bounties ?? tr?.bounties ?? 0, place, field: tr?.entries || 0, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 });
     } else {
       // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
       setFinish((f) => ({ ...f, cashOut: s.stack, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 }));
@@ -392,7 +402,11 @@ function Live({ s }: { s: Session }) {
     const now = Date.now();
     const ended: Session = {
       ...s,
-      cashOut: finish.cashOut,
+      cashOut: total,
+      // 0 is kept (not left out), so a count tournament mode made earlier can't come back.
+      bounties: mtt ? finish.bounties : undefined,
+      // Older versions read tournament mode's count: it says the same.
+      ...(s.tourney ? { tourney: { ...s.tourney, bounties: (mtt && finish.bounties) || undefined } } : null),
       finish: finish.place || undefined,
       field: finish.field || undefined,
       tips: finish.tips || undefined,
@@ -481,7 +495,7 @@ function Live({ s }: { s: Session }) {
     });
   };
 
-  // Pause, resume or a rebuy tapped on the lock screen (Live Activity, widget): done here with the
+  // Pause, resume, a rebuy or "end" (opens the end form) tapped on the lock screen (Live Activity, widget): done here with the
   // usual "Anular". Fails closed: nothing happens while the app lock is up or still being read.
   const params = useLocalSearchParams<{ do?: string; id?: string }>();
   const lockUp = useLockScreenUp();
@@ -489,7 +503,8 @@ function Live({ s }: { s: Session }) {
   useEffect(() => {
     if (!params.do || lockUp) return;
     router.setParams({ do: undefined, id: undefined });
-    if (fromLock === 'rebuy') rebuy();
+    if (fromLock === 'end') startEnding();
+    else if (fromLock === 'rebuy') rebuy();
     else if (fromLock) togglePause();
     // Only a new link or the lock opening runs it; the session changing under it doesn't.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -658,6 +673,12 @@ function Live({ s }: { s: Session }) {
                   {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
                   {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
                 </Row>
+                {mtt ? (
+                  <Row gap={S.sm} style={{ alignItems: 'flex-end' }}>
+                    <NumField money label={t('Bounties ({currency})', { currency: s.currency })} value={finish.bounties} onChange={(bounties) => setFinish((f) => ({ ...f, bounties }))} />
+                    {finish.bounties > 0 ? <T v="small" style={{ flex: 2 }}>{t('Total: {amount}', { amount: money(total, s.currency) })}</T> : after?.e.pko ? <T v="small" style={{ flex: 2 }}>{t('Torneio com bounties: o prémio do lugar acima, os bounties aqui.')}</T> : <View style={{ flex: 2 }} />}
+                  </Row>
+                ) : null}
                 <View style={{ gap: S.sm }}>
                   <T v="label">{t('Como correu')}</T>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
@@ -667,7 +688,7 @@ function Live({ s }: { s: Session }) {
                   </View>
                 </View>
                 {(() => {
-                  const { owed, profit: p } = endPreview({ ...s, cashOut: finish.cashOut, tips: finish.tips || undefined }, sessions, packages);
+                  const { owed, profit: p } = endPreview({ ...s, cashOut: total, bounties: mtt ? finish.bounties : undefined, tips: finish.tips || undefined }, sessions, packages);
                   return (
                     <View style={{ gap: 6, paddingTop: S.xs }}>
                       {owed > 0 ? (
@@ -689,7 +710,7 @@ function Live({ s }: { s: Session }) {
                   <AfterFestivalSession
                     s={s}
                     after={after}
-                    prize={finish.cashOut}
+                    prize={total}
                     onReenter={() => {
                       setEnding(false);
                       rebuy();
@@ -779,10 +800,11 @@ function Live({ s }: { s: Session }) {
       ) : null}
       {/* Everything you do between hands, within reach of the thumb. */}
       <View style={styles.thumbBar} onLayout={onBarLayout}>
-        <View ref={barRef} collapsable={false} style={{ flex: 3, flexDirection: 'row', alignItems: 'stretch', gap: S.sm }}>
+        <View ref={barRef} collapsable={false} style={{ flex: 4, flexDirection: 'row', alignItems: 'stretch', gap: tight ? S.xs : S.sm }}>
         <ThumbAction icon={paused ? 'play' : 'pause'} label={paused ? t('Retomar') : t('Pausa')} onPress={togglePause} active={paused} />
         <ThumbAction icon="add-circle-outline" label={mtt ? 'Re-entry' : 'Rebuy'} onPress={rebuy} />
         <ThumbAction icon={s.notes ? 'document-text' : 'document-text-outline'} label={t('Nota')} onPress={() => setNoteOpen(true)} />
+        <ThumbAction icon={voiceLocked ? 'lock-closed' : 'mic-outline'} label={t('Voz')} a11y={voiceLocked ? `${t('Atualizar por voz')}, Pro` : t('Atualizar por voz')} onPress={() => (voiceLocked ? pro.paywall('voiceLive') : setVoice('open'))} />
         </View>
         <View ref={handRef} collapsable={false} style={{ flex: 2 }}>
           {/* "Nueva mano" / "Nova mão" at 200%: two lines rather than "Nueva m…". */}
@@ -790,6 +812,19 @@ function Live({ s }: { s: Session }) {
         </View>
       </View>
       <CoachMarks id="live-session" steps={tour} />
+      {voice !== 'closed' ? (
+        <Suspense fallback={null}>
+          <LiveVoiceSheet
+            visible={voice === 'open'}
+            session={s}
+            onClose={() => setVoice('shut')}
+            onDone={(title, patch) => {
+              setVoice('shut');
+              undoable(title, patch);
+            }}
+          />
+        </Suspense>
+      ) : null}
       <NoteSheet
         visible={noteOpen}
         value={s.notes}
@@ -807,11 +842,11 @@ function Live({ s }: { s: Session }) {
 const SESSION_TAGS = ['Focado', 'Cansado', 'Tilt', 'Mesa fácil', 'Mesa difícil', 'Bem jogado', 'Azar'];
 
 /** Square icon-and-label button for the bar at the bottom of a live session. */
-function ThumbAction({ icon, label, onPress, active }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; active?: boolean }) {
+function ThumbAction({ icon, label, onPress, active, a11y }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void; active?: boolean; a11y?: string }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={a11y ?? label}
       onPress={() => {
         tap();
         onPress();
@@ -896,6 +931,9 @@ function TableReads({ roster }: { roster: string[] }) {
     </Section>
   );
 }
+
+// Lazy: the speech parser loads on the first tap, in the same chunk as the hand told by voice.
+const LiveVoiceSheet = React.lazy(() => import('@/components/voice-chunk').then((m) => ({ default: m.LiveVoiceSheet })));
 
 function mmss(ms: number) {
   const secs = Math.max(0, Math.ceil(ms / 1000));

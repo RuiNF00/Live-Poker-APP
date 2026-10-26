@@ -18,6 +18,11 @@ export function swapUrl(id: string, ref?: string): string {
 
 /** One per draft: a create sent again with it (an automatic retry) gets the same swap back, never a second one. */
 export const newCreateKey = () => Array.from(Crypto.getRandomBytes(32), (b) => b.toString(16).padStart(2, '0')).join('');
+/** The id of a swap made without signal (swap_own_id on the server): from the draft's key, which
+ * stays on the phone until the create lands, so the link can go out first and nobody can take it. */
+export async function swapIdFor(key: string): Promise<string> {
+  return (await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, 'swap-id:' + key)).toLowerCase().slice(0, 16);
+}
 export const newCid = () => Crypto.randomUUID().replace(/-/g, '').slice(0, 16);
 
 export class SwapError extends Error {
@@ -42,8 +47,9 @@ async function call(path: string, init: RequestInit & { token?: string } = {}): 
 }
 
 /** `rcUserId`: my RevenueCat id, so the swap's accounts follow my Pro for both players. */
-export async function createSwap(terms: SwapTerms, rcUserId?: string, key?: string): Promise<{ swap: RemoteSwap; token: string }> {
-  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, rcUserId, token: key }) });
+/** `id` (swapIdFor(key)): the link's id, already sent. */
+export async function createSwap(terms: SwapTerms, rcUserId?: string, key?: string, id?: string): Promise<{ swap: RemoteSwap; token: string }> {
+  const j = await call('', { method: 'POST', body: JSON.stringify({ terms, rcUserId, token: key, id }) });
   if (!j.swap || !j.token) throw new SwapError('bad_response', 500);
   return { swap: j.swap, token: j.token };
 }

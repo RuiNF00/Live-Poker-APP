@@ -7,7 +7,7 @@ import { FitText } from './FitText';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
-import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Defs, Path, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { t } from '@/i18n';
 import { shortDate } from '@/poker/format';
@@ -15,7 +15,7 @@ import type { CardStat, CardStyle, Milestone } from '@/share/session-card';
 import type { Session } from '@/store/types';
 import { C, F, R, ff } from '@/theme';
 
-import { linkHost, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, POST_H, STORY_H, STORY_W } from './StoryCard';
+import { linkHost, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, POST_H, STORY_H, STORY_W } from './story-brand';
 
 /** The sticker is captured on its own, at this size in points. */
 export const STICKER_W = 320;

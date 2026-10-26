@@ -27,6 +27,8 @@ export async function POST(req: Request, { params }: Ctx) {
   const side = await store.side(id, token);
   if (!side) return NextResponse.json({ error: 'not_found' }, { status: 404, headers: swapCors });
   const ok = await store.addEntry(id, token, entry);
+  // Full: the app tells the player to start a new one; retrying never helps.
+  if (ok === 'full') return NextResponse.json({ error: 'full' }, { status: 413, headers: swapCors });
   if (!ok) return NextResponse.json({ error: 'not_confirmed' }, { status: 409, headers: swapCors });
   return swapResponse(id, token);
 }

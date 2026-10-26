@@ -11,6 +11,7 @@
 // had to make (a suit, a size, a missing card) is listed for the player to fix.
 
 import { apply, buttonForHeroPosition, legal, positions, replay, straddleSeats, totalPot, type TableState } from './engine';
+import { holeCount, isPLO } from './variant';
 import { resizeTable, rescaleStacks } from './factory';
 import type { ActionKind, CardCode, Hand, HandAction, Street, Suit } from './types';
 
@@ -32,7 +33,11 @@ export type VoiceNoteCode =
   /** Something said couldn't happen at that point of the hand and was left out. */
   | 'skipped'
   /** A stack grew so a bet that was said would fit. */
-  | 'stackGrew';
+  | 'stackGrew'
+  /** PLO: a size above the pot, brought down to a pot-sized bet or raise. */
+  | 'potLimit'
+  /** PLO5 or Hi-Lo was said: the hand is kept as four-card PLO. */
+  | 'ploOnly';
 
 export interface VoiceNote {
   code: VoiceNoteCode;
@@ -64,8 +69,8 @@ function ranks(r: Rank, single: string[], plural: string[]) {
   plural.forEach((w) => (PAIR_WORDS[w] = r));
 }
 ranks('A', ['as', 'ace', 'az'], ['ases', 'aces', 'azes']);
-ranks('K', ['rei', 'rey', 'king', 'k', 'ka', 'capa'], ['reis', 'reyes', 'kings']);
-ranks('Q', ['dama', 'rainha', 'reina', 'queen', 'q'], ['damas', 'rainhas', 'reinas', 'queens']);
+ranks('K', ['rei', 'rey', 'king', 'k', 'ka', 'capa'], ['reis', 'reyes', 'kings', 'kas']);
+ranks('Q', ['dama', 'rainha', 'reina', 'queen', 'q', 'qu', 'cu'], ['damas', 'rainhas', 'reinas', 'queens']);
 ranks('J', ['valete', 'jota', 'jack', 'j', 'valet', 'jaque'], ['valetes', 'jotas', 'jacks', 'valets']);
 ranks('T', ['dez', 'diez', 'ten', '10'], ['dezes', 'dieces', 'tens']);
 ranks('9', ['nove', 'nueve', 'nine', '9'], ['noves', 'nueves', 'nines']);
@@ -80,7 +85,7 @@ ranks('2', ['dois', 'duas', 'dos', 'two', 'deuce', 'duque', '2'], ['duques', 'tw
 const ARTICLES = new Set(['o', 'a', 'the', 'el', 'la', 'um', 'uma', 'un', 'una', 'an', 'os', 'as', 'los', 'las']);
 
 /** Words that are also ordinary words: a card only next to another card word. */
-const WEAK_RANKS = new Set(['as', 'a', 'dos', 'k', 'q', 'j', 'ka', 'az', 'two', 'ten', 'capa']);
+const WEAK_RANKS = new Set(['as', 'a', 'dos', 'k', 'q', 'qu', 'cu', 'j', 'ka', 'az', 'two', 'ten', 'capa']);
 
 const SUIT_WORDS: Record<string, Suit> = {
   espadas: 's', espada: 's', picas: 's', pica: 's', spades: 's', spade: 's',
@@ -112,7 +117,7 @@ const HERO_REF = new Set(['eu', 'hero', 'i', 'yo', 'me', 'mim', 'im']);
 const HERO_MARK = new Set(['estou', 'tou', 'sou', 'estava', 'estoy', 'estaba', 'soy', 'am']);
 const HAVE_1 = new Set(['tenho', 'tinha', 'tengo', 'tenia', 'have', 'had', 'got', 'recebo', 'recebi', 'levo', 'peguei']);
 const VILLAIN_REF = new Set(['ele', 'ela', 'vilao', 'villain', 'he', 'she', 'him', 'adversario', 'oponente', 'opponent', 'rival', 'gajo', 'tipo', 'cara', 'guy', 'reg', 'fish', 'peixe', 'pescado']);
-const SHOW = new Set(['mostra', 'mostrou', 'shows', 'showed', 'muestra', 'mostro', 'ensena', 'enseno', 'vira', 'virou', 'tem', 'has', 'tiene']);
+const SHOW = new Set(['mostra', 'mostrou', 'shows', 'showed', 'muestra', 'mostro', 'ensena', 'enseno', 'voltea', 'volteo', 'vira', 'virou', 'tem', 'has', 'tiene']);
 const WIN_1 = new Set(['ganho', 'ganhei', 'gano', 'gane', 'win', 'won', 'levo', 'levei', 'arrasto']);
 const WIN_3 = new Set(['ganha', 'ganhou', 'gana', 'gano', 'wins', 'leva', 'levou', 'arrasta', 'arrastou', 'llevo', 'lleva']);
 const SPLIT = new Set(['split', 'chop', 'dividimos', 'dividem', 'dividido', 'empate', 'empatamos', 'repartimos']);
@@ -136,24 +141,26 @@ function verbs(kind: VerbDef['kind'], p0: string[], p1: string[], p3: string[], 
   p3.forEach((w) => (VERBS[w] = { kind, person: 3, ...extra }));
 }
 verbs('fold', ['fold', 'folded', 'foldeo', 'tiro', 'retiro'], ['foldo', 'foldei', 'folde', 'desisto', 'desisti', 'largo', 'larguei', 'corri', 'corro', 'fujo', 'fugi'], ['folds', 'folda', 'foge', 'fugiu', 'foldou', 'desiste', 'desistiu', 'larga', 'largou', 'correu', 'corre', 'foldea', 'tira', 'retira']);
-verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou']);
+verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee', 'checo', 'cheque'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou', 'checa']);
 verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
 verbs('bet', ['bet', 'betted', 'cbet', 'donk', 'lead', 'barrel', 'beteo', 'probe'], ['aposto', 'apostei', 'apuesto', 'aposte', 'beto', 'betei', 'cbeto', 'disparo', 'disparei'], ['bets', 'aposta', 'apostou', 'apuesta', 'beta', 'betou', 'cbets', 'leads', 'barrels', 'donks', 'betea', 'dispara', 'disparou']);
-verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
+verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'resubi', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
 verbs('bet', ['cbet'], ['cbeto'], ['cbets'], { cbet: true });
 verbs('raise', ['3bet', '4bet', '5bet', 'treebet', 'tribet'], ['3beto', '4beto', '3betei', '4betei'], ['3bets', '4bets', '5bets', '3beta', '4beta', '3betou', '4betou'], { open: true });
 verbs('fold', [], [], ['foldam', 'foldaram', 'desistem', 'desistiram', 'largam', 'largaram', 'correm', 'correram', 'foldean', 'foldearon'], { plural: true });
-verbs('check', [], [], ['passam', 'passaram', 'checkam', 'checkaram', 'pasan', 'pasaron', 'chequean'], { plural: true });
+verbs('check', [], [], ['passam', 'passaram', 'checkam', 'checkaram', 'pasan', 'pasaron', 'chequean', 'checan', 'checaron'], { plural: true });
 verbs('call', [], [], ['pagam', 'pagaram', 'limpam', 'limparam', 'igualam', 'igualaram', 'pagan', 'pagaron', 'igualan', 'limpean', 'completam', 'entram', 'entraram'], { plural: true });
 verbs('passto', ['passto'], [], []);
 verbs('foldall', ['foldall'], [], []);
-verbs('allin', ['allin', 'shove', 'shoved', 'jam', 'jammed', 'push', 'pushed'], ['shovo', 'shovei', 'empurro', 'empurrei'], ['shoves', 'jams', 'pushes', 'shova', 'shovou', 'empurra', 'empurrou']);
+verbs('allin', ['allin', 'shove', 'shoved', 'jam', 'jammed', 'push', 'pushed'], ['shovo', 'shovei', 'empurro', 'empurrei', 'empujo', 'empuje'], ['shoves', 'jams', 'pushes', 'shova', 'shovou', 'empurra', 'empurrou', 'empuja']);
 
 /** Accented Spanish past forms, told apart before accents go: "pagó" is him, "pago" is me. */
 const ES_PAST_3: Record<string, VerbDef> = {
   'pagó': { kind: 'call', person: 3 }, 'pasó': { kind: 'check', person: 3 }, 'apostó': { kind: 'bet', person: 3 }, 'subió': { kind: 'raise', person: 3 },
   'igualó': { kind: 'call', person: 3 }, 'foldeó': { kind: 'fold', person: 3 }, 'chequeó': { kind: 'check', person: 3 }, 'abrió': { kind: 'raise', person: 3 },
   'retiró': { kind: 'fold', person: 3 }, 'tiró': { kind: 'fold', person: 3 }, 'resubió': { kind: 'raise', person: 3 }, 'ganó': { kind: 'call', person: 3 },
+  // es-MX, told after the hand: «checó», «beteó», «empujó».
+  'checó': { kind: 'check', person: 3 }, 'beteó': { kind: 'bet', person: 3 }, 'empujó': { kind: 'allin', person: 3 },
 };
 
 /** "Faço fold", "dei check", "vai all-in": the helper says who, the noun says what. */
@@ -197,7 +204,7 @@ function numToken(w: string): number | null {
 }
 
 /** "dois mil e quinhentos", "2 mil 500", "2.5", "vinte e cinco" → a number; null if none starts at i. */
-function readNumber(w: string[], i: number): { value: number; next: number } | null {
+export function readNumber(w: string[], i: number): { value: number; next: number } | null {
   let total = 0;
   let current = 0;
   let any = false;
@@ -277,12 +284,35 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/(\d+(?:\.\d+)?)\s*(bbs?)\b/g, '$1 bb');
   s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1 / $2');
   // "Abre para 900, não, para 1100", "subo a 1000, perdón, a 1100": the amount said last stands.
-  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
+  s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|mas bien|bueno|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
   const sub: [RegExp, string | ((m: string) => string)][] = [
     // "O resto foge": the rest fold, it isn't "o resto" as in all-in.
     [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
     [/\ball[\s-]*ins?\b|\bol[\s-]*in\b|\ba tudo\b|\bo resto\b/g, ' allin '],
+    // es-MX: «me voy con todo», «se va con todo»; «se la pago», «me la paga», «le subo»: the
+    // pronouns only say against whom.
+    [/\b(?:me )?(voy|fui) con todo\b|\b(?:se )?(va|fue) con todo\b/g, (m: string) => ` ${m.split(' ').find((x) => ['voy', 'fui', 'va', 'fue'].includes(x))} allin `],
+    // «Me voy.» on its own is a fold; «sube a mil, voy.» a call.
+    [/\bme voy(?=\s*(?:[.,;!?]|$))/g, ' foldo '],
+    [/\bvoy(?=\s*(?:[.,;!?]|$))/g, ' pago '],
+    [/\bse (?:la|lo) (?=[\p{L}§])/gu, ' '],
+    [/\bme (?:la|lo) (?=[\p{L}§])/gu, ' me '],
+    [/\ble (?=[\p{L}§])/gu, ' '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
+    // "PLO5", "Omaha de 5 cartas", "Omaha Hi-Lo": not dealt by the app, kept as PLO with a note.
+    [/\bplo5\b|\b(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)(?: de)? (?:5|five|cinco)[\s-]*(?:cartas|card|cards)\b|\b(?:5|five|cinco)[\s-]*(?:card|cards|cartas)[\s-]*(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)\b|\b(?:plo|omaha)[\s-]*(?:hi[\s-]*lo|high[\s-]*low|o8|8 or better)\b/g, ' plo plox '],
+    // "PLO", "Pot-Limit Omaha", "Omaha": four hole cards (see handFromSpeech). A number after
+    // "PLO" with a space is the table ("PLO 4 jogadores"), only "PLO4" written together is the game.
+    [/\bpot[\s-]*limit[\s-]*omaha\b|\bplo4?\b|\bomaha\b/g, ' plo '],
+    // "Dá pot", "faz pote", "va al bote": a pot-sized bet, or raise if there's one to face.
+    // The verb stays when it says who ("voy al bote" with no "yo" is hero), before "bet".
+    [/\b(da|dou|deu|dei|faz|faco|fiz|fez|vai|vou|foi|fui|hace|hago|hizo|va|voy|go|goes|went|makes|made)(?: (?:o|el|the|a|al|ao))? (?:pot|pote|bote)\b/g, (m: string) => {
+      const v = m.split(' ')[0];
+      return AUX_1.has(v) || AUX_3.has(v) ? ` ${v} bet pote ` : ' bet pote ';
+    }],
+    // "Double suited", "duplo naipe", "doble palo": two pairs of suits; "single suited", one.
+    [/\bdouble[\s-]*suited\b|\bduplo[\s-]*naipe\b|\bduplamente naipad[ao]s?\b|\bdoble[\s-]*(?:palo|suited)\b|\bdos palos\b|\bdois naipes\b/g, ' dsuited '],
+    [/\bsingle[\s-]*suited\b|\bnaipe simples\b|\bum naipe\b|\bun palo\b|\bsimple[\s-]*suited\b/g, ' ssuited '],
     [/(?<!\+ ?)\b([2-5])[\s-]*bet(s|o|ei|ou|a)?\b/g, ' $1bet$2 '],
     [/\b(tres|three|tri|tree)[\s-]*bet(s|o|ei|ou|a)?\b/g, ' 3bet$2 '],
     [/\b(quatro|cuatro|four)[\s-]*bet(s|o|ei|ou|a)?\b/g, ' 4bet$2 '],
@@ -295,7 +325,8 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:middle|mid)\s*position\b|\bposicao (?:do )?meio\b|\bposicion media\b/g, ' mp '],
     [/\b(?:lo|low)[\s-]*jack\b|\blojack\b/g, ' lj '],
     [/\b(?:hi|high)[\s-]*jack\b|\bhijack\b/g, ' hj '],
-    [/\bcut[\s-]*off\b|\bcutoff\b/g, ' co '],
+    [/\bcut[\s-]*off\b|\bcutoff\b|\b(?<=(?:el|en|del) )corte\b/g, ' co '],
+    [/\bprimera posicion\b|\bprimeira posicao\b/g, ' utg '],
     [/\bbig[\s-]*blind\b|\bbigblind\b|\bbig blinde\b|\bciega grande\b/g, ' bb '],
     // "La ciega pasa": a blind on its own is the big blind.
     [/\bciega\b(?! (?:pequena|chica|grande))/g, ' bb '],
@@ -312,6 +343,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(?:tres|three) (?:quartos|quarters|cuartos)(?: do| of the| del)?(?: pote| pot| bote)?\b/g, ' %75 pote '],
     [/\b(?:um|one|a|un) (?:quarto|quarter|cuarto)(?: do| of the| del)?(?: pote| pot| bote)?\b/g, ' %25 pote '],
     [/\b(\d+(?:\.\d+)?) (?:%|por cento|percent|por ciento)(?: do| of the| del)?(?: pote| pot| bote)?/g, ' %$1 pote '],
+    [/\bse (?:retiran|tiran) (los|las) (dos|tres)\b/g, ' $1 $2 foldam '],
     [/\bse retiran\b|\bse tiran\b/g, ' foldam '],
     // "Lo veo", "yo veo." is a call; "veo que apuesta" is only seeing.
     [/\b(?:lo|la|te|yo lo|yo la) veo\b|\bveo(?=\s*(?:[.,;!?]|$))/g, ' pago '],
@@ -319,7 +351,7 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\b(\d+)[\s-]*max\b/g, ' $1 max '],
     // "Toda a gente desiste" is pt-PT for everyone; "ninguém paga", "nobody calls": the rest fold.
     [/\btoda a gente\b/g, ' todos '],
-    [/\b(?:ninguem|nadie|nobody|no one|noone) (?:paga|pagou|iguala|call|calls|called|quis|quiere|quiso|wants)\b/g, ' foldall '],
+    [/\b(?:ninguem|nadie|nobody|no one|noone) (?:me |te |la |lo )?(?:paga|pagou|iguala|call|calls|called|quis|quiere|quiso|wants)\b/g, ' foldall '],
     // "Passamos ao flop", "pasamos al turn": only the street changes.
     [/\b(?:pasamos|passamos|vamos)(?: (?:a|ao|al|pro|pra|para o|para el|to the|to))? (?=flop|turn|river|rio\b)/g, ' , '],
     [/\b(flop|turn|river) ?[.,:;]? ?(?:o |el |the )?\1\b/g, ' $1 '],
@@ -358,8 +390,9 @@ type Atom =
   | { t: 'heroMark'; at: number }
   | { t: 'have'; at: number }
   | { t: 'verb'; v: VerbDef; at: number }
-  | { t: 'amount'; amt: Amount; at: number }
-  | { t: 'cards'; cards: CardSpec[]; suited?: boolean; texture?: Texture; at: number }
+  /** held: said after «com/con/with» («o CO, com 45 mil, paga»), the way a stack is said. */
+  | { t: 'amount'; amt: Amount; at: number; held?: true }
+  | { t: 'cards'; cards: CardSpec[]; suited?: boolean; ds?: 1 | 2; texture?: Texture; at: number }
   | { t: 'street'; s: Street; at: number }
   | { t: 'show'; at: number }
   | { t: 'win'; who: 'hero' | 'other' | 'split'; at: number }
@@ -383,9 +416,10 @@ const UNIT_AFTER = new Set([...THOUSAND, ...BB_UNIT, ...X_UNIT, 'fichas', 'chips
  * Cards from i on: up to `max`, in any of the ways players say them. Stops at
  * the first word that isn't a card or a filler.
  */
-function readCards(w: string[], i: number, max: number, eager: boolean): { cards: CardSpec[]; suited?: boolean; texture?: Texture; next: number } {
+function readCards(w: string[], i: number, max: number, eager: boolean): { cards: CardSpec[]; suited?: boolean; ds?: 1 | 2; texture?: Texture; next: number } {
   const cards: CardSpec[] = [];
   let suited: boolean | undefined;
+  let ds: 1 | 2 | undefined;
   let texture: Texture | undefined;
   let j = i;
   let lastCountWord = -1;
@@ -477,6 +511,12 @@ function readCards(w: string[], i: number, max: number, eager: boolean): { cards
       end = j;
       continue;
     }
+    if ((x === 'dsuited' || x === 'ssuited') && cards.length > 2) {
+      ds = x === 'dsuited' ? 2 : 1;
+      j++;
+      end = j;
+      continue;
+    }
     if (RAINBOW.has(x)) {
       texture = { n: 1 };
       j++;
@@ -501,10 +541,11 @@ function readCards(w: string[], i: number, max: number, eager: boolean): { cards
     else if (OFFSUIT.has(w[j])) suited = false;
     else if (RAINBOW.has(w[j])) texture = { n: 1 };
     else if (MONOTONE.has(w[j])) texture = { n: 3 };
+    else if ((w[j] === 'dsuited' || w[j] === 'ssuited') && cards.length > 2) ds = w[j] === 'dsuited' ? 2 : 1;
     else continue;
     end = j + 1;
   }
-  return { cards, suited, texture, next: Math.max(end, i + (cards.length ? 1 : 0)) };
+  return { cards, suited, ds, texture, next: Math.max(end, i + (cards.length ? 1 : 0)) };
 }
 
 function readAmountUnit(w: string[], j: number): { unit: Amount['unit']; next: number } {
@@ -518,7 +559,8 @@ function readAmountUnit(w: string[], j: number): { unit: Amount['unit']; next: n
   return { unit: 'chips', next: j };
 }
 
-export function atomise(text: string): Atom[] {
+/** `hole`: cards each player is dealt (4 in PLO). */
+export function atomise(text: string, hole = 2): Atom[] {
   const { words: w } = normalise(text);
   const out: Atom[] = [];
   let cardMode: 'hole' | 'board' | 'show' | null = null;
@@ -569,7 +611,7 @@ export function atomise(text: string): Atom[] {
       i++;
       continue;
     }
-    if (x === 'preflop') {
+    if (x === 'preflop' || x === 'plo' || x === 'plox') {
       i++;
       continue;
     }
@@ -608,8 +650,10 @@ export function atomise(text: string): Atom[] {
     }
     // "O big me dá 3-bet", "la ciega grande me sube": "me" says whom it was against, the seat acts.
     // "Apuesto 1000, me paga": a third-person verb after "me" is the villain's too.
-    const villainAct = (out.length > 0 && out[out.length - 1].t === 'actor' && (out[out.length - 1] as { a: { k: string } }).a.k !== 'hero') || VERBS[w[i + 1] ?? '']?.person === 3 || AUX_3.has(w[i + 1] ?? '');
-    const clitic = x === 'me' && villainAct && !!w[i + 1] && (w[i + 1] in VERBS || AUX_3.has(w[i + 1]));
+    // «me la pagó»: an accented past form (§) is the villain's too.
+    const past3 = (w[i + 1] ?? '').startsWith('§');
+    const villainAct = (out.length > 0 && out[out.length - 1].t === 'actor' && (out[out.length - 1] as { a: { k: string } }).a.k !== 'hero') || VERBS[w[i + 1] ?? '']?.person === 3 || AUX_3.has(w[i + 1] ?? '') || past3;
+    const clitic = x === 'me' && villainAct && !!w[i + 1] && (w[i + 1] in VERBS || AUX_3.has(w[i + 1]) || past3);
     if (clitic) {
       i++;
       continue;
@@ -646,7 +690,10 @@ export function atomise(text: string): Atom[] {
     if (HAVE_1.has(x)) {
       // "tenho 30 mil" is a stack, "tenho ás rei" are cards.
       const num = readNumber(w, i + 1);
-      if (num && !(isCardWord(w[i + 1]) && !UNIT_AFTER.has(w[num.next] ?? ''))) {
+      // «tengo 25 mil»: «25» reads as cards too, but a unit right after it makes it chips.
+      // «tenho 7 de copas»: «de» and a suit make it a card (Registo P3).
+      const suited = isCardWord(w[i + 1]) && w[i + 2] === 'de' && (w[i + 3] ?? '') in SUIT_WORDS;
+      if (num && !suited && !(isCardWord(w[i + 1]) && !UNIT_AFTER.has(w[num.next] ?? '') && !UNIT_AFTER.has(w[i + 2] ?? ''))) {
         out.push({ t: 'heroMark', at: i }, { t: 'stack', at: i });
         i++;
         continue;
@@ -696,6 +743,13 @@ export function atomise(text: string): Atom[] {
         const kind = NOUNS[w[j]];
         out.push({ t: 'verb', v: { kind, person: AUX_1.has(x) ? 1 : 3, open: /^\dbet$/.test(w[j]), ...(w[j] === 'cbet' ? { cbet: true } : {}) }, at: i });
         i = j + 1;
+        continue;
+      }
+      // "eu faço 3000", "hace 2500": a size with no noun is a bet or a raise.
+      if (['faco', 'fiz', 'faz', 'fez', 'hago', 'hice', 'hace', 'hizo'].includes(x) && readNumber(w, ['para', 'pra', 'a'].includes(w[i + 1]) ? i + 2 : i + 1)) {
+        out.push({ t: 'verb', v: { kind: 'raise', person: AUX_1.has(x) ? 1 : 3 }, at: i });
+        i++;
+        if (['para', 'pra', 'a'].includes(w[i])) i++;
         continue;
       }
     }
@@ -783,9 +837,9 @@ export function atomise(text: string): Atom[] {
     const strongRank = (x in RANK_WORDS && !WEAK_RANKS.has(x) && !/^\d+$/.test(x) && numToken(x) === null) || x in PAIR_WORDS || (/^[akqjt2-9]{2}[so]?$/.test(x) && !/^\d+$/.test(x)) || /^(\d)\1$/.test(x);
     const pairCue = (x === 'par' || x === 'pair' || x === 'pocket' || x === 'pockets' || x === 'pareja') && (isCardWord(w[i + 1]) || ((w[i + 1] === 'de' || w[i + 1] === 'of') && isCardWord(w[i + 2])));
     if ((cue && isCardWord(x) && !(/^\d+$/.test(x) && moneyAfter(w[i + 1]))) || strongRank || pairCue || weakPair || (cue && x === 'a' && isCardWord(w[i + 1]) && !moneyAfter(w[i + 2]))) {
-      const c = readCards(w, i, 2, cue || pairCue);
+      const c = readCards(w, i, hole, cue || pairCue);
       if (c.cards.length) {
-        out.push({ t: 'cards', cards: c.cards, suited: c.suited, at: i });
+        out.push({ t: 'cards', cards: c.cards, suited: c.suited, ds: c.ds, at: i });
         i = c.next;
         cardMode = null;
         continue;
@@ -807,8 +861,9 @@ export function atomise(text: string): Atom[] {
         i = bbN.next;
         continue;
       }
-      // "6 max", "9 jogadores"
-      const tableCue = ['max', 'handed'].includes(w[j]) || ['mesa', 'de', 'com', 'table', 'of', 'with', 'somos', 'eramos', 'estamos', 'a'].includes(w[i - 1] ?? '');
+      // "6 max", "9 jogadores", "PLO 4 jogadores": also a count said alone before a pause, which no verb follows.
+      const tableCue =
+        ['max', 'handed'].includes(w[j]) || ['mesa', 'de', 'com', 'table', 'of', 'with', 'somos', 'eramos', 'estamos', 'a', 'plo'].includes(w[i - 1] ?? '') || (i === 0 && (w[j + 1] === undefined || w[j + 1] === ','));
       if (SIZE_WORDS.has(w[j]) && tableCue && num.value >= 2 && num.value <= 10 && Number.isInteger(num.value)) {
         out.push({ t: 'size', n: num.value, at: i });
         i = j + 1;
@@ -822,7 +877,8 @@ export function atomise(text: string): Atom[] {
       const u = readAmountUnit(w, j);
       j = u.next;
       const by = BY_WORDS.has(w[i - 1] ?? '');
-      out.push({ t: 'amount', amt: { v: num.value, unit: u.unit, ...(by ? { by } : {}) }, at: i });
+      const held = ['com', 'con', 'with'].includes(w[i - 1] ?? '');
+      out.push({ t: 'amount', amt: { v: num.value, unit: u.unit, ...(by ? { by } : {}) }, at: i, ...(held ? { held: true as const } : {}) });
       i = j;
       continue;
     }
@@ -889,6 +945,8 @@ interface Setup {
   heroPos?: string;
   heroCards?: CardSpec[];
   heroSuited?: boolean;
+  /** PLO: "double suited" (2) or "single suited" (1). */
+  heroDs?: 1 | 2;
   size?: number;
   blinds?: { sb: number; bb: number; ante?: number };
   straddle?: 'utg' | 'btn';
@@ -897,7 +955,7 @@ interface Setup {
 }
 
 /** Atoms into events: who did what, in the order it was said. */
-function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
+function toEvents(atoms: Atom[], hole = 2): { setup: Setup; events: Event[] } {
   const setup: Setup = { stacks: [] };
   const events: Event[] = [];
   const used = new Set<number>();
@@ -942,8 +1000,9 @@ function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
         const heroActs = lastAct.actor?.k === 'hero' || (!lastAct.actor && lastAct.person === 1);
         if (heroActs) {
           if (!setup.heroCards) {
-            setup.heroCards = a.cards.slice(0, 2);
+            setup.heroCards = a.cards.slice(0, hole);
             setup.heroSuited = a.suited;
+            setup.heroDs = a.ds;
           }
         } else events.push({ kind: 'show', actor: lastAct.actor ?? { k: 'villain' }, cards: a.cards, suited: a.suited });
         continue;
@@ -952,8 +1011,9 @@ function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
         events.push({ kind: 'show', actor: owner && owner.a.k !== 'hero' ? owner.a : owner ? { k: 'hero' } : null, cards: a.cards, suited: a.suited });
         if (owner) used.add(atoms.indexOf(owner));
       } else if (!setup.heroCards && (have || !owner || owner.a.k === 'hero' || (owner.a.k === 'pos' && !events.some((e) => e.kind === 'act')))) {
-        setup.heroCards = a.cards.slice(0, 2);
+        setup.heroCards = a.cards.slice(0, hole);
         setup.heroSuited = a.suited;
+        setup.heroDs = a.ds;
         // "Botão, ás rei": a position right before hero's cards, before any action, is hero's.
         if (owner && owner.a.k === 'pos' && !setup.heroPos && !have) {
           setup.heroPos = owner.a.label;
@@ -1090,6 +1150,16 @@ function toEvents(atoms: Atom[]): { setup: Setup; events: Event[] } {
     }
     setup.stacks.push({ actor: who, amt: a.amt, implicit: true });
   }
+  // Later on too: "o CO, com 45 mil, paga" says the seat's stack between the seat and its verb. Only after
+  // «com»: «O UTG, 2000, aposta» is a bet said first (Registo P2).
+  for (let k = Math.max(1, firstVerb); k < atoms.length - 1; k++) {
+    const a = atoms[k];
+    const p = atoms[k - 1]?.t === 'break' ? atoms[k - 2] : atoms[k - 1];
+    const next = atoms[k + 1].t === 'break' ? atoms[k + 2] : atoms[k + 1];
+    if (a.t !== 'amount' || !a.held || used.has(k) || a.amt.unit !== 'chips' || a.amt.by || next?.t !== 'verb' || !p) continue;
+    if (!isActor(p) || p.a.k !== 'pos' || p.a.label === setup.heroPos) continue;
+    setup.stacks.push({ actor: p.a, amt: a.amt, implicit: true });
+  }
   return { setup, events };
 }
 
@@ -1135,17 +1205,39 @@ function quietSuits(board: CardCode[], hero: CardCode[]): Suit[] {
   return [...ALL_SUITS].sort((a, b) => count(a) - count(b));
 }
 
+/**
+ * PLO suits said as "double/single suited": for each of the four cards, the index of the
+ * card it shares a suit with. Pairs are of different ranks ("ases e reis double suited" is
+ * A♠K♠ A♥K♥), and the other cards get suits of their own.
+ */
+function omahaMates(specs: CardSpec[], ds: 1 | 2): (number | undefined)[] {
+  const pairs: [number, number][][] = [
+    [[0, 1], [2, 3]],
+    [[0, 2], [1, 3]],
+    [[0, 3], [1, 2]],
+  ];
+  const ok = (a: number, b: number) => specs[a].r !== specs[b].r && !(specs[a].s && specs[b].s && specs[a].s !== specs[b].s);
+  const pick = pairs.find((pp) => pp.slice(0, ds).every(([a, b]) => ok(a, b)));
+  const out: (number | undefined)[] = [];
+  for (const [a, b] of pick?.slice(0, ds) ?? []) out[b] = a;
+  return out;
+}
+
 export function handFromSpeech(text: string, base: Hand): VoiceResult {
-  const atoms = atomise(text);
-  const { setup, events } = toEvents(atoms);
+  // "PLO", "Omaha" said, or a PLO table already: four hole cards, bets capped at the pot.
+  if (!isPLO(base.game) && normalise(text).words.includes('plo')) base = { ...base, game: { ...base.game, variant: 'plo' } };
+  const hole = holeCount(base.game);
+  const atoms = atomise(text, hole);
+  const { setup, events } = toEvents(atoms, hole);
   // Cards already picked on the entry screen stay, unless the player says others.
   const picked = base.players[base.hero].cards;
   const saidCards = !!setup.heroCards?.length;
-  if (!setup.heroCards?.length && picked?.length === 2) setup.heroCards = picked.map((c) => ({ r: c[0] as Rank, s: c[1] as Suit }));
+  if (!setup.heroCards?.length && picked?.length === hole) setup.heroCards = picked.map((c) => ({ r: c[0] as Rank, s: c[1] as Suit }));
   const notes: VoiceNote[] = [];
   const note = (n: VoiceNote) => {
     if (!notes.some((x) => x.code === n.code && x.street === n.street && x.pos === n.pos)) notes.push(n);
   };
+  if (normalise(text).words.includes('plox')) note({ code: 'ploOnly' });
   const deck = new Deck();
 
   let hand: Hand = { ...base, actions: [], board: [], winners: undefined, board2: undefined, winners2: undefined, players: base.players.map((p) => ({ ...p, cards: undefined })) };
@@ -1226,8 +1318,12 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       specs = [{ ...specs[0], s: specs[1].s }, specs[1]];
     }
     const suited = setup.heroSuited === true && specs.length === 2 && specs[0].r !== specs[1].r;
+    // PLO "double suited": two pairs of cards of different ranks share a suit each; "single suited", one pair.
+    const mate = specs.length === 4 && setup.heroDs ? omahaMates(specs, setup.heroDs) : null;
     heroCards = resolveNamed(specs, (k, chosen) => {
       if (suited) return chosen.length ? [chosen[0][1] as Suit] : ['h'];
+      const m = mate?.[k];
+      if (m !== undefined && m < chosen.length) return [chosen[m][1] as Suit];
       return ALL_SUITS.filter((s) => !chosen.some((c) => c[1] === s));
     });
     if (suited && heroCards.length === 2 && heroCards[0][1] !== heroCards[1][1]) {
@@ -1416,7 +1512,7 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       const seat: number = i ?? hand.players.findIndex((_, x) => x !== hand.hero && !s.folded[x]);
       if (seat < 0 || seat === hand.hero) continue;
       const suited = e.suited === true && e.cards.length === 2 && e.cards[0].r !== e.cards[1].r;
-      const cards = resolveNamed(e.cards.slice(0, 2), (kk, chosen) =>
+      const cards = resolveNamed(e.cards.slice(0, hole), (kk, chosen) =>
         suited && chosen.length ? [chosen[0][1] as Suit] : quietSuits(hand.board, [...heroCards, ...chosen]),
       );
       if (cards.some((c) => deck.guessed.includes(c))) note({ code: 'suits', pos: positions(n, hand.button)[seat] });
@@ -1567,6 +1663,12 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       if (to === null) continue;
       if (e.verb === 'allin' && !e.amt) to = l.maxTo;
       if (e.verb === 'allin' && e.amt && to > l.maxTo && stated.has(p)) to = l.maxTo;
+      // PLO: nothing above the pot; a bigger size said is a pot-sized bet or raise.
+      // An all-in the pot can't hold is the same: the player hears it, unless they said "pote".
+      if (s.potLimit && (to > l.maxTo || e.verb === 'allin') && l.maxTo < s.bets[p] + s.stacks[p]) {
+        to = l.maxTo;
+        if (e.amt?.unit !== 'pot') note({ code: 'potLimit', street: s.street, pos: positions(n, hand.button)[p] });
+      }
       // A size bigger than the stack the app assumed: the stack was bigger (or it's all-in, if the stack was said).
       if (to > l.maxTo) {
         if (stated.has(p)) to = l.maxTo;
@@ -1606,7 +1708,7 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
   if (hand.winners) {
     const r = replay(hand);
     const live = hand.players.map((_, i) => i).filter((i) => !r.final.folded[i]);
-    const known = live.every((i) => (hand.players[i].cards?.length ?? 0) === 2) && hand.board.length === 5;
+    const known = live.every((i) => (hand.players[i].cards?.length ?? 0) === hole) && hand.board.length === 5;
     if (known || r.final.foldWin || !r.result) hand = { ...hand, winners: undefined };
   }
 

@@ -11,8 +11,7 @@ import { Platform } from 'react-native';
 
 import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { BackerPageSync } from '@/components/staking/BackerPage';
-import { SettleReminder } from '@/components/staking/SettleReminder';
-import { SwapReminder } from '@/components/swaps/SwapReminder';
+import { preloadSvg } from '@/components/svg';
 import { SwapSettleReminder } from '@/components/swaps/SwapSettleReminder';
 import { TrialFollowUp } from '@/components/TrialFollowUp';
 import { languageChanged } from '@/i18n';
@@ -24,6 +23,9 @@ import { ReviewSync } from '@/lib/review';
 
 // Every use of CloudBackup.tsx is lazy, so it stays one chunk off the first frame.
 const AutoCloudBackup = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.AutoCloudBackup })));
+// The reminders bring the swap and staking sheets with them: they load after the first frame too.
+const SwapReminder = React.lazy(() => import('@/components/swaps/SwapReminder').then((m) => ({ default: m.SwapReminder })));
+const SettleReminder = React.lazy(() => import('@/components/staking/SettleReminder').then((m) => ({ default: m.SettleReminder })));
 
 /**
  * Android changes the app's language (Settings › Apps › Sweatbook › Language) without restarting
@@ -40,20 +42,24 @@ function LanguageWatch() {
 }
 
 export default function AfterStart() {
+  // Web: the charts and share cards draw with svg, which is not in the launch chunk.
+  useEffect(() => {
+    void preloadSvg();
+  }, []);
   return (
     <>
       <React.Suspense fallback={null}>
         <AutoCloudBackup />
+        <SwapReminder />
+        <SettleReminder />
       </React.Suspense>
       <BackerLiveSync />
       <BackerPageSync />
       <SessionLockScreen />
       <HomeWidgetSync />
-      <SwapReminder />
       <SwapSettleReminder />
       <TrialFollowUp />
       <MonthRecapSync />
-      <SettleReminder />
       <NotifyPolicySync />
       <ReviewSync />
       <LanguageWatch />

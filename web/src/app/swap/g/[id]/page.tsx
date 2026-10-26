@@ -9,6 +9,8 @@ import { normalizeCode } from '@/lib/refcode';
 import { loadGroup as loadGroupById, publicGroup } from '@/lib/swap-groups';
 import { GroupView } from '@/components/swap/GroupView';
 import { swapCopy } from '@/components/swap/copy';
+import { OnTheWay } from '@/components/swap/OnTheWay';
+import { madeOffline } from '@/lib/swaps';
 
 type Params = { params: Promise<{ id: string }> };
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -20,7 +22,8 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   const rec = await loadGroup(id);
   const locale = previewLocale((await searchParams).lang, (await headers()).get('accept-language'));
   const c = swapCopy(locale);
-  if (!rec) return { title: c.notFound, robots: { index: false }, referrer: 'no-referrer' };
+  // Neutral while it doesn't exist: a chat may keep this preview after the swap arrives.
+  if (!rec) return { title: c.swap, robots: { index: false }, referrer: 'no-referrer' };
   const title = c.groupMetaTitle(rec.terms.title, rec.seats.length);
   // No names or amounts in the preview: the chat it lands in is the whole group, maybe more.
   return {
@@ -38,8 +41,12 @@ export default async function GroupSwapPage({ params, searchParams }: Params & S
   const { id } = await params;
   const { r } = await searchParams;
   const rec = await loadGroup(id);
-  if (!rec) notFound();
   const locale = pickLocale((await headers()).get('accept-language'));
+  if (!rec && madeOffline(id)) {
+    const c = swapCopy(locale);
+    return <OnTheWay title={c.onWay} body={c.onWayBody} retry={c.retry} />;
+  }
+  if (!rec) notFound();
   const invite = typeof r === 'string' ? normalizeCode(r) : null;
   // Who pays whom shows only when the group's creator has Pro; otherwise just the results.
   const accounts = await groupCreatorPro(id);

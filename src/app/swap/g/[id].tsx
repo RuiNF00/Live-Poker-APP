@@ -17,6 +17,7 @@ import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { newCreateKey, SwapError } from '@/lib/swap-api';
+import { queueSwapCreate, usePendingSwapCreates } from '@/lib/swap-create-queue';
 import { claimSeat, fetchGroup, groupUrl } from '@/lib/swap-group-api';
 import { shortDate, timeOf } from '@/poker/format';
 import { GROUP_MIN, groupFromRemote, groupNet, groupReady, groupWaitingOn, minTransfers, type GroupEntry, type GroupSeat, type RemoteGroup, type SwapGroup } from '@/store/swap-groups';
@@ -96,6 +97,8 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
   const [busy, setBusy] = useState(false);
   // This screen's own token: a claim whose answer was lost gets the seat on the retry.
   const key = useRef(newCreateKey());
+  // Joined without signal: it goes out by itself when the signal is back (swap-create-queue.ts).
+  const queued = usePendingSwapCreates().some((p) => p.of === remote.id);
   const open = remote.seats.filter((s) => !s.confirmedAt);
 
   async function join() {
@@ -108,6 +111,11 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
       tap('success');
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
+      if (code === 'offline') {
+        queueSwapCreate({ kind: 'claim', id: remote.id, key: key.current, invite, seat: pick, title: remote.terms.title, players: remote.seats.length });
+        setBusy(false);
+        return;
+      }
       notice(t('Não foi possível entrar'), code === 'seat_taken' ? t('Esse lugar já foi escolhido.') : t('Precisa de rede. Tenta de novo quando tiveres sinal.'));
       setBusy(false);
     }
@@ -123,7 +131,11 @@ function Join({ remote, invite }: { remote: RemoteGroup; invite?: string }) {
           </T>
         </Card>
       ) : null}
-      {invite && open.length ? (
+      {queued ? (
+        <Card tone="inset">
+          <T v="small">{t('Sem rede: a tua escolha fica guardada e é enviada quando houver sinal.')}</T>
+        </Card>
+      ) : invite && open.length ? (
         <>
           <Section title={t('Quem és tu?')} hint={t('Toca no teu nome para entrar. Cada nome só pode ser escolhido uma vez.')}>
             <ChipRow>
@@ -200,13 +212,14 @@ function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
     const { sessionId, ...entry } = d;
     const res = await addGroupPrize(g.id, entry, sessionId);
     tap('success');
-    if (res === 'queued') setOffline(true);
+    if (res === 'full') notice(t('Swap cheio'), t('Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.'));
+    else if (res === 'queued') setOffline(true);
   }
 
   function onEntry(e: GroupEntry) {
     if (e.seat !== g.seat) return;
     confirmAction(t('Apagar registo?'), t('O grupo deixa de o ver. Usa isto só para corrigir um erro.'), t('Apagar'), async () => {
-      if (!(await removeGroupEntryHere(g.id, e))) notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+      if (!(await removeGroupEntryHere(g.id, e))) notice(t('Não deu para apagar'), t('Tenta outra vez.'));
     });
   }
 
@@ -286,7 +299,7 @@ function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
               <ToggleItem
                 icon="flash-outline"
                 title={t('Enviar o meu resultado sozinho')}
-                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.')}
+                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.')}
                 value={!!g.autoShare}
                 onChange={(v) => saveGroup({ ...g, autoShare: v, updatedAt: Date.now() })}
               />
@@ -375,7 +388,7 @@ function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
                 creator && !g.gone ? t('Apagar') : t('Sair'),
                 async () => {
                   if (await leaveGroupEverywhere(g.id)) router.back();
-                  else notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+                  else notice(t('Não deu para apagar'), t('Tenta outra vez.'));
                 },
               )
             }

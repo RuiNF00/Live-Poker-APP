@@ -531,6 +531,11 @@ a {
   margin-left: calc(var(--k) * var(--cw) * -0.18);
 }
 
+/* PLO: four cards fan tighter so they stay over the plate, but not so tight a "10" reads as "1". */
+.rt-seat-cards:has(> .rt-card:nth-child(4)) .rt-card:nth-child(n + 2) {
+  margin-left: calc(var(--k) * var(--cw) * -0.3);
+}
+
 .rt-seat-cards .rt-card:nth-child(odd) {
   transform: rotate(-4deg);
 }

@@ -4,9 +4,9 @@ import { View } from 'react-native';
 import { locale, t } from '@/i18n';
 import { isMtt } from '@/billing/onboarding';
 import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
-import { chips } from '@/poker/format';
+import { chips, money } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { addDays, atClock, lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
+import { addDays, bountiesOf, atClock, lastPlayed, lastTimeAt, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly';
@@ -123,7 +123,7 @@ export function SessionForm({
     // Editing a played session only fixes its kind: times, result, staking and notes stay.
     if (initial.endedAt) {
       const { sb, bb, ante, anteType, level, stage, stack } = blank;
-      return setS({ ...s, kind: k, sb, bb, ante, anteType, level, stage, stack, tourney: undefined, ...(k === 'mtt' ? {} : { finish: undefined, field: undefined }) });
+      return setS({ ...s, kind: k, sb, bb, ante, anteType, level, stage, stack, tourney: undefined, ...(k === 'mtt' ? {} : { finish: undefined, field: undefined, bounties: undefined }) });
     }
     setS({ ...blank, id: s.id, name: s.name, venue: s.venue, format: s.format, bankrollId: s.bankrollId, country: s0.country, ...(fresh ? lastPlayed(s.currency, sessions, k) : {}) });
   };
@@ -197,7 +197,15 @@ export function SessionForm({
         <Card style={{ gap: S.lg }}>
           <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
             <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} selectOnFocus />
-            <NumField money label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={s.cashOut} onChange={(cashOut) => set({ cashOut })} autoFocus={fresh} selectOnFocus />
+            {/* MTT: the prize without the bounties, which have their own field; the session keeps the sum. */}
+            <NumField
+              money
+              label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`}
+              value={mtt ? s.cashOut - bountiesOf(s) : s.cashOut}
+              onChange={(prize) => set({ cashOut: prize + (mtt ? bountiesOf(s) : 0) })}
+              autoFocus={fresh}
+              selectOnFocus
+            />
           </Row>
           <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
             <NumField money label={mtt ? t('Add-ons ({currency})', { currency: s.currency }) : t('Top-ups ({currency})', { currency: s.currency })} value={s.addOn} onChange={(addOn) => set({ addOn })} selectOnFocus />
@@ -207,6 +215,18 @@ export function SessionForm({
             <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
               <NumField label={t('Lugar')} value={s.finish ?? 0} onChange={(finish) => set({ finish: finish || undefined })} selectOnFocus />
               <NumField label={t('Inscritos')} value={s.field ?? 0} onChange={(field) => set({ field: field || undefined })} selectOnFocus />
+            </Row>
+          )}
+          {mtt && (
+            <Row gap={S.sm} style={{ alignItems: 'flex-end' }}>
+              <NumField
+                money
+                label={t('Bounties ({currency})', { currency: s.currency })}
+                value={bountiesOf(s)}
+                onChange={(b) => set({ cashOut: s.cashOut - bountiesOf(s) + b, bounties: b, ...(s.tourney ? { tourney: { ...s.tourney, bounties: b || undefined } } : null) })}
+                selectOnFocus
+              />
+              {bountiesOf(s) > 0 ? <T v="small" style={{ flex: 1 }}>{t('Total: {amount}', { amount: money(s.cashOut, s.currency) })}</T> : <View style={{ flex: 1 }} />}
             </Row>
           )}
           <Row>

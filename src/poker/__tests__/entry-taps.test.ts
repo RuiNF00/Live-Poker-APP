@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, closingCall, foldsToCard, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, foldsToCard, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -1190,4 +1190,65 @@ test('round 8 · a showdown waits for «Guardar» while a cards shown is missing
   e.board('9d');
   e.board('3c');
   assert.throws(() => e.autoSave());
+});
+
+test('sizes · the line shows each open, raise and bet as a size, with no extra tap', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.size('3x');
+  const taps = e.taps;
+  const line = entryLine(e.hand);
+  assert.equal(line[0].size!.replace(',', '.'), '3x', 'hero 3-bets 3x the open');
+  assert.equal(line[1].size!.replace(',', '.'), '2.5x', 'CO opens 2.5 bb');
+  assert.equal(e.taps, taps);
+  e.only('CO');
+  e.board('2c', '7d', '9h');
+  e.size('½');
+  const bet = entryLine(e.hand)[0];
+  assert.equal(bet.verb, 'C-bet');
+  assert.match(bet.size!, /^\d+%$/);
+  assert.ok(Math.abs(parseInt(bet.size!, 10) - 50) <= 3, bet.size);
+});
+
+test('sizes · calls, checks and folds carry no size', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.act('call');
+  for (const x of entryLine(e.hand)) if (x.verb === 'Call' || x.verb === 'Fold' || x.verb === 'Check') assert.equal(x.size, undefined, x.verb);
+});
+
+test('sizes · the keypad reads what is typed as a size', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  const bb = e.hand.game.bb;
+  assert.equal(sizeText(e.hand, e.s, 3 * bb), '3x', 'an open in big blinds');
+  e.entered('CO');
+  e.size('2.5x');
+  const open = e.s.currentBet;
+  assert.equal(sizeText(e.hand, e.s, open * 4), '4x', 'a 3-bet against the open');
+  assert.equal(sizeText(e.hand, e.s, open), null, 'a call is not a size');
+  e.act('call');
+  e.only(null);
+  e.board('2c', '7d', '9h');
+  // CO acts first on the flop: a pot-size bet reads 100%.
+  const pot = e.s.pot + e.s.bets.reduce((a, b) => a + b, 0);
+  assert.equal(sizeText(e.hand, e.s, pot), '100%');
+  assert.equal(sizeText(e.hand, e.s, Math.round(pot * 0.75)), '75%');
+});
+
+test('sizes · the felt shows the size of the last bet or raise', async () => {
+  const { actionSize } = await import('../view');
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.entered('CO');
+  e.size('2.5x');
+  assert.equal(actionSize(e.s.last!, e.s).replace(',', '.'), ' (2.5x)', 'the open against the big blind');
+  e.size('3x');
+  assert.equal(actionSize(e.s.last!, e.s), ' (3x)', 'the 3-bet against the open');
+  e.only('CO');
+  e.board('2c', '7d', '9h');
+  e.size('Pote');
+  assert.equal(actionSize(e.s.last!, e.s), ' (100%)');
+  e.act('call');
+  assert.equal(actionSize(e.s.last!, e.s), '', 'a call has no size');
 });

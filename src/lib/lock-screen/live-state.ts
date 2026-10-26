@@ -6,6 +6,8 @@ import { t } from '@/i18n';
 import { CASH_LEVELS, MTT_LEVELS } from '@/poker/factory';
 import { bbs, chips, timeOf } from '@/poker/format';
 import { levelOf, nextBreak, type NextBreak } from '@/poker/tourney';
+import type { GameInfo } from '@/poker/types';
+import { isPLO } from '@/poker/variant';
 import { isPaused, playedMs } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
@@ -33,6 +35,10 @@ export interface LiveProps {
   stackBB: string;
   level: string;
   blinds: string;
+  /** "PLO" when the session's last hand was Omaha, '' for hold'em. Not translated, like blindsLabel. */
+  game: string;
+  /** The level label with the game in front ("PLO · Nível 3", or "PLO" with no level); `level` for hold'em. */
+  gameLevel: string;
   /** 0 when no level length is set. */
   nextLevelAt: number;
   /** When the current level began, breaks taken out (so it pairs with nextLevelAt for the level bar); 0 with no level clock. */
@@ -45,7 +51,15 @@ export interface LiveProps {
   /** Pause or resume, and a rebuy (cash) or re-entry (tournament), one tap from the lock screen: see lockAction. */
   pauseUrl: string;
   rebuyUrl: string;
-  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; shareStack: string; pause: string; rebuy: string };
+  endUrl: string;
+  /**
+   * The buttons act without opening the app (iOS LiveActivityIntent, Android notification button).
+   * Only with no app lock known to be on: otherwise they open the app, which asks for the lock first.
+   */
+  inPlace: boolean;
+  /** Button targets for the in-place actions: "pause:<id>", read back by parseTarget. */
+  pauseTarget: string;
+  labels: { time: string; stack: string; blinds: string; next: string; levelUp: string; newHand: string; nextBlinds: string; shareStack: string; pause: string; rebuy: string; end: string };
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
@@ -137,19 +151,33 @@ function hm(ms: number): string {
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}`;
 }
 
+type HandGame = { sessionId?: string; createdAt: number; game: Pick<GameInfo, 'variant'> };
+
+/**
+ * Whether the session is played as PLO: its latest hand says so. The game belongs to the table, and a
+ * new hand at the same table carries it (newHand), so the last hand is enough; no hands yet, hold'em.
+ */
+export function sessionPLO(hands: readonly HandGame[], sessionId: string): boolean {
+  let last: HandGame | undefined;
+  for (const h of hands) if (h.sessionId === sessionId && (!last || h.createdAt > last.createdAt)) last = h;
+  return !!last && isPLO(last.game);
+}
+
 /**
  * What the lock screen shows. With privacy mode on (`hideAmounts`), a cash
  * game's stack is money on the table, so it shows ••• there; tournament chips
  * aren't money and stay. The session's name often carries the venue, so
  * privacy mode shows the game instead.
  */
-export function liveProps(s: Session, now = Date.now(), hideAmounts = false): LiveProps {
+export function liveProps(s: Session, now = Date.now(), hideAmounts = false, inPlace = false, plo = false): LiveProps {
   const paused = isPaused(s);
   const played = playedMs(s, now);
   const mtt = s.kind === 'mtt';
   const next = nextLevelAt(s, now);
   const after = levelAfter(s, 1);
   const hideCash = hideAmounts && !mtt;
+  const level = s.level ? t('Nível {n}', { n: s.level }) : 'Blinds';
+  const game = plo ? 'PLO' : '';
   return {
     title: (!hideAmounts && s.name) || (mtt ? t('Torneio') : 'Cash game'),
     status: paused ? t('Em pausa') : t('A jogar'),
@@ -160,8 +188,10 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     played: hm(played),
     stack: hideCash ? '•••' : chips(s.stack),
     stackBB: hideCash ? '•••' : bbs(s.stack, s.bb),
-    level: s.level ? t('Nível {n}', { n: s.level }) : 'Blinds',
+    level,
     blinds: `${chips(s.sb)}/${chips(s.bb)}`,
+    game,
+    gameLevel: !game ? level : s.level ? `${game} · ${level}` : game,
     nextLevelAt: next ?? 0,
     levelFrom: next && s.levelMinutes ? next - s.levelMinutes * 60_000 : 0,
     nextBlinds: `${chips(after.sb)}/${chips(after.bb)}`,
@@ -169,6 +199,10 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
     shareUrl: mtt ? `sweatbook://session-card/${encodeURIComponent(s.id)}?stack=1` : '',
     pauseUrl: `sweatbook://session?do=${paused ? 'resume' : 'pause'}&id=${encodeURIComponent(s.id)}`,
     rebuyUrl: `sweatbook://session?do=rebuy&id=${encodeURIComponent(s.id)}`,
+    // Ending needs the cash-out or the prize, so it always opens the app, on the end form.
+    endUrl: `sweatbook://session?do=end&id=${encodeURIComponent(s.id)}`,
+    inPlace,
+    pauseTarget: `${paused ? 'resume' : 'pause'}:${s.id}`,
     labels: {
       time: t('Tempo'),
       stack: 'Stack',
@@ -176,14 +210,21 @@ export function liveProps(s: Session, now = Date.now(), hideAmounts = false): Li
       next: t('Sobe em'),
       levelUp: t('Subir nível'),
       newHand: t('Nova mão'),
+      nextBlinds: t('Blinds seguintes'),
       shareStack: t('Partilhar stack'),
       pause: paused ? t('Retomar') : t('Pausa'),
       rebuy: mtt ? 'Re-entry' : 'Rebuy',
+      end: t('Terminar sessão'),
     },
   };
 }
 
-export type LockAction = 'pause' | 'resume' | 'rebuy';
+/**
+ * What a lock-screen button can do in place (no app open): pause and resume only. A rebuy moves
+ * money, so it opens the app, where it comes with «Anular»; 'end' opens the end form.
+ */
+export type InPlaceAction = 'pause' | 'resume';
+export type LockAction = InPlaceAction | 'rebuy' | 'end';
 
 /**
  * The action a lock-screen button asked for, if it still applies: same session (not one the
@@ -194,6 +235,7 @@ export type LockAction = 'pause' | 'resume' | 'rebuy';
 export function lockAction(what: string | undefined, id: string | undefined, s: Session): LockAction | null {
   if (!id || id !== s.id || s.endedAt) return null;
   if (what === 'rebuy') return 'rebuy';
+  if (what === 'end') return 'end';
   if (what === 'pause') return isPaused(s) ? null : 'pause';
   if (what === 'resume') return isPaused(s) ? 'resume' : null;
   return null;
@@ -213,6 +255,18 @@ export function askForLockScreen(os: string, s: Pick<Session, 'id' | 'endedAt'>,
 export function sessionNoticePreview(s: Session, now = Date.now(), hideAmounts = false): { title: string; body: string } {
   const p = liveProps(s, now, hideAmounts);
   return { title: p.title, body: `${p.status} · ${p.stack} · ${p.blinds}` };
+}
+
+/** "pause:<id>" from a lock-screen button back into the action and the session id. */
+export function parseTarget(target: string): { what: string; id: string } {
+  const i = target.indexOf(':');
+  return i < 0 ? { what: target, id: '' } : { what: target.slice(0, i), id: target.slice(i + 1) };
+}
+
+/** What a pause or resume from the lock screen changes, the same as the session screen's button. */
+export function lockActionPatch(s: Session, a: InPlaceAction, now = Date.now()): Partial<Session> {
+  if (a === 'pause') return { breaks: [...s.breaks, { start: now }] };
+  return { breaks: s.breaks.map((b, i) => (i === s.breaks.length - 1 && !b.end ? { ...b, end: now } : b)) };
 }
 
 /** Text of the level-up reminder. */

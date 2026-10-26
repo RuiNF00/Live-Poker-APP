@@ -44,6 +44,8 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 /** DELETE with header `x-edit-token`: the profile is gone for good (the shared hands stay). */
 export async function DELETE(req: Request, { params }: Ctx) {
+  // Long tokens, so only the cost: 60 an hour per address is plenty for «Apagar tudo».
+  if (await limited(req, 'profile-delete', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors2 });
   const handle = normalizeHandle((await params).handle);
   const token = req.headers.get('x-edit-token') ?? '';
   const ok = !!token && handleProblem(handle) !== 'invalid' && (await profileStore().remove(handle, token));

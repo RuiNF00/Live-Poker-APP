@@ -1,7 +1,7 @@
 import { handName, type HandNameLocale } from '../../packages/hand-format/src/hand-name';
 import { variant } from '../i18n';
 
-import { cardCode, score7 } from './equity';
+import { cardCode, score7, scoreOmaha } from './equity';
 import type { CardCode } from './types';
 
 // Named as players say it at the table, in the app's language: "Par de Ases", "Full: Damas e 4".
@@ -24,4 +24,11 @@ export function evaluate(cards: CardCode[]): Evaluation {
   const best = score7(cards.map(cardCode));
   const category = Math.floor(best / 15 ** 5);
   return { score: best, category, name: handName(best, NAME_LOCALE) };
+}
+
+/** PLO at showdown: exactly two hole cards and three from the board. */
+export function evaluateOmaha(hole: CardCode[], board: CardCode[]): Evaluation {
+  if (hole.length < 4 || board.length < 5) return { score: -1, category: -1, name: '' };
+  const best = scoreOmaha(hole.map(cardCode), board.map(cardCode));
+  return { score: best, category: Math.floor(best / 15 ** 5), name: handName(best, NAME_LOCALE) };
 }

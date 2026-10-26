@@ -9,6 +9,7 @@ import { RefreshControl, useWindowDimensions, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { seatLabel } from '@/components/swaps/group-parts';
 import { AccountsLocked, PAIR, pctLabel } from '@/components/swaps/parts';
+import { SwapSend, type SwapLink } from '@/components/swaps/SwapSend';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { usePendingSwapCreates } from '@/lib/swap-create-queue';
@@ -30,6 +31,8 @@ function SwapsScreen() {
   const include = settings.includeSwaps !== false;
   const loose = include ? assignSwaps(sessions, swaps).unassigned.length + assignGroups(sessions, groups).unassigned.length : 0;
   const [refreshing, setRefreshing] = useState(false);
+  // A swap still waiting for signal: its link can be sent again (it opens once the swap is made).
+  const [resend, setResend] = useState<SwapLink | null>(null);
   // At 160%+ the two buttons stack: side by side on a narrow phone "Grupo" broke mid-word.
   const pair = useWindowDimensions().fontScale >= 1.6 ? { ...PAIR, flexBasis: '100%' as const } : PAIR;
   useFocusEffect(
@@ -168,7 +171,7 @@ function SwapsScreen() {
               <Section title={t('Ativos')}>
                 <ListGroup>
                   {waiting.map((p) => (
-                    <WaitingRow key={p.key} p={p} />
+                    <WaitingRow key={p.key} p={p} onSend={p.link ? () => setResend({ ...p.link!, to: t('Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.') }) : undefined} />
                   ))}
                   {activeGroups.map((g) => (
                     <GroupRow key={g.id} g={g} locked={locked && !g.accounts} />
@@ -194,6 +197,7 @@ function SwapsScreen() {
           </>
         )}
       </Screen>
+      <SwapSend link={resend} onDone={() => setResend(null)} />
     </>
   );
 }
@@ -242,9 +246,10 @@ function SwapRow({ s, locked }: { s: Swap; locked: boolean }) {
 
 
 /** Made without signal: created by itself when it's back (swap-create-queue.ts). */
-function WaitingRow({ p }: { p: PendingCreate }) {
+function WaitingRow({ p, onSend }: { p: PendingCreate; onSend?: () => void }) {
   return (
     <ListItem
+      onPress={onSend}
       left={p.group ? <Ionicons name="people-outline" size={22} color={C.muted} /> : <Avatar name={p.with} />}
       title={p.group ? p.title : p.with}
       subtitle={p.group ? t('{n} jogadores', { n: Number(p.with) }) : p.title}

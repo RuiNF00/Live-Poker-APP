@@ -11,6 +11,7 @@ import { equityVsRange, rangeOf, rangePct, rangePctForRaises, topClasses } from 
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
 import { motionTimeline, type MotionAnim } from './timeline';
+import { holeCount } from '@/poker/variant';
 
 export type BadgeKind = ActionKind | 'allin';
 
@@ -22,12 +23,14 @@ export interface RpSeat {
   stack: string;
   /** Face-up cards, `null` = face down, `undefined` = no cards (folded). */
   cards?: CardCode[] | null;
+  /** Cards each player holds (4 in PLO): how many backs a face-down hand shows. */
+  holes?: number;
   folded: boolean;
   allIn: boolean;
   hero: boolean;
   acting: boolean;
   /** This player's latest action on the current street. */
-  badge: { kind: BadgeKind; label: string } | null;
+  badge: { kind: BadgeKind; label: string; short?: string } | null;
   /** Chips in front of the player (this street), raw. */
   bet: number;
   betLabel: string | null;
@@ -229,8 +232,17 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     const kind: BadgeKind = a.allIn ? 'allin' : a.kind;
     // Postflop bets carry their size against the pot, as on a solver: "BET 60 (75%)".
     const before = totalPot(s.state) - a.added;
-    const size = a.kind === 'bet' && s.state.street !== 'preflop' && before > 0 ? ` (${Math.round((a.added / before) * 100)}%)` : '';
-    badges.set(a.p, { kind, label: badgeLabel(kind, fmt(a.kind === 'call' ? a.added : a.to)) + size });
+    // Raises carry theirs against the bet they raise: "RAISE 90 (3x)".
+    const raised = j > 0 ? r.steps[j - 1].state.currentBet : 0;
+    const size =
+      a.kind === 'bet' && s.state.street !== 'preflop' && before > 0
+        ? ` (${Math.round((a.added / before) * 100)}%)`
+        : a.kind === 'raise' && raised > 0 && a.to > raised
+          ? ` (${decimal(Math.round((a.to / raised) * 10) / 10).replace(/[.,]0$/, '')}x)`
+          : '';
+    const base = badgeLabel(kind, fmt(a.kind === 'call' ? a.added : a.to));
+    // `short` drops the size where a narrow badge would cut it ("RAISE 60 bb (2…").
+    badges.set(a.p, { kind, label: base + size, ...(size ? { short: base } : null) });
   }
 
   // All-in with nobody left to bet: the hands go face up for the run-out, as on TV.
@@ -241,7 +253,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
 
   const seats: RpSeat[] = hand.players.map((p, i) => {
     const hero = i === hand.hero;
-    const known = p.cards && p.cards.length >= 2 ? p.cards : undefined;
+    const known = p.cards && p.cards.length === holeCount(hand.game) ? p.cards : undefined;
     let cards: RpSeat['cards'];
     if (st.folded[i]) cards = undefined;
     else if (hero) cards = known ?? null;
@@ -256,6 +268,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
       pos: pos[i],
       stack: st.allIn[i] && !st.folded[i] && !result ? 'ALL-IN' : fmt(stack),
       cards,
+      holes: holeCount(hand.game),
       folded: st.folded[i],
       allIn: st.allIn[i] && !st.folded[i],
       hero,
@@ -273,7 +286,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
   // Equity, like on TV: once every hand still in is face up and cards are still to come.
   const board = hand.board.slice(0, st.boardCount);
   const live = seats.filter((s) => !s.folded);
-  if (!result && board.length < 5 && live.length >= 2 && live.every((s) => s.cards && s.cards.length === 2)) {
+  if (!result && board.length < 5 && live.length >= 2 && live.every((s) => s.cards && s.cards.length === holeCount(hand.game))) {
     const eq = cachedEquity(live.map((s) => s.cards!), board);
     live.forEach((s, j) => (s.equity = eq[j]));
   }

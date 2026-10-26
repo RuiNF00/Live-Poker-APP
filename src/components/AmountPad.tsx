@@ -24,6 +24,7 @@ export function AmountPad({
   onClose,
   onDone,
   onAllIn,
+  sizeOf,
 }: {
   visible: boolean;
   title: string;
@@ -41,6 +42,8 @@ export function AmountPad({
   onDone: (chips: number) => void;
   /** "All-in": what was typed is everything this player had (the stack follows), whatever the minimum. */
   onAllIn?: (chips: number) => void;
+  /** The size of a bet or raise to this amount ("75%", "3x"), shown next to its bb. */
+  sizeOf?: (chips: number) => string | null;
 }) {
   const sheetAnim = useSheetAnimation();
   const [txt, setTxt] = useState('');
@@ -102,6 +105,7 @@ export function AmountPad({
           {plain ? null : (
             <T v="monoS" color={tooLow ? C.danger : C.muted}>
               = {inBB ? chips(capped) + ' ' + t('fichas') : bbs(capped, bb)}
+              {sizeOf && capped > 0 && !tooLow && sizeOf(capped) ? ' · ' + sizeOf(capped) : ''}
               {max !== undefined && value >= max ? ' (all-in)' : ''}
               {tooLow ? ' · ' + t('mínimo {amount}', { amount: chips(min!) }) : ''}
             </T>

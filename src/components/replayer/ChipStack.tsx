@@ -2,7 +2,7 @@
 // after the stats-app replayer: a bet reads as chips on the felt, not just a number.
 
 import React from 'react';
-import Svg, { Ellipse, G, Rect } from 'react-native-svg';
+import { Ellipse, G, Rect, Svg } from '@/components/svg';
 
 const DENOMS = [
   { v: 1_000_000, c: '#E4C164', e: '#6B4C14' },

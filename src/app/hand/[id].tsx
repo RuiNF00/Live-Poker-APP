@@ -13,11 +13,11 @@ import { sameTable } from '@/poker/factory';
 import { sampleHand } from '@/poker/sample';
 import { unfinished } from '@/poker/unfinished';
 import { HandHeader } from '@/components/HandHeader';
-import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ShareSheet, type ShareOption } from '@/components/ShareSheet';
 import { WhatFriendsSee } from '@/components/WhatFriendsSee';
 import { OfflineBadge } from '@/components/NetStatus';
+import { TellByVoice } from '@/components/entry/TellByVoice';
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -48,6 +48,9 @@ import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
 import { DEFAULT_TAGS, type Hand, type Street } from '@/poker/types';
 import { reduceMotion } from '@/lib/motion';
+
+// The replayer (~20 KB; its table is shared with the cards) loads with the screen that shows it, not at launch.
+const Replayer = React.lazy(() => import('@/components/Replayer').then((m) => ({ default: m.Replayer })));
 
 // Loaded when the hand opens, not at launch (the comments code is only used here and in /h).
 const CommentsList = React.lazy(() => import('@/components/Comments').then((m) => ({ default: m.CommentsList })));
@@ -177,7 +180,9 @@ export default function HandScreen() {
       <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.md, gap: S.lg, paddingBottom: 48 }}>
         <Banner tone="info" icon="sparkles-outline" title={t('Mão de exemplo')} body={t('É assim que as tuas mãos ficam guardadas.')} />
         <HandHeader hand={hand} inBB={settings.inBB} />
-        <Replayer hand={hand} initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} autoPlay source="sample" />
+        <React.Suspense fallback={null}>
+          <Replayer hand={hand} initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} autoPlay source="sample" />
+        </React.Suspense>
         <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
         <Section title={t('Partilhar')}>
           <Button
@@ -464,6 +469,8 @@ ${link}`;
           {nextHere ? <Button kind="secondary" title={t('Próxima mão')} icon="add" onPress={() => router.replace('/hand/new')} style={{ flex: 1 }} lines={2} /> : null}
         </Row>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
+        {/* After the hand: tell it instead of tapping it in (the voice note, if any, plays in the sheet). */}
+        {!isComplete(hand) && <TellByVoice handId={hand.id} />}
         {nextLeft ? (
           <Banner
             tone="warn"
@@ -478,7 +485,9 @@ ${link}`;
             <VoiceNotePlayer uri={hand.voiceNote} />
           </React.Suspense>
         ) : null}
-        <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        <React.Suspense fallback={null}>
+          <Replayer hand={hand} source="own" initialInBB={settings.inBB} onInBB={(inBB) => setSettings({ inBB })} icm={!!settings.icm} onStreet={setStreet} seek={seek} streetNotes={hand.streetNotes} />
+        </React.Suspense>
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />

@@ -12,6 +12,7 @@ import { BRAND } from '@/theme';
 
 import { onEraseAll } from './erase-hooks';
 import { installId, refCode, setRefCode, track } from './events';
+import { shouldRegister } from './invite-code';
 import { createInviteReward, inviteStatusFrom, OFFER_KEY, openOffer, type Activation, type ClaimState, type InviteOffer, type InviteStatus } from './invite-reward';
 import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
@@ -80,12 +81,15 @@ export async function canEnterCode(): Promise<boolean> {
  * server already holds a different code for this install, links switch to it.
  */
 export async function ensureRegistered(): Promise<void> {
-  if (!isOnline() || (await getJSON<boolean>(K.registered))) return;
+  if (!isOnline()) return;
+  const done = await AsyncStorage.getItem(K.registered).catch(() => null);
+  const rc = await appUserId();
+  if (!shouldRegister(done, !!rc)) return;
   try {
     const r = await post<{ code: string }>('code', { code: await refCode() });
     if (!r) return;
     if (r.code && r.code !== (await refCode())) await setRefCode(r.code);
-    await AsyncStorage.setItem(K.registered, 'true');
+    await AsyncStorage.setItem(K.registered, rc ? 'rc' : 'true');
   } catch {}
 }
 

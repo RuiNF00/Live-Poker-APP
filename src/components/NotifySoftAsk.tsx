@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image } from 'expo-image';
 import React, { useCallback, useRef, useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Image, Modal, Pressable, View } from 'react-native';
 
 import { Button, Row, T, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
@@ -77,7 +76,8 @@ export function SoftAskSheet({ ask, onAnswer }: { ask: SoftAsk | null; onAnswer:
               accessibilityLabel={`${t('Exemplo de aviso')}: ${ask.preview.title}. ${ask.preview.body}`}
               style={{ backgroundColor: C.surface3, borderRadius: R.lg, padding: S.md, gap: 6, borderWidth: 1, borderColor: C.border }}>
               <Row gap={S.sm}>
-                <Image source={require('../../assets/images/icon.png')} style={{ width: 20, height: 20, borderRadius: 5 }} />
+                {/* React Native's Image: expo-image (~35 KB on the web) only for a 20 px icon cost the launch. */}
+                <Image source={require('../../assets/images/icon.png')} resizeMethod="resize" style={{ width: 20, height: 20, borderRadius: 5 }} />
                 <T v="tiny" style={{ flex: 1, color: C.textDim }}>
                   SWEATBOOK
                 </T>

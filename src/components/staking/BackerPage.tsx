@@ -8,9 +8,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStaking } from '@/components/staking/use-staking';
 import { buildStatement, type Statement } from '@/lib/backing-link';
 import { createBackerPage, newPageKey, sealPage, updateBackerPage, type BackerPage } from '@/lib/backer-page';
+import { pageVersion } from '@/lib/backer-page-version';
 import { createKey, forgetCreateKey } from '@/lib/create-key';
 import { useOnline } from '@/lib/sync';
 import { nextEventFor, useOffers, type ActionOffer } from '@/store/action-offer';
+import { currentDeleted } from '@/store/deleted';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals } from '@/store/my-festivals';
 import { unconverted, type BackerLedger, type YearStatement } from '@/store/staking';
@@ -46,9 +48,9 @@ export async function ensureBackerPage(backer: Backer, save: (b: Backer) => void
   return next;
 }
 
-/** Sends one page now; false when it is gone. */
-export async function pushBackerPage(page: BackerPage, st: Statement): Promise<boolean> {
-  return updateBackerPage(page, await sealPage(st, page));
+/** Sends one page now, with `v` (pageVersion): 'gone' when it is gone, 'newer' when another phone's is newer. */
+export async function pushBackerPage(page: BackerPage, st: Statement, v: number): Promise<'ok' | 'gone' | 'newer'> {
+  return updateBackerPage(page, await sealPage(st, page), v);
 }
 
 const RETRY_MS = 60000;
@@ -70,6 +72,7 @@ function Sync() {
 
   useEffect(() => {
     if (!online) return;
+    const v = pageVersion({ backers, sessions, packages, payments, offers, deleted: currentDeleted() });
     for (const b of backers) {
       const l = ledgers.get(b.id);
       // Part of the deal with no rate yet: the page keeps its last numbers until the rate is here.
@@ -84,7 +87,9 @@ function Sync() {
         setTimeout(async () => {
           timers.current.delete(page.id);
           try {
-            if (await pushBackerPage(page, { ...st, at: Date.now() })) sent.current.set(page.id, key);
+            const out = await pushBackerPage(page, { ...st, at: Date.now() }, v);
+            // 'newer': another phone sent fresher numbers; this one sends again once its data changes.
+            if (out !== 'gone') sent.current.set(page.id, key);
             else {
               // Removed on the server (or purged): forget it; the next "Enviar" makes a new one.
               const cur = latest.current.find((x) => x.id === b.id);

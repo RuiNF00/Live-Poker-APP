@@ -54,16 +54,22 @@ export async function updateAgreement(remote: { id: string; token: string }, off
  * A newer change replaces one still waiting.
  */
 export function queueAgreementUpdate(remote: { id: string; token: string }, offer: AgreementPayload) {
-  // Known at once: the screen checks right after, before the outbox has written the job.
-  sending.add(remote.id);
-  queue('offer-update', { id: remote.id, token: remote.token, offer }, remote.id);
+  // Known at once: the screen checks right after, before the outbox has written the job. Once it
+  // is written the outbox answers, so a job it gives up on stops counting as waiting.
+  writing.set(remote.id, (writing.get(remote.id) ?? 0) + 1);
+  void queue('offer-update', { id: remote.id, token: remote.token, offer }, remote.id).then(() => {
+    const n = (writing.get(remote.id) ?? 1) - 1;
+    if (n > 0) writing.set(remote.id, n);
+    else writing.delete(remote.id);
+  });
 }
 
-const sending = new Set<string>();
+/** Links with new terms on their way into the outbox. */
+const writing = new Map<string, number>();
 
 /** New terms for this link still waiting to go out. */
 export async function agreementUpdateWaiting(id: string): Promise<boolean> {
-  return sending.has(id) || queued('offer-update', id);
+  return writing.has(id) || queued('offer-update', id);
 }
 
 registerSender('offer-update', async (p) => {
@@ -74,9 +80,7 @@ registerSender('offer-update', async (p) => {
       headers: { 'content-type': 'application/json', 'x-edit-token': r.token },
       body: JSON.stringify({ offer: r.offer }),
     });
-    const out = outcomeOf(res.status);
-    if (out !== 'retry') sending.delete(r.id);
-    return out;
+    return outcomeOf(res.status);
   } catch {
     return 'retry';
   }

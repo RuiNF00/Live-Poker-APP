@@ -1,5 +1,5 @@
-// Odds calculator: your two cards, the board so far and villain's cards or a range in,
-// your equity out. Same maths as the replayer's equity, works offline.
+// Odds calculator: your two cards (four in PLO), the board so far and villain's cards or a
+// range in, your equity out. Same maths as the replayer's equity, works offline.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -11,16 +11,16 @@ import { RpCard } from '@/components/replayer/RpCard';
 import { Card, Chip, ChipRow, Row, Section, Segmented, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { FULL_DECK } from '@/poker/cards';
-import { equity } from '@/poker/equity';
 import { pct } from '@/poker/format';
-import { equityVsRange, topRange } from '@/poker/ranges';
+import { oddsEquity, oddsHole, type OddsGame } from '@/poker/odds';
 import type { CardCode } from '@/poker/types';
 import { C, R, S } from '@/theme';
 
-// Slots 0-1 hero, 2-6 board, 7-8 villain.
-const HERO = [0, 1];
-const BOARD = [2, 3, 4, 5, 6];
-const VILLAIN = [7, 8];
+// Slots 0-3 hero, 4-8 board, 9-12 villain; hold'em uses the first two of each hand.
+const HERO_ALL = [0, 1, 2, 3];
+const BOARD = [4, 5, 6, 7, 8];
+const VILLAIN_ALL = [9, 10, 11, 12];
+const SLOTS = 13;
 const RANGES = [4, 8, 20, 40, 100];
 
 /** "AsKd" -> ["As", "Kd"], ignoring anything that isn't a real card. */
@@ -36,20 +36,25 @@ function parseCards(s: unknown): CardCode[] {
 
 export default function OddsScreen() {
   const params = useLocalSearchParams<{ hero?: string; board?: string }>();
+  // Four hero cards in the link open the PLO calculator.
+  const [game, setGame] = useState<OddsGame>(() => (parseCards(params.hero).length >= 4 ? 'plo' : 'nlhe'));
+  const n = oddsHole(game);
+  const HERO = HERO_ALL.slice(0, n);
+  const VILLAIN = VILLAIN_ALL.slice(0, n);
   const [slots, setSlots] = useState<(CardCode | null)[]>(() => {
-    const s: (CardCode | null)[] = Array(9).fill(null);
-    parseCards(params.hero).slice(0, 2).forEach((c, i) => (s[HERO[i]] = c));
+    const s: (CardCode | null)[] = Array(SLOTS).fill(null);
+    parseCards(params.hero).slice(0, n).forEach((c, i) => (s[HERO_ALL[i]] = c));
     parseCards(params.board)
       .filter((c) => !s.includes(c))
       .slice(0, 5)
       .forEach((c, i) => (s[BOARD[i]] = c));
     return s;
   });
-  const [mode, setMode] = useState<'range' | 'cards'>('range');
+  const [mode, setMode] = useState<'range' | 'cards'>(() => (n === 4 ? 'cards' : 'range'));
   const [rangePct, setRangePct] = useState(20);
   // Fill order: your cards, villain's cards, then the board (optional), like dealing a hand.
-  const order = (m: typeof mode) => [...HERO, ...(m === 'cards' ? VILLAIN : []), ...BOARD];
-  const firstEmpty = (s: (CardCode | null)[], m = mode) => order(m).find((i) => !s[i]) ?? null;
+  const order = (m: typeof mode, k = n) => [...HERO_ALL.slice(0, k), ...(m === 'cards' ? VILLAIN_ALL.slice(0, k) : []), ...BOARD];
+  const firstEmpty = (s: (CardCode | null)[], m = mode, k = n) => order(m, k).find((i) => !s[i]) ?? null;
   const [active, setActive] = useState<number | null>(() => firstEmpty(slots));
 
   const hero = HERO.map((i) => slots[i]).filter(Boolean) as CardCode[];
@@ -63,16 +68,10 @@ export default function OddsScreen() {
   const heroKey = hero.join('');
   const villainKey = villain.join('');
   const boardKey = board.join('');
-  const result = useMemo(() => {
-    if (hero.length < 2 || boardGap) return null;
-    if (mode === 'cards') {
-      if (villain.length < 2) return null;
-      const [h, v] = equity([hero, villain], board);
-      return { hero: h, villain: v };
-    }
-    const e = equityVsRange(hero, topRange(rangePct), board);
-    return e == null ? null : { hero: e, villain: 1 - e };
-  }, [heroKey, villainKey, boardKey, mode, rangePct, boardGap]); // eslint-disable-line react-hooks/exhaustive-deps
+  const result = useMemo(
+    () => (boardGap ? null : oddsEquity(game, hero, villain, board, mode, rangePct)),
+    [game, heroKey, villainKey, boardKey, mode, rangePct, boardGap], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const used = new Set(slots.filter(Boolean) as string[]);
   const pick = (c: CardCode) => {
@@ -102,14 +101,25 @@ export default function OddsScreen() {
   };
   const clear = () => {
     tap();
-    setSlots(Array(9).fill(null));
+    setSlots(Array(SLOTS).fill(null));
     setActive(0);
   };
   const switchMode = (m: 'range' | 'cards') => {
     setMode(m);
-    if (m === 'range') setSlots((s) => s.map((c, i) => (VILLAIN.includes(i) ? null : c)));
+    if (m === 'range') setSlots((s) => s.map((c, i) => (VILLAIN_ALL.includes(i) ? null : c)));
     if (m === 'cards') setActive(firstEmpty(slots, 'cards'));
-    else setActive(firstEmpty(slots.map((c, i) => (VILLAIN.includes(i) ? null : c)), 'range'));
+    else setActive(firstEmpty(slots.map((c, i) => (VILLAIN_ALL.includes(i) ? null : c)), 'range'));
+  };
+  // PLO is cards against cards (the ranges are hold'em hands); back to hold'em drops the extra two.
+  const switchGame = (g: OddsGame) => {
+    if (g === game) return;
+    const k = oddsHole(g);
+    const next = slots.map((c, i) => (g === 'nlhe' && (HERO_ALL.indexOf(i) >= 2 || VILLAIN_ALL.indexOf(i) >= 2) ? null : c));
+    const m = g === 'plo' ? 'cards' : mode;
+    setGame(g);
+    setMode(m);
+    setSlots(next);
+    setActive(firstEmpty(next, m, k));
   };
 
   const pctLabel = (e: number) => pct(e, 1);
@@ -128,29 +138,49 @@ export default function OddsScreen() {
           {mode === 'cards' ? <SlotGroup label={t('Vilão')} ids={VILLAIN} slots={slots} active={active} onSlot={onSlot} /> : null}
           <Result
             result={result}
-            missing={hero.length < 2 ? t('Escolhe as tuas duas cartas.') : boardGap ? t('Completa o flop (ou tira o turn e o river).') : t('Escolhe as duas cartas do vilão.')}
+            missing={
+              hero.length < n
+                ? n === 4 ? t('Escolhe as tuas quatro cartas.') : t('Escolhe as tuas duas cartas.')
+                : boardGap
+                  ? t('Completa o flop (ou tira o turn e o river).')
+                  : n === 4 ? t('Escolhe as quatro cartas do vilão.') : t('Escolhe as duas cartas do vilão.')
+            }
             label={mode === 'range' ? `vs top ${rangePct}%` : t('vs cartas do vilão')} street={street} fmt={pctLabel} />
         </Card>
 
-        <Section title={t('Vilão')}>
+        <Section title={t('Jogo')}>
           <Segmented
             options={[
-              { key: 'range', label: 'Range' },
-              { key: 'cards', label: t('Cartas') },
+              { key: 'nlhe', label: "Hold'em" },
+              { key: 'plo', label: 'PLO' },
             ]}
-            value={mode}
-            onChange={switchMode}
+            value={game}
+            onChange={switchGame}
           />
-          {mode === 'range' ? (
-            <ChipRow>
-              {RANGES.map((p) => (
-                <Chip key={p} label={p === 100 ? t('Qualquer') : `Top ${p}%`} active={rangePct === p} onPress={() => setRangePct(p)} />
-              ))}
-            </ChipRow>
-          ) : null}
         </Section>
 
-        <Section title={t('Escolhe as cartas')} action={used.size ? t('Limpar') : undefined} onAction={clear} hint={t('Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.')}>
+        {/* PLO has no range choice: villain's four cards are picked on the card above. */}
+        {game === 'nlhe' ? (
+          <Section title={t('Vilão')}>
+            <Segmented
+              options={[
+                { key: 'range', label: 'Range' },
+                { key: 'cards', label: t('Cartas') },
+              ]}
+              value={mode}
+              onChange={switchMode}
+            />
+            {mode === 'range' ? (
+              <ChipRow>
+                {RANGES.map((p) => (
+                  <Chip key={p} label={p === 100 ? t('Qualquer') : `Top ${p}%`} active={rangePct === p} onPress={() => setRangePct(p)} />
+                ))}
+              </ChipRow>
+            ) : null}
+          </Section>
+        ) : null}
+
+        <Section title={t('Escolhe as cartas')} action={used.size ? t('Limpar') : undefined} onAction={clear} hint={game === 'plo' ? t('Toca num lugar para o mudar.') : t('Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.')}>
           <CardPicker used={used} selected={[]} onPick={pick} />
         </Section>
       </ScrollView>

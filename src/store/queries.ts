@@ -3,6 +3,7 @@
 
 import { replay } from '@/poker/engine';
 import type { Hand } from '@/poker/types';
+import { isPLO } from '@/poker/variant';
 
 import type { PlayerNote } from './types';
 
@@ -112,11 +113,13 @@ function preflopReads(h: Hand): PreflopReads {
   return out;
 }
 
+/** Hold'em hands only: VPIP in PLO runs far higher, so mixing the two would fit neither game. */
 export function opponentStats(hands: Hand[], players: PlayerNote[]): Map<string, OpponentStats> {
   const byName = nameIndex(players);
   const ids = new Set(players.map((p) => p.id));
   const out = new Map<string, OpponentStats>();
   for (const h of hands) {
+    if (isPLO(h.game)) continue;
     const seats = knownSeats(h, ids, byName);
     if (!seats.length) continue;
     const { acted, vpip, pfr, tbOpp, tb } = preflopReads(h);

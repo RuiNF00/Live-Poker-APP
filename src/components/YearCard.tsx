@@ -6,7 +6,7 @@ import { FitText } from './FitText';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Defs, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { locale, t } from '@/i18n';
 import { blindsLabel, chips, duration, pct, rawMoney, shortDate } from '@/poker/format';
@@ -18,7 +18,7 @@ import { C, F, R, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
 import { Logo, Watermark } from './SessionCard';
-import { STORY_H, STORY_W } from './StoryCard';
+import { STORY_H, STORY_W } from './story-brand';
 
 const INK = C.accentInk;
 const LOOK: Record<YearCardKind, 'noite' | 'brasa'> = { year: 'brasa', best: 'noite', stakes: 'noite', bankroll: 'noite', pot: 'noite', streak: 'brasa' };

@@ -6,7 +6,7 @@
 // or amounts, no hands, and the venue only when the player chooses to show it.
 
 import { dayOf, isBagged } from '@/store/multi-day';
-import { cost, isPaused, playedMs, soldShare } from '@/store/session-math';
+import { bountiesOf, cost, isPaused, pieceOf, playedMs, soldShare, stakesOf } from '@/store/session-math';
 import type { Session } from '@/store/types';
 import { BRAND } from '@/theme';
 
@@ -41,6 +41,13 @@ export interface LiveSnapshot {
   stage: string | null;
   /** % of the action sold, so backers see the size of the whole package. */
   sold: number;
+  /**
+   * PKO, ended: the part of cashOut the backers have no piece of (bounties that stay with the
+   * player), so `sold` × (cashOut − kept) is what they get. Absent when they share every bounty.
+   */
+  kept?: number;
+  /** PKO, ended: all the bounties, inside cashOut; a backer whose link says k=1 has no piece of them. */
+  bounties?: number;
   hands: number;
   /** Day of a multi-day tournament, 1-based. */
   day: number;
@@ -84,7 +91,18 @@ export function liveSnapshot(s: Session, player: string, hands: number, now = Da
     day: dayOf(s),
     bagged: isBagged(s),
     updatedAt: now,
+    ...keptOf(s),
+    ...(s.endedAt && bountiesOf(s) ? { bounties: Math.round(bountiesOf(s) * 100) / 100 } : null),
   };
+}
+
+/** Bounties kept out of the backers' prize, spread over everything sold (only some packages may keep them). */
+function keptOf(s: Session): { kept: number } | null {
+  const b = s.endedAt ? bountiesOf(s) : 0;
+  const sold = soldShare(s);
+  if (!b || !sold) return null;
+  const keptShare = stakesOf(s).reduce((a, x) => a + (x.bountiesKept ? pieceOf(s, x) : 0), 0);
+  return keptShare ? { kept: Math.round(((b * keptShare) / sold) * 100) / 100 } : null;
 }
 
 /** What changed for a backer: the clock alone doesn't count (the page runs its own). */

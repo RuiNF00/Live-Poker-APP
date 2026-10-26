@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FIRST_ACTION_LABEL, FIRST_CURRENCIES, firstAction, GOALS, isMtt, ONBOARDING_KEY, planFor, PLAYS, VOLUMES, type Answers, type FirstAction, type Goal } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
 import { InvitePaste } from '@/components/InvitePaste';
-import { Replayer } from '@/components/Replayer';
 import { Button, Pill, Row, T, tap, type IconName } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -16,6 +15,9 @@ import { chips, money } from '@/poker/format';
 import { sampleHand } from '@/poker/sample';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
+
+// The replayer (~20 KB; its table is shared with the cards) loads with the screen that shows it, not at launch.
+const Replayer = React.lazy(() => import('@/components/Replayer').then((m) => ({ default: m.Replayer })));
 
 const STEPS = ['hero', 'goals', 'plays', 'volume', 'currency', 'plan'] as const;
 
@@ -135,7 +137,9 @@ export default function Welcome() {
           <>
             {/* Same side margin as the hand screen: the controls keep their rounded ends. */}
             <View style={{ marginHorizontal: S.md - S.gutter }}>
-              <Replayer hand={sample} autoPlay />
+              <React.Suspense fallback={null}>
+                <Replayer hand={sample} autoPlay />
+              </React.Suspense>
             </View>
             <View style={{ gap: S.sm }}>
               <T v="title">{t('A tua mão, revista em 30 segundos')}</T>

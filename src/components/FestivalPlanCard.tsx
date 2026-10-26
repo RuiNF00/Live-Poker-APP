@@ -6,14 +6,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Defs, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { t } from '@/i18n';
 import { fitPlan, type PlanDay } from '@/share/festival-plan';
 import { C, R, ff } from '@/theme';
 
 import { Logo } from './FestivalCard';
-import { linkHost, STORY_H, STORY_W } from './StoryCard';
+import { linkHost, STORY_H, STORY_W } from './story-brand';
 
 const SIDE = 26;
 export function FestivalPlanCard({ name, dates, days, buyIns = false, ref }: { name: string; dates: string; days: PlanDay[]; buyIns?: boolean; ref?: React.Ref<React.ComponentRef<typeof View>> }) {

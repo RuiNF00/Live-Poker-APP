@@ -22,16 +22,23 @@ export async function GET(req: Request, { params }: Ctx) {
   return NextResponse.json({ sealed: rec.sealed, updatedAt: rec.updatedAt }, { headers: noStore });
 }
 
-/** PUT { sealed } with header `x-edit-token`. 404 when the page is gone or the token is wrong. */
+/**
+ * PUT { sealed, v? } with header `x-edit-token`. 404 when the page is gone or the token is wrong;
+ * 409 when the page stored is newer than v (a phone with old data): nothing changes.
+ */
 export async function PUT(req: Request, { params }: Ctx) {
   const { id } = await params;
   if (await limited(req, 'page-update', 600, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors2 });
   const token = req.headers.get('x-edit-token') ?? '';
-  const body = (await req.json().catch(() => null)) as { sealed?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { sealed?: unknown; v?: unknown } | null;
   const sealed = parseSealed(body?.sealed);
   if (!sealed) return NextResponse.json({ error: 'invalid_page' }, { status: 422, headers: cors2 });
-  const ok = !!token && validId(id) && (await pageStore().update(id, token, sealed));
-  return NextResponse.json({ updated: ok }, { status: ok ? 200 : 404, headers: cors2 });
+  // The app's newest change for this backer, in ms. Absent from apps before 20261019150000.
+  const v = body?.v;
+  if (v !== undefined && !(Number.isSafeInteger(v) && (v as number) >= 0)) return NextResponse.json({ error: 'invalid_version' }, { status: 422, headers: cors2 });
+  const out = !!token && validId(id) ? await pageStore().update(id, token, sealed, v as number | undefined) : false;
+  if (out === 'stale') return NextResponse.json({ error: 'stale' }, { status: 409, headers: cors2 });
+  return NextResponse.json({ updated: !!out }, { status: out ? 200 : 404, headers: cors2 });
 }
 
 /** DELETE with header `x-edit-token`: the link stops opening for the backer. */

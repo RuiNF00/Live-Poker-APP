@@ -21,16 +21,16 @@ import { setMoneyMasked } from '@/poker/format';
 import type { Hand } from '@/poker/types';
 
 import { mergeById, restoredSettings, type BackupData } from './backup';
-import { bankrollOf, bankrollsBack, dropUnusedAuto, emptyDuplicates, ensureBankrolls, foldSeparated, refold, rehome, rehomeDeleted, separateBankrolls, sortBankrolls } from './bankroll-math';
+import { bankrollOf, bankrollsBack, dropUnusedAuto, emptyDuplicates, ensureBankrolls, foldSeparated, pinBankrolls, refold, rehome, rehomeDeleted, separateBankrolls, sortBankrolls } from './bankroll-math';
 import { clearPlans, currentPlans, importPlans, loadPlans, type FestivalPlan } from './festival-plan';
 import { clearOwnFestivals, currentOwnFestivals, importOwnFestivals, loadOwnFestivals } from './my-festivals';
 import { clearWeekly, currentWeekly, importWeekly, loadWeekly, type WeeklyTournament } from './weekly';
 import { KEYS, SPECS, loadAll as readAll } from './boot';
-import { alive, bankrollMark, joinDeleted, revive, type Deleted, type DeletedList } from './deleted-math';
+import { alive, bankrollMark, DELETED_LISTS, joinDeleted, keyOf, liveSwaps, revive, type Deleted, type DeletedList } from './deleted-math';
 import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
 import { countedSessions } from './session-math';
-import { keepCuts, withCuts } from './staking';
+import { anonymousStake, keepCuts, withCuts } from './staking';
 import { mergeSwaps, withSwaps, type Swap } from './swaps';
 import { currentSwaps, getAllSwaps, importSwaps, useSwaps } from './swaps-store';
 import type { SwapGroup } from './swap-groups';
@@ -287,17 +287,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (d.trips.persisted !== d.trips.items) w.trips.schedule(d.trips.items);
       // A separated copy back next to its bankroll in the same currency is that bankroll (bankroll-math.ts).
       const fold = foldSeparated(d.bankrolls.items);
-      const ss = refold(d.sessions.items, fold.to);
+      const folded = refold(d.sessions.items, fold.to);
       const ts = refold(d.transfers.items, fold.to);
-      if (ss !== d.sessions.items) w.sessions.schedule(ss);
       if (ts !== d.transfers.items) w.transfers.schedule(ts);
       const st = d.settings.bankrollId && fold.to.has(d.settings.bankrollId) ? { ...d.settings, bankrollId: fold.to.get(d.settings.bankrollId) } : d.settings;
       // Older data has no bankrolls: one per currency is made on first launch.
-      const made = ensureBankrolls(fold.bankrolls, ss, st.currency);
+      const made = ensureBankrolls(fold.bankrolls, folded, st.currency);
       // Empty copies that older syncs between two phones multiplied go. No delete mark: the other phone
       // may have used one since, and it drops its own empty ones the same way.
-      const extra = emptyDuplicates(made, ss, ts, st.bankrollId);
+      const extra = emptyDuplicates(made, folded, ts, st.bankrollId);
       const br = extra.length ? made.filter((b) => !extra.includes(b.id)) : made;
+      // Where each session counts is written down, so the other phone counts it in the same bankroll.
+      const ss = pinBankrolls(folded, br);
+      if (ss !== d.sessions.items) w.sessions.schedule(ss);
       if (d.bankrolls.persisted !== br) w.bankrolls.schedule(br);
       setHands(d.hands.items);
       setSessions(ss);
@@ -482,7 +484,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return l.map((s) => {
         const stakes = kept.get(s.id) ?? s.stakes;
         return stakes && (kept.has(s.id) || stakes.some((x) => x.backerId === id))
-          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? { share: x.share, markup: x.markup, ...(x.cut ? { cut: x.cut } : {}), ...(x.cutPct !== undefined ? { cutPct: x.cutPct, cumBefore: x.cumBefore } : {}) } : x)), updatedAt: now }
+          ? { ...s, stakes: stakes.map((x) => (x.backerId === id ? anonymousStake(x) : x)), updatedAt: now }
           : s;
       });
     });
@@ -615,7 +617,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const fresh = !hands.length && !rawSessions.length;
       setSettingsState((cur) => restoredSettings(cur, b.settings, fresh));
       // Counted against what's loaded now; importSwaps merges the same way.
-      const sw = mergeSwaps(currentSwaps(), b.swaps ?? []).added;
+      const sw = mergeSwaps(currentSwaps(), liveSwaps(b.swaps ?? [], 'swaps', del, (e) => e.side)).added;
       importSwaps(b.swaps ?? []).catch(() => {});
       importGroups(b.swapGroups ?? []).catch(() => {});
       importPlans(b.festivalPlans ?? {}).catch(() => {});

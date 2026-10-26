@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { equity } from '../equity';
+import { equity, score5, score7 } from '../equity';
 
 const near = (a: number, b: number, eps: number) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
 
@@ -107,4 +107,24 @@ test('the evaluator gives exactly the old scores, for 5, 6 and 7 cards and every
   }
   assert.equal(seen.size, 9);
   assert.equal(evaluate(['As', 'Ks']).category, -1);
+});
+
+test('score5 gives every five-card hand the same score as score7', () => {
+  // Every hand from 40 cards: all four suits of 2-6 and T-A, so every category is there
+  // (wheel, broadway, straight flushes, quads, boats) without the 2.6 million of the full deck.
+  const deck: number[] = [];
+  for (const r of [2, 3, 4, 5, 6, 10, 11, 12, 13, 14]) for (let s = 0; s < 4; s++) deck.push(r * 4 + s);
+  const wrong: string[] = [];
+  let n = 0;
+  for (let i = 0; i < deck.length; i++)
+    for (let j = i + 1; j < deck.length; j++)
+      for (let k = j + 1; k < deck.length; k++)
+        for (let l = k + 1; l < deck.length; l++)
+          for (let m = l + 1; m < deck.length; m++) {
+            const x = [deck[i], deck[j], deck[k], deck[l], deck[m]];
+            if (score5(x[3], x[0], x[4], x[1], x[2]) !== score7(x)) wrong.push(x.join(','));
+            n++;
+          }
+  assert.equal(n, 658008);
+  assert.deepEqual(wrong.slice(0, 5), []);
 });

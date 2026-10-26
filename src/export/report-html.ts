@@ -165,11 +165,13 @@ function expensesTable(x: TaxReport): string {
 function taxBlock(x: TaxReport): string {
   const byCountry = x.rows.some((r) => r.country || r.withheld);
   if (!byCountry && !x.us) return '';
+  // PKO: the bounties get their own column, only when there are any.
+  const anyB = x.rows.some((r) => r.bounties > 0);
   const rows = x.rows
     .map(
       (r) =>
-        `<tr><td>${esc(r.country ? `${flag(r.country)} ${countryName(r.country)}` : countryName(undefined))}</td><td class="n">${r.sessions}</td><td class="n">${esc(rawMoney(r.wins, r.currency))}</td><td class="n">${esc(rawMoney(r.losses, r.currency))}</td><td class="n ${cls(r.net)}">${esc(signed(r.net, r.currency))}</td><td class="n">${r.withheld ? esc(rawMoney(r.withheld, r.currency)) : '—'}</td><td class="n">${r.toRecover ? esc(rawMoney(r.toRecover, r.currency)) : '—'}</td></tr>${
-          r.backedWithheld ? `<tr><td colspan="7" class="muted">${esc(t('Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).'))}</td></tr>` : ''
+        `<tr><td>${esc(r.country ? `${flag(r.country)} ${countryName(r.country)}` : countryName(undefined))}</td><td class="n">${r.sessions}</td><td class="n">${esc(rawMoney(r.wins, r.currency))}</td><td class="n">${esc(rawMoney(r.losses, r.currency))}</td><td class="n ${cls(r.net)}">${esc(signed(r.net, r.currency))}</td>${anyB ? `<td class="n">${r.bounties ? esc(rawMoney(r.bounties, r.currency)) : '—'}</td>` : ''}<td class="n">${r.withheld ? esc(rawMoney(r.withheld, r.currency)) : '—'}</td><td class="n">${r.toRecover ? esc(rawMoney(r.toRecover, r.currency)) : '—'}</td></tr>${
+          r.backedWithheld ? `<tr><td colspan="${anyB ? 8 : 7}" class="muted">${esc(t('Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).'))}</td></tr>` : ''
         }`,
     )
     .join('');
@@ -191,10 +193,10 @@ function taxBlock(x: TaxReport): string {
     <section>
       <h2>${esc(t('Impostos por país'))}</h2>
       ${byCountry ? `<table>
-        <thead><tr><th>${esc(t('País'))}</th><th class="n">${esc(t('Sessões'))}</th><th class="n">${esc(t('Ganhos'))}</th><th class="n">${esc(t('Perdas'))}</th><th class="n">${esc(t('Resultado'))}</th><th class="n">${esc(t('Retido'))}</th><th class="n">${esc(t('A recuperar'))}</th></tr></thead>
+        <thead><tr><th>${esc(t('País'))}</th><th class="n">${esc(t('Sessões'))}</th><th class="n">${esc(t('Ganhos'))}</th><th class="n">${esc(t('Perdas'))}</th><th class="n">${esc(t('Resultado'))}</th>${anyB ? `<th class="n">${esc(t('Dos quais bounties'))}</th>` : ''}<th class="n">${esc(t('Retido'))}</th><th class="n">${esc(t('A recuperar'))}</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <p class="muted">${esc(t('Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).'))}${x.sharesIncluded ? ' ' + esc(t('Inclui swaps e a tua parte dos pacotes de staking.')) : ''}</p>` : ''}
+      <p class="muted">${esc(t('Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).'))}${anyB ? ' ' + esc(t('Os ganhos incluem os bounties recebidos em dinheiro.')) : ''}${x.sharesIncluded ? ' ' + esc(t('Inclui swaps e a tua parte dos pacotes de staking.')) : ''}</p>` : ''}
       ${us}
       ${expensesTable(x)}
       <p class="note">${esc(t('Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma com um contabilista as regras do teu país e de onde jogaste.'))}</p>

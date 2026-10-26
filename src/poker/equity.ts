@@ -1,4 +1,4 @@
-// All-in equity for hold'em hands with known cards: each player's share of the pot
+// All-in equity for hold'em (and PLO) hands with known cards: each player's share of the pot
 // if the rest of the board is dealt now. Exact when two cards or fewer are to come,
 // a fixed-seed sample otherwise (preflop), so the same spot always shows the same number.
 
@@ -88,19 +88,87 @@ function rng(seed: number) {
   };
 }
 
+/**
+ * Score of exactly five cards, the same number score7 gives them, without allocating: Omaha
+ * scores 60 five-card hands a player per board, and score7's arrays made a preflop PLO
+ * spot take seconds on a phone.
+ */
+export function score5(c0: number, c1: number, c2: number, c3: number, c4: number): number {
+  let a = c0 >> 2, b = c1 >> 2, c = c2 >> 2, d = c3 >> 2, e = c4 >> 2, t: number;
+  // Ranks high to low with a sorting network (no array to sort).
+  if (a < b) { t = a; a = b; b = t; }
+  if (d < e) { t = d; d = e; e = t; }
+  if (c < e) { t = c; c = e; e = t; }
+  if (c < d) { t = c; c = d; d = t; }
+  if (b < e) { t = b; b = e; e = t; }
+  if (a < d) { t = a; a = d; d = t; }
+  if (a < c) { t = a; a = c; c = t; }
+  if (b < d) { t = b; b = d; d = t; }
+  if (b < c) { t = b; b = c; c = t; }
+  const flush = ((c0 ^ c1) & 3) === 0 && ((c0 ^ c2) & 3) === 0 && ((c0 ^ c3) & 3) === 0 && ((c0 ^ c4) & 3) === 0;
+  const distinct = a !== b && b !== c && c !== d && d !== e;
+  // The wheel (A-5) is a five-high straight.
+  const st = !distinct ? 0 : a - e === 4 ? a : a === 14 && b === 5 ? 5 : 0;
+  if (flush && st) return pack5(8, st, 0, 0, 0, 0);
+  if (!distinct) {
+    if (a === d) return pack5(7, a, e, 0, 0, 0);
+    if (b === e) return pack5(7, b, a, 0, 0, 0);
+    if (a === c && d === e) return pack5(6, a, d, 0, 0, 0);
+    if (a === b && c === e) return pack5(6, c, a, 0, 0, 0);
+  }
+  if (flush) return pack5(5, a, b, c, d, e);
+  if (st) return pack5(4, st, 0, 0, 0, 0);
+  if (distinct) return pack5(0, a, b, c, d, e);
+  if (a === c) return pack5(3, a, d, e, 0, 0);
+  if (b === d) return pack5(3, b, a, e, 0, 0);
+  if (c === e) return pack5(3, c, a, b, 0, 0);
+  if (a === b) return c === d ? pack5(2, a, c, e, 0, 0) : d === e ? pack5(2, a, d, c, 0, 0) : pack5(1, a, c, d, e, 0);
+  if (b === c) return d === e ? pack5(2, b, d, a, 0, 0) : pack5(1, b, a, d, e, 0);
+  if (c === d) return pack5(1, c, a, b, e, 0);
+  return pack5(1, d, a, b, c, 0);
+}
+
+/** pack() for score5, without the array. */
+const pack5 = (cat: number, k0: number, k1: number, k2: number, k3: number, k4: number) => ((((cat * 15 + k0) * 15 + k1) * 15 + k2) * 15 + k3) * 15 + k4;
+
+/**
+ * Omaha: the best hand with exactly two of the four hole cards and three of the five
+ * board cards (60 ways), so four hearts on the board with one in hand is no flush.
+ */
+export function scoreOmaha(hole: number[], board: number[]): number {
+  let best = -1;
+  const n = board.length;
+  for (let x = 0; x < n - 2; x++)
+    for (let y = x + 1; y < n - 1; y++)
+      for (let z = y + 1; z < n; z++)
+        for (let a = 0; a < hole.length - 1; a++)
+          for (let b = a + 1; b < hole.length; b++) {
+            const s = score5(hole[a], hole[b], board[x], board[y], board[z]);
+            if (s > best) best = s;
+          }
+  return best;
+}
+
+/** A hand's score on a full board: four hole cards play as Omaha, two as hold'em. */
+export const scoreHand = (hole: number[], board: number[]) => (hole.length === 4 ? scoreOmaha(hole, board) : score7([...hole, ...board]));
+
 function settle(holes: number[][], board: number[], into: number[]) {
   let best = -1;
   let winners: number[] = [];
   holes.forEach((h, i) => {
-    const s = score7([...h, ...board]);
+    const s = scoreHand(h, board);
     if (s > best) [best, winners] = [s, [i]];
     else if (s === best) winners.push(i);
   });
   for (const w of winners) into[w] += 1 / winners.length;
 }
 
-/** Equity of each hand (0..1, summing to 1). `samples` only applies with three or more cards to come. */
-export function equity(holeCards: CardCode[][], boardCards: CardCode[], samples = 6000): number[] {
+/**
+ * Equity of each hand (0..1, summing to 1). `samples` only applies with three or more cards to come.
+ * PLO samples fewer boards (each costs 60 five-card scores a hand, not one): 2000 keeps a preflop
+ * spot well under a second on a phone, within about a point of the exact number.
+ */
+export function equity(holeCards: CardCode[][], boardCards: CardCode[], samples = holeCards.some((h) => h.length > 2) ? 2000 : 6000): number[] {
   const used = new Set([...holeCards.flat(), ...boardCards]);
   const deck = FULL_DECK.filter((c) => !used.has(c)).map(code);
   const holes = holeCards.map((h) => h.map(code));

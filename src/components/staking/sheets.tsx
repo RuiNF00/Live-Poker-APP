@@ -72,14 +72,16 @@ function BackerForm({ backer, onSave, onDelete }: { backer: Backer; onSave: (b: 
 }
 
 /** `terms`: where to start from, usually the backer's last deal (see packageDefaults). */
-export function blankPackage(backerId: string, terms?: Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut'>): StakePackage {
+export function blankPackage(backerId: string, terms?: Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut' | 'bountiesKept'>): StakePackage {
   return { id: uid('k_'), backerId, name: '', kind: 'action', share: 20, markup: 1.1, playerCut: 50, ...terms, createdAt: Date.now() };
 }
 
-export function packageTerms(p: Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut'>): string {
-  return p.kind === 'makeup'
-    ? t('{share}% com makeup · ficas com {cut}% do lucro', { share: num(p.share), cut: num(p.playerCut) })
-    : t('{share}% de cada torneio · {markup}', { share: num(p.share), markup: markupLabel(p.markup) });
+export function packageTerms(p: Pick<StakePackage, 'kind' | 'share' | 'markup' | 'playerCut' | 'bountiesKept'>): string {
+  const terms =
+    p.kind === 'makeup'
+      ? t('{share}% com makeup · ficas com {cut}% do lucro', { share: num(p.share), cut: num(p.playerCut) })
+      : t('{share}% de cada torneio · {markup}', { share: num(p.share), markup: markupLabel(p.markup) });
+  return p.bountiesKept ? `${terms} · ${t('bounties ficam contigo')}` : terms;
 }
 
 /**
@@ -162,6 +164,15 @@ function PackageForm({ pkg, suggestName, makeup, balance, onSave, onDelete }: { 
           </ChipRow>
         </Section>
       )}
+      <ListGroup>
+        <ToggleItem
+          icon="trophy-outline"
+          title={t('Bounties ficam comigo')}
+          subtitle={x.bountiesKept ? t('O backer tem parte do prémio sem os bounties (PKO).') : t('O backer tem parte do prémio todo, bounties incluídos.')}
+          value={!!x.bountiesKept}
+          onChange={(v) => set({ bountiesKept: v ? true : undefined })}
+        />
+      </ListGroup>
       {pkg.name ? (
         <ListGroup>
           <ToggleItem

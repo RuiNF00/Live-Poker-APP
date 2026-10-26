@@ -19,6 +19,7 @@ import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, List
 import { t, variant } from '@/i18n';
 import { statementUrl } from '@/lib/backing-link';
 import { backerPageUrl, queueBackerPageDelete } from '@/lib/backer-page';
+import { pageVersion } from '@/lib/backer-page-version';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
 import { shareRef } from '@/lib/referrals';
@@ -27,12 +28,13 @@ import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
 import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
+import { currentDeleted } from '@/store/deleted';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, unconverted, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, unconverted, withPackageBounties, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -243,8 +245,10 @@ function BackerScreen() {
       try {
         const b = await ensureBackerPage(next, saveBacker);
         next = b;
-        // Filled before the message goes, so the backer never opens an empty page.
-        if (await pushBackerPage(b.page, statementFor(b, settings.nickname || '', l, data))) url = withLang(backerPageUrl(b.page, ref), variant);
+        // Filled before the message goes, so the backer never opens an empty page. 'newer': another
+        // phone already filled it with fresher numbers, so the link is good as it is.
+        const v = pageVersion({ backers, sessions, packages, payments, offers, deleted: currentDeleted() });
+        if ((await pushBackerPage(b.page, statementFor(b, settings.nickname || '', l, data), v)) !== 'gone') url = withLang(backerPageUrl(b.page, ref), variant);
         else next = { ...b, page: undefined };
       } catch {
         // No signal: the one-off link works anyway (its numbers ride in the link itself).
@@ -565,13 +569,28 @@ function BackerScreen() {
             notice(t('Não dá para reabrir este pacote'), t('O makeup deste pacote já passou para «{name}». Continua a ser recuperado lá.', { name: next.name }));
             return;
           }
-          if (next) deletePackage(next.id);
-          if (carry) {
-            const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
-            savePackage(closed);
-            if (next) savePackage(next);
-          } else savePackage(p);
-          setPkg(null);
+          // The bounties term goes onto every stake of the package (saved, so links and backers see it change).
+          const moved = was && !!was.bountiesKept !== !!p.bountiesKept ? withPackageBounties(sessions, p.id, !!p.bountiesKept) : [];
+          const apply = () => {
+            if (next) deletePackage(next.id);
+            for (const s of moved) saveSession(s);
+            if (carry) {
+              const { closed, next } = closePackage(p, pk.states.get(p.id)?.makeup ?? 0, true, uid('p'), undefined, pk.states.get(p.id)?.currency);
+              savePackage(closed);
+              if (next) savePackage(next);
+            } else savePackage(p);
+            setPkg(null);
+          };
+          // Sessions already played change what the backer gets, payments made included: said before, not after.
+          const played = moved.filter((s) => s.endedAt).length;
+          if (played)
+            confirm(
+              p.bountiesKept ? t('Os bounties passam a ficar contigo') : t('Os bounties passam a ser partilhados'),
+              played === 1 ? t('Muda o que o backer recebe na sessão já jogada deste pacote, e o saldo com ele.') : t('Muda o que o backer recebe nas {n} sessões já jogadas deste pacote, e o saldo com ele.', { n: played }),
+              apply,
+              t('Mudar'),
+            );
+          else apply();
         }}
         onDelete={
           pkg && packages.some((p) => p.id === pkg.id)

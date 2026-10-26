@@ -64,3 +64,20 @@ test('unopened pot offers check or bet', () => {
     ['Check', 'Bet 3000', 'All-in 62k'],
   );
 });
+
+test('PLO: the biggest bet in the poll is the pot, not an all-in', () => {
+  const P = (name: string, cards?: string[]) => ({ name, stack: 200, ...(cards ? { cards } : {}) });
+  const hand: Hand = {
+    v: 1, id: 'plo', createdAt: 0, updatedAt: 0,
+    game: { kind: 'cash', name: 'C', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€', variant: 'plo' },
+    players: [P('Hero', ['Ah', 'As', '7d', '6c']), P(''), P('', ['Jc', 'Td', '3s', '3d']), P(''), P(''), P('')],
+    button: 0, hero: 0, board: ['Kh', 'Qh', '9h', '4h', '2c'], tags: [], notes: '',
+    actions: [
+      { p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' }, { p: 0, kind: 'raise', to: 7 }, { p: 1, kind: 'fold' }, { p: 2, kind: 'call' },
+      { p: 2, kind: 'check' }, { p: 0, kind: 'bet', to: 15 }, { p: 2, kind: 'call' },
+      { p: 2, kind: 'check' }, { p: 0, kind: 'check' }, { p: 2, kind: 'check' }, { p: 0, kind: 'check' },
+    ],
+  };
+  const m = storyMoment(hand, 'question', false);
+  assert.deepEqual(m.options.map((o) => [o.label, o.taken]), [['Check', true], ['Bet', false], ['Pote 45', false]]);
+});

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isOffensive } from '@/lib/moderation';
 import { brand } from '@/config/brand';
 import { limited } from '@/lib/abuse';
+import { cappedJson } from '@/lib/coach';
 import { cors } from '@/lib/cors';
 import { packStore, parsePackHands } from '@/lib/packs';
 
@@ -18,7 +19,9 @@ export function OPTIONS() {
 export async function POST(req: Request) {
   if (Number(req.headers.get('content-length') ?? 0) > 16_000) return NextResponse.json({ error: 'too_big' }, { status: 413, headers });
   if (await limited(req, 'pack-create', 20, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers });
-  const body = (await req.json().catch(() => null)) as { title?: unknown; hideAmounts?: unknown; hands?: unknown } | null;
+  const raw = await cappedJson(req, 16_000);
+  if (raw === 'too_big') return NextResponse.json({ error: 'too_big' }, { status: 413, headers });
+  const body = raw as { title?: unknown; hideAmounts?: unknown; hands?: unknown } | null;
   const hands = parsePackHands(body?.hands);
   if (!hands.length) return NextResponse.json({ error: 'no_hands' }, { status: 422, headers });
   const cut = typeof body?.title === 'string' ? body.title.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 80) : '';

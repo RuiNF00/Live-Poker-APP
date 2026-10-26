@@ -8,7 +8,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Defs, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { t } from '@/i18n';
 import { comboLabel, displayRank, SUIT_SYMBOL } from '@/poker/cards';
@@ -23,7 +23,7 @@ import { C, F, R, ff, posColor } from '@/theme';
 import { FitText } from './FitText';
 import { STREET_LABEL, viewAt } from './replayer/model';
 import { Watermark } from './SessionCard';
-import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './StoryCard';
+import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './story-brand';
 
 const CREAM = '#F6F2E8';
 
@@ -101,6 +101,9 @@ export function HandPoster({ hand, moment, comment, brand = true, format = 'stor
   const cardW = post ? (line ? 66 : 76) : line && tags.length ? 80 : 86;
   const frameH = post ? H - pad * 2 : H - pad - 110;
   const inner = STORY_W - 2 * side - 36;
+  // PLO's four cards share the width two hold'em cards get (with room for the tilt at the ends).
+  const heroW = cards.length > 2 ? Math.min(cardW, Math.floor((inner - 3 * 8 - 16) / cards.length)) : cardW;
+  const tilt = cards.length > 2 ? [-6, -2, 2, 6] : [-6, 6];
 
   return (
     <View ref={ref} collapsable={false} style={{ width: STORY_W, height: H, overflow: 'hidden', backgroundColor: C.bgDeep }}>
@@ -133,10 +136,10 @@ export function HandPoster({ hand, moment, comment, brand = true, format = 'stor
 
         {/* Hero's cards, big, with the seat and the combo */}
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: post ? 6 : 10 }}>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flexDirection: 'row', gap: cards.length > 2 ? 8 : 10 }}>
             {cards.map((c, i) => (
-              <View key={c + i} style={{ transform: [{ rotate: i === 0 ? '-6deg' : '6deg' }] }}>
-                <BigCard card={c} w={cardW} />
+              <View key={c + i} style={{ transform: [{ rotate: `${tilt[i] ?? 0}deg` }] }}>
+                <BigCard card={c} w={heroW} />
               </View>
             ))}
           </View>

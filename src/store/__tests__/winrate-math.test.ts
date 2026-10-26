@@ -63,7 +63,12 @@ test('breakdowns by game, stake, venue and weekday', () => {
   assert.deepEqual(winRateBy(list, 'stake', '€').map((g) => g.label), ['2/5']);
   assert.ok(winRateBy(list, 'weekday', '€').every((g) => g.w.sessions >= 2), 'single-session days are left out');
   assert.equal(winRate(four.slice(0, 2)), null, 'needs 3 sessions');
-  assert.equal(gameOf(cash(1, 1, 0, { name: 'Omaha hi-lo' })), 'PLO');
+  assert.equal(gameOf(cash(1, 1, 0, { name: 'Omaha hi-lo' })), 'PLO8');
+  // Two sessions named «Cash 1/2» but played with PLO hands go to PLO, not into the hold'em bb/100.
+  const plain = [cash(2, 4, 600, { id: 'p1', name: 'Cash 1/2' }), cash(4, 4, -200, { id: 'p2', name: 'Cash 1/2' })];
+  const hands = ['p1', 'p2'].map((sessionId) => ({ sessionId, game: { kind: 'cash' as const, name: '', variant: 'plo' as const } }));
+  assert.deepEqual(winRateBy([...four, ...plain], 'game', '€', hands).map((g) => g.label), ['NLH', 'PLO']);
+  assert.deepEqual(winRateBy([...four, ...plain], 'game', '€').map((g) => g.label), ['NLH']);
 });
 
 // A 3-minute session at +200 would read as +4000 €/h: no rate under MIN_RATE_HOURS (15 min) of play.

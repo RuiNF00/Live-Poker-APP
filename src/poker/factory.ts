@@ -87,6 +87,8 @@ export function newHand(opts: {
       stage: session.stage,
       currency: session.currency,
       buyIn: session.buyIn,
+      // PLO belongs to the table (straddles and bomb pots to one hand): same table, same game.
+      ...(carry && last.game.variant ? { variant: last.game.variant } : null),
     };
     n = session.tableSize;
     stack = session.stack;

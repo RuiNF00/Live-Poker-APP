@@ -1,7 +1,8 @@
 // Betting engine. Replays a Hand's inputs into table states: who acts next,
 // what they may do, pots, side pots and payouts. Pure functions, no React.
 
-import { evaluate } from './evaluator';
+import { evaluate, evaluateOmaha } from './evaluator';
+import { holeCount, isPLO } from './variant';
 import type { ActionKind, CardCode, Hand, HandAction, Street } from './types';
 
 export interface LastAction {
@@ -33,6 +34,8 @@ export interface TableState {
   raises: number;
   /** Last preflop raiser, for c-bet labels and tags. */
   pfAggressor: number | null;
+  /** PLO: no bet or raise above the pot (see potLimitTo). Unset in hold'em. */
+  potLimit?: boolean;
   /** Board cards visible in this state. */
   boardCount: number;
   /** A street closed and its board cards have not been entered yet. */
@@ -232,6 +235,7 @@ export function initialState(hand: Hand): TableState {
     bettingDone: false,
     foldWin: false,
     last: null,
+    ...(isPLO(g) ? { potLimit: true } : null),
   };
   const sb = sbIndex(n, hand.button);
   const bb = bbIndex(n, hand.button);
@@ -352,12 +356,23 @@ export interface Legal {
   maxTo: number;
 }
 
+/**
+ * Pot limit: the most a raise can make it is the bet plus the pot after calling it
+ * (everything in the middle, the bets on this street and the call). 3.5 bb from UTG.
+ */
+export function potLimitTo(s: TableState, p: number): number {
+  const toCall = Math.max(0, s.currentBet - s.bets[p]);
+  return s.currentBet + s.pot + s.bets.reduce((a, b) => a + b, 0) + toCall;
+}
+
 export function legal(s: TableState): Legal | null {
   const p = s.toAct;
   if (p === null) return null;
   const toCall = Math.max(0, s.currentBet - s.bets[p]);
-  const maxTo = s.bets[p] + s.stacks[p];
-  const minTo = Math.min(maxTo, s.currentBet === 0 ? s.minRaise : s.currentBet + s.minRaise);
+  const stackTo = s.bets[p] + s.stacks[p];
+  const minRaiseTo = s.currentBet === 0 ? s.minRaise : s.currentBet + s.minRaise;
+  const maxTo = s.potLimit ? Math.min(stackTo, Math.max(potLimitTo(s, p), minRaiseTo)) : stackTo;
+  const minTo = Math.min(maxTo, minRaiseTo);
   return {
     p,
     toCall: Math.min(toCall, s.stacks[p]),
@@ -387,7 +402,8 @@ export function apply(prev: TableState, a: HandAction, hand: Hand): TableState |
       kind = 'check';
     } else added = put(s, p, toCall);
   } else {
-    const maxTo = s.bets[p] + s.stacks[p];
+    // A bet over the pot in PLO is the pot: the most the rules let it be.
+    const maxTo = legal(s)!.maxTo;
     const to = Math.min(a.to ?? 0, maxTo);
     if (to <= s.currentBet) {
       // An all-in for less than the bet is a call.
@@ -540,8 +556,8 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
       const scores = new Map<number, number>();
       for (const i of live) {
         const c = hand.players[i].cards;
-        if (c && c.length === 2 && board.length === 5) {
-          const ev = evaluate([...c, ...board]);
+        if (c && c.length === holeCount(hand.game) && board.length === 5) {
+          const ev = isPLO(hand.game) ? evaluateOmaha(c, board) : evaluate([...c, ...board]);
           scores.set(i, ev.score);
           if (names) handNames[i] = ev.name;
         }
@@ -652,10 +668,10 @@ export function isComplete(hand: Hand, r: Replay = replay(hand)): boolean {
 /** Every action, card and winner is in: what a solver or the next hand's stacks need. */
 export function isPlayedOut(hand: Hand, r: Replay = replay(hand)): boolean {
   const s = r.final;
-  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !s.needsBoard && !r.needsBoard2 && s.toAct === null && (!r.result || r.result.resolved);
+  return (hand.players[hand.hero].cards?.length ?? 0) === holeCount(hand.game) && !s.needsBoard && !r.needsBoard2 && s.toAct === null && (!r.result || r.result.resolved);
 }
 
 /** Hero has folded with both cards entered. */
 export function heroFolded(hand: Hand, r: Replay = replay(hand)): boolean {
-  return (hand.players[hand.hero].cards?.length ?? 0) === 2 && !!r.final.folded[hand.hero];
+  return (hand.players[hand.hero].cards?.length ?? 0) === holeCount(hand.game) && !!r.final.folded[hand.hero];
 }

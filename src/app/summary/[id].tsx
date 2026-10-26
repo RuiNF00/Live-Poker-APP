@@ -6,6 +6,7 @@ import { Pressable, View } from 'react-native';
 
 import { CardRow } from '@/components/PlayingCard';
 import { SessionEndPro } from '@/components/SessionEndPro';
+import { TellByVoice } from '@/components/entry/TellByVoice';
 import { Banner, Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
@@ -111,6 +112,8 @@ export default function SessionSummary() {
           onPress={() => router.push({ pathname: '/hand/new', params: { edit: left[0].id } })}
         />
       ) : null}
+      {/* The session is over: the oldest half-saved hand can be told now, with its voice note. */}
+      {left.length > 0 ? <TellByVoice handId={left[0].id} first={left.length > 1} /> : null}
 
       <Card padded={false}>
         <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Para mostrar ou tirar print sem dinheiro à vista')} value={hideMoney} onChange={setHideMoney} />

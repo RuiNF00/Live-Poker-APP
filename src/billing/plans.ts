@@ -139,7 +139,7 @@ export const FREE = {
   trips: 1 as number | null,
 };
 
-export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'generic';
+export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'stats' | 'story' | 'solver' | 'coach' | 'welcome' | 'plan' | 'views' | 'bigWin' | 'sessionStart' | 'sessionEnd' | 'mttStats' | 'varianceMine' | 'trips' | 'voiceLive' | 'generic';
 
 /** Headline per trigger: the paywall talks about what the player just tried to do. One idea per line. */
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
@@ -220,6 +220,11 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     title: t('Conta a mão, nós pomo-la na mesa'),
     body: t('Dizes a mão em voz alta e ela aparece no replayer, pronta a corrigir.'),
   },
+  // The «Voz» button of a live session: same Pro lock as voiceHand, but the player wanted to update the session.
+  voiceLive: {
+    title: t('Diz o que mudou, nós atualizamos'),
+    body: t('Stack, nível, rebuy ou pausa por voz, sem largar as cartas.'),
+  },
   moveUpPlan: {
     title: t('Decide a stake com os teus números'),
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
@@ -258,7 +263,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
 };
 
-export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mttStats' | 'varianceMine' | 'trips' | ProFeature;
+export type FeatureKey = 'hands' | 'story' | 'stats' | 'solver' | 'coach' | 'mttStats' | 'varianceMine' | 'trips' | 'voiceLive' | ProFeature;
 
 /** The first three are the generic rows; the rest lead only when they triggered the paywall. */
 export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body: string }[] = [
@@ -282,6 +287,7 @@ export const PRO_FEATURES: { key: FeatureKey; icon: string; title: string; body:
   { key: 'villainRange', icon: 'grid', title: t('Range do vilão'), body: t('Equity contra a tua grelha') },
   { key: 'faceVideo', icon: 'videocam', title: t('Vídeo com a tua cara'), body: t('A explicar a mão, num canto') },
   { key: 'voiceHand', icon: 'mic', title: t('Mão por voz'), body: t('Contas e ela fica na mesa') },
+  { key: 'voiceLive', icon: 'mic', title: t('Sessão por voz'), body: t('Stack e nível sem escrever') },
 ];
 
 const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
@@ -311,6 +317,7 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   trips: 'trips',
   faceVideo: 'faceVideo',
   voiceHand: 'voiceHand',
+  voiceLive: 'voiceLive',
 };
 
 /**

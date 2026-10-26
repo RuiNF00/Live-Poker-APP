@@ -20,6 +20,8 @@ export interface SeatView {
   stack: string;
   /** Cards to show face up; `null` = face down, `undefined` = no cards. */
   cards?: CardCode[] | null;
+  /** Cards each player holds (4 in PLO): how many backs a face-down hand shows. */
+  holes?: number;
   folded?: boolean;
   acting?: boolean;
   hero?: boolean;
@@ -211,17 +213,29 @@ export function Table({
                 style={[styles.seat, { left: (p.x / 100) * w, top: (p.y / 100) * h, transform: [{ translateX: -44 }, { translateY: -38 }, { scale }] }]}>
                 <View style={[styles.cards, { opacity: s.folded ? 0.25 : 1 }]}>
                   {s.cards === undefined ? null : s.cards === null ? (
-                    <>
-                      <PlayingCard faceDown size={cardSize} style={{ transform: [{ rotate: '-5deg' }] }} />
-                      <PlayingCard faceDown size={cardSize} style={{ marginLeft: -10, transform: [{ rotate: '5deg' }] }} />
-                    </>
+                    (s.holes ?? 2) > 2 ? (
+                      Array.from({ length: s.holes! }, (_, ci) => (
+                        <PlayingCard key={ci} faceDown size={cardSize} style={{ marginLeft: ci ? -15 : 0, transform: [{ rotate: `${(ci - 1.5) * 4}deg` }] }} />
+                      ))
+                    ) : (
+                      <>
+                        <PlayingCard faceDown size={cardSize} style={{ transform: [{ rotate: '-5deg' }] }} />
+                        <PlayingCard faceDown size={cardSize} style={{ marginLeft: -10, transform: [{ rotate: '5deg' }] }} />
+                      </>
+                    )
                   ) : (
                     s.cards.map((c, ci) => (
                       <PlayingCard
                         key={c}
                         card={c}
                         size={s.hero ? 'md' : cardSize}
-                        style={{ marginLeft: ci ? (s.hero ? -6 : -8) : 0, transform: [{ rotate: ci ? '4deg' : '-4deg' }] }}
+                        // PLO's four cards fan tighter than hold'em's two, so they fit over the plate,
+                        // but each still shows its whole rank: a "10" reads as "1" any tighter.
+                        style={
+                          s.cards!.length > 2
+                            ? { marginLeft: ci ? (s.hero ? -13 : -8) : 0, transform: [{ rotate: `${(ci - 1.5) * 4}deg` }] }
+                            : { marginLeft: ci ? (s.hero ? -6 : -8) : 0, transform: [{ rotate: ci ? '4deg' : '-4deg' }] }
+                        }
                       />
                     ))
                   )}

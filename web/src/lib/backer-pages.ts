@@ -19,12 +19,18 @@ export interface PageRecord {
   updatedAt: string;
 }
 
+/**
+ * 'ok'; 'stale' when the page stored has a newer version (the app's newest change for that
+ * backer, in ms) than this one, and nothing changed; false with a wrong token or a page that is
+ * gone. Without a version (an older app) the page is taken and the stored version stays.
+ */
+export type PageUpdate = 'ok' | 'stale' | false;
+
 export interface PageStore {
   /** `token`: the app's own (64 hex), so a create sent again returns the same page. */
   create(token: string): Promise<{ id: string; editToken: string }>;
   get(id: string): Promise<PageRecord | null>;
-  /** False with a wrong token or a page that is gone. */
-  update(id: string, editToken: string, s: Sealed): Promise<boolean>;
+  update(id: string, editToken: string, s: Sealed, version?: number): Promise<PageUpdate>;
   remove(id: string, editToken: string): Promise<boolean>;
   /** Removes pages not updated for 180 days. */
   purge(): Promise<void>;
@@ -47,10 +53,12 @@ class SupabasePages implements PageStore {
     return r ? { id: r.id, sealed: r.sealed, updatedAt: r.updated_at } : null;
   }
 
-  async update(id: string, editToken: string, s: Sealed) {
-    const { data, error } = await this.db.rpc('update_backer_page', { p_id: id, p_edit_token: editToken, p_sealed: s });
+  async update(id: string, editToken: string, s: Sealed, version?: number): Promise<PageUpdate> {
+    // 20261019150000; without a version, the three-argument function as before.
+    const args = version === undefined ? { p_id: id, p_edit_token: editToken, p_sealed: s } : { p_id: id, p_edit_token: editToken, p_sealed: s, p_version: version };
+    const { data, error } = await this.db.rpc('update_backer_page', args);
     if (error) throw error;
-    return !!data;
+    return data === 'stale' ? 'stale' : data ? 'ok' : false;
   }
 
   async remove(id: string, editToken: string) {
@@ -65,11 +73,12 @@ class SupabasePages implements PageStore {
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-type LocalRow = PageRecord & { editTokenHash: string };
+type LocalRow = PageRecord & { editTokenHash: string; version?: number };
 
-class LocalPages implements PageStore {
-  private file = path.join(process.cwd(), '.data', 'backer-pages.json');
+export class LocalPages implements PageStore {
   private queue: Promise<unknown> = Promise.resolve();
+
+  constructor(private file = path.join(process.cwd(), '.data', 'backer-pages.json')) {}
 
   private async read(): Promise<Record<string, LocalRow>> {
     try {
@@ -104,15 +113,17 @@ class LocalPages implements PageStore {
   async get(id: string) {
     const r = (await this.read())[id];
     if (!r) return null;
-    const { editTokenHash: _, ...rec } = r;
+    const { editTokenHash: _, version: __, ...rec } = r;
     return rec;
   }
 
-  async update(id: string, editToken: string, s: Sealed) {
-    return this.mutate((d) => {
-      if (d[id]?.editTokenHash !== sha256(editToken)) return false;
-      d[id] = { ...d[id], sealed: s, updatedAt: new Date().toISOString() };
-      return true;
+  async update(id: string, editToken: string, s: Sealed, version?: number) {
+    return this.mutate((d): PageUpdate => {
+      const r = d[id];
+      if (r?.editTokenHash !== sha256(editToken)) return false;
+      if (version !== undefined && r.version !== undefined && version < r.version) return 'stale';
+      d[id] = { ...r, sealed: s, updatedAt: new Date().toISOString(), version: version ?? r.version };
+      return 'ok';
     });
   }
 

@@ -278,3 +278,15 @@ test('restore path: the moved deposit lands in one of the other phone\'s bankrol
   assert.ok(b.kept.some((x) => x.id === b.moved[0].bankrollId), b.kept.map((x) => x.id).join(', '));
   assert.equal(balanceOf({ bankrollId: b.moved[0].bankrollId }, [], b.moved, b.kept).balance, 500);
 });
+
+test('sessions with no bankroll get the one they count in written down, so both phones agree', async () => {
+  const { pinBankrolls } = await import('../bankroll-math');
+  const bs: Bankroll[] = [br('€', { id: 'b', createdAt: 2 }), br('€', { id: 'a', createdAt: 1 }), br('$', { id: 'u' })];
+  const loose = [ses('x', '€', 0, { bankrollId: undefined }), ses('y', '€', 0, { bankrollId: 'gone' }), ses('z', '$', 0, { bankrollId: 'u' })];
+  const out = pinBankrolls(loose, bs, 50);
+  assert.deepEqual(out.map((s) => s.bankrollId), ['a', 'a', 'u']);
+  assert.equal(out[0].updatedAt, 50);
+  // One that already says where it counts is left as it is; nothing loose, the same array.
+  assert.equal(out[2], loose[2]);
+  assert.equal(pinBankrolls(out, bs), out);
+});

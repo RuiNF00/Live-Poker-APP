@@ -17,6 +17,7 @@ psql -q -d "$DB" -f tests/swap_owner_rc_test.sql
 psql -q -d "$DB" -f tests/swap_group_release_test.sql
 psql -q -d "$DB" -f tests/swap_create_once_test.sql
 psql -q -d "$DB" -f tests/swap_confirm_once_test.sql
+psql -q -d "$DB" -f tests/swap_own_id_test.sql
 bash tests/swap_entry_lock_test.sh
 psql -q -d "$DB" -f tests/profiles_test.sql
 psql -q -d "$DB" -f tests/coach_test.sql
@@ -27,3 +28,5 @@ psql -q -d "$DB" -f tests/create_once_test.sql
 psql -q -d "$DB" -f tests/comment_author_erase_test.sql
 psql -q -d "$DB" -f tests/comment_author_bans_test.sql
 psql -q -d "$DB" -f tests/backer_pages_test.sql
+psql -q -d "$DB" -f tests/shared_hands_drop_buyin_venue_test.sql
+psql -q -d "$DB" -f tests/live_end_test.sql

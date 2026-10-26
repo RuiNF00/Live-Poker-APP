@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SAMPLE_TOURNAMENT_HAND, handTitle, stakesText, straddleOf, type HandRecord } from '../src';
+import { SAMPLE_TOURNAMENT_HAND, gameStakes, handTitle, stakesText, straddleOf, type HandRecord } from '../src';
 
 // A 1/2 cash hand with a UTG straddle of 4 and a second straddle of 8.
 const straddled: HandRecord = {
@@ -25,5 +25,15 @@ describe('stakes with a straddle', () => {
   it('no straddle, no third number', () => {
     expect(straddleOf(SAMPLE_TOURNAMENT_HAND)).toBe(0);
     expect(stakesText({ sb: 1, bb: 2 }, String)).toBe('1/2');
+  });
+});
+
+describe('PLO stakes', () => {
+  it('say PLO wherever the stakes show, like the app; hold\'em unchanged', () => {
+    const plo: HandRecord = { ...straddled, game: 'PLO', actions: { preflop: [] } };
+    expect(gameStakes(plo, '1/2')).toBe('PLO 1/2');
+    expect(gameStakes(straddled, '1/2')).toBe('1/2');
+    expect(handTitle(plo)).toContain('PLO 1/2');
+    expect(handTitle(straddled)).not.toContain('PLO');
   });
 });

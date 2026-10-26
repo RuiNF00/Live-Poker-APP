@@ -5,6 +5,7 @@
 // happened, which is what turns a story view into a visit.
 // "result": the last frame, cards shown and the pot pushed.
 
+import { t } from '@/i18n';
 import { legal, replay, totalPot, type Replay, type Step } from '@/poker/engine';
 import { amount } from '@/poker/format';
 import type { Hand, Street } from '@/poker/types';
@@ -73,7 +74,9 @@ export function storyMoment(hand: Hand, mode: StoryMode, inBB: boolean): StoryMo
       // Show hero's real sizing so the poll is the actual spot; offer a shove next to it.
       if (sized && taken) options.push({ label: verb + ' ' + amount(taken.to, hand, inBB), taken: true });
       else if (!shove && allInTo > lg.minTo) options.push({ label: verb, taken: false });
-      options.push({ label: 'All-in ' + amount(allInTo, hand, inBB), taken: shove });
+      // PLO: when the pot is less than the stack, the biggest bet is the pot, not an all-in.
+      const potCap = allInTo < s.bets[lg.p] + s.stacks[lg.p];
+      if (!(potCap && sized && taken?.to === allInTo)) options.push({ label: (potCap ? t('Pote') : 'All-in') + ' ' + amount(allInTo, hand, inBB), taken: shove });
     }
   }
   // Three pills fit the story; keep the one hero took.

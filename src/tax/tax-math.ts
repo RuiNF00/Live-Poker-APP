@@ -5,7 +5,7 @@
 // can be tested.
 
 import { inRange, type DateRange } from '@/store/bankroll-math';
-import { profit, soldShare } from '@/store/session-math';
+import { ownBounties, profit, soldShare } from '@/store/session-math';
 import { EXPENSE_KINDS, toTripCurrency } from '@/store/trip-math';
 import type { ExpenseKind, Session, Trip } from '@/store/types';
 
@@ -24,6 +24,8 @@ export interface TaxRow {
   docs: number;
   /** Tax was withheld on a session with backers: the amount is the whole document's, not split. */
   backedWithheld: boolean;
+  /** Your bounties (PKO): already in the winnings, shown apart. */
+  bounties: number;
 }
 
 export interface UsLosses {
@@ -68,7 +70,7 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { trip: 
   const rows = new Map<string, TaxRow>();
   for (const s of list) {
     const key = `${s.country ?? ''}|${s.currency}`;
-    const row = rows.get(key) ?? { country: s.country ?? '', currency: s.currency, sessions: 0, wins: 0, losses: 0, net: 0, withheld: 0, toRecover: 0, recovered: 0, docs: 0, backedWithheld: false };
+    const row = rows.get(key) ?? { country: s.country ?? '', currency: s.currency, sessions: 0, wins: 0, losses: 0, net: 0, withheld: 0, toRecover: 0, recovered: 0, docs: 0, backedWithheld: false, bounties: 0 };
     const g = gamblingResult(s);
     row.sessions++;
     if (g > 0) row.wins += g;
@@ -80,10 +82,11 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { trip: 
     if (s.withheld?.status === 'recovered') row.recovered += w;
     if (w && soldShare(s) > 0) row.backedWithheld = true;
     row.docs += s.docs?.length ?? 0;
+    row.bounties += ownBounties(s);
     rows.set(key, row);
   }
   const out = [...rows.values()]
-    .map((x) => ({ ...x, wins: r2(x.wins), losses: r2(x.losses), net: r2(x.net), withheld: r2(x.withheld), toRecover: r2(x.toRecover), recovered: r2(x.recovered) }))
+    .map((x) => ({ ...x, wins: r2(x.wins), losses: r2(x.losses), net: r2(x.net), withheld: r2(x.withheld), toRecover: r2(x.toRecover), recovered: r2(x.recovered), bounties: r2(x.bounties) }))
     // Countries first (most sessions first), sessions without a country last.
     .sort((a, b) => (!a.country ? 1 : 0) - (!b.country ? 1 : 0) || b.sessions - a.sessions || a.country.localeCompare(b.country));
 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { limited } from '@/lib/abuse';
 import { coachStore, OWNER_RE, TOKEN_RE } from '@/lib/coach';
 import { coachCors } from '../cors';
 
@@ -13,6 +14,8 @@ export function OPTIONS() {
  * readable to the player. With `?erase=1` ("delete all my data") the link is deleted with everything in it.
  */
 export async function DELETE(req: Request, { params }: Ctx) {
+  // Long tokens, so only the cost: 60 an hour per address is plenty for «Apagar tudo».
+  if (await limited(req, 'coach-delete', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: coachCors });
   const { token } = await params;
   const owner = req.headers.get('x-owner-token') ?? '';
   const erase = new URL(req.url).searchParams.get('erase') === '1';

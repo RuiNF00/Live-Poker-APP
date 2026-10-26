@@ -38,6 +38,8 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 /** DELETE with header `x-edit-token`: the page is gone for everyone. */
 export async function DELETE(req: Request, { params }: Ctx) {
+  // Long tokens, so only the cost: 60 an hour per address is plenty for «Apagar tudo».
+  if (await limited(req, 'live-delete', 60, 3600)) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: cors });
   const { id } = await params;
   const token = req.headers.get('x-edit-token') ?? '';
   const ok = !!token && validId(id) && (await liveStore().remove(id, token));

@@ -21,6 +21,18 @@ select edit_token_hash from get_backer_page(:'pg_id');
 \set ON_ERROR_STOP on
 select sealed->>'c' = 'y' as page_unchanged_by_bad_update from get_backer_page(:'pg_id');
 
+-- With a version (20261019150000): an older page than the one stored is refused, nothing changes.
+select update_backer_page(:'pg_id', :tok, '{"v":1,"n":"x","c":"v20"}'::jsonb, 20) = 'ok' as page_version_ok;
+select update_backer_page(:'pg_id', :tok, '{"v":1,"n":"x","c":"v10"}'::jsonb, 10) = 'stale' as page_older_version_refused;
+select sealed->>'c' = 'v20' and version = 20 as page_kept_newer from backer_pages where id = :'pg_id';
+-- The same version again (a resend) and a newer one are taken.
+select update_backer_page(:'pg_id', :tok, '{"v":1,"n":"x","c":"v20b"}'::jsonb, 20) = 'ok' as page_same_version_ok;
+select update_backer_page(:'pg_id', :tok, '{"v":1,"n":"x","c":"v30"}'::jsonb, 30) = 'ok' as page_newer_version_ok;
+-- An app without versions still updates, and the stored version stays.
+select update_backer_page(:'pg_id', :tok, '{"v":1,"n":"x","c":"old-app"}'::jsonb) as page_unversioned_ok;
+select sealed->>'c' = 'old-app' and version = 30 as page_unversioned_keeps_version from backer_pages where id = :'pg_id';
+select update_backer_page(:'pg_id', 'wrong', '{"v":1,"n":"x","c":"z"}'::jsonb, 99) is null as page_version_wrong_token;
+
 -- Not updated for 181 days: purged.
 select id as old_id from create_backer_page('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb') \gset
 update backer_pages set updated_at = now() - interval '181 days' where id = :'old_id';

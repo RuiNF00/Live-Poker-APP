@@ -3,7 +3,7 @@
 // counts until everyone is in.
 
 import { router, Stack, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
@@ -16,9 +16,8 @@ import { CURRENCIES } from '@/store/currencies';
 import { Button, Card, Chip, ChipRow, Field, IconButton, Row, Screen, Section, Segmented, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { onReconnect } from '@/lib/online';
 import { shareRef } from '@/lib/referrals';
-import { newCreateKey, SwapError } from '@/lib/swap-api';
+import { newCreateKey, SwapError, swapIdFor } from '@/lib/swap-api';
 import { forgetSwapCreate, queueSwapCreate } from '@/lib/swap-create-queue';
 import { createGroup, groupUrl } from '@/lib/swap-group-api';
 import { money } from '@/poker/format';
@@ -30,6 +29,8 @@ import { useSwaps } from '@/store/swaps-store';
 import { C, S } from '@/theme';
 
 const PCTS = [0.5, 1, 2, 3, 5];
+// When the terms are made (only ever from the create button, never during a render).
+const madeAt = () => Date.now();
 
 function NewGroupSwap() {
   const { settings, activeSession, setSettings } = useStore();
@@ -51,11 +52,9 @@ function NewGroupSwap() {
   const [pickedCurrency, setCurrency] = useState<string | null>(live?.currency ?? null);
   const currency = pickedCurrency ?? (auto && CURRENCIES.includes(auto.currency) ? auto.currency : CURRENCIES.includes(settings.currency) ? settings.currency : '$');
   // Created, choosing where to send the link: the group screen opens when the sheet closes.
-  const [sent, setSent] = useState<{ id: string; link: SwapLink } | null>(null);
+  const [sent, setSent] = useState<{ id: string; queued: boolean; link: SwapLink } | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  // No signal: everything typed stays, and the swap is created by itself when the signal is back.
-  const [waiting, setWaiting] = useState(false);
   // The draft's own key: a retry (by hand or when the signal is back) can't make a second group.
   const key = useRef({ token: newCreateKey(), invite: newCreateKey() });
 
@@ -67,7 +66,6 @@ function NewGroupSwap() {
         setTyped('');
         setNote('');
         setBusy(false);
-        setWaiting(false);
         key.current = { token: newCreateKey(), invite: newCreateKey() };
       },
       [],
@@ -119,35 +117,26 @@ function NewGroupSwap() {
     if (!ok) return;
     setBusy(true);
     tap('medium');
-    const terms: GroupTerms = { v: 1, scope, title: title.trim(), venue: venue.trim(), currency, pct, note: note.trim(), createdAt: Date.now() };
+    const terms: GroupTerms = { v: 1, scope, title: title.trim(), venue: venue.trim(), currency, pct, note: note.trim(), createdAt: madeAt() };
     const names = [me.trim(), ...others];
     const rc = await appUserId();
+    // The link's id comes from the draft's key: the same link with or without signal.
+    const id = await swapIdFor(key.current.token);
     try {
-      const { group, token, invite } = await createGroup(terms, names, rc, key.current);
+      const { group, token, invite } = await createGroup(terms, names, rc, key.current, id);
       saveGroup({ ...groupFromRemote(group, token, 0, invite), ownerRc: rc });
       forgetSwapCreate(key.current.token);
       if (!settings.nickname) setSettings({ nickname: me.trim() });
-      const ref = await shareRef().catch(() => '');
-      const url = groupUrl(group.id, invite, ref);
-      track('link_shared', { channel: 'swap' });
-      const msg = t('Swap de grupo de {pct} no {title}. Escolhe o teu nome para entrar: {url}', { pct: pctLabel(group.terms.pct), title: group.terms.title, url });
-      const open = () => router.replace({ pathname: '/swap/g/[id]', params: { id: group.id } });
-      if (Platform.OS === 'web') {
-        open();
-        await Clipboard.setStringAsync(url);
-        notice(t('Link copiado'), url);
-      } else if (sendsToWhatsapp()) {
-        open();
-        await sendWhatsapp(msg);
-      } else setSent({ id: group.id, link: { url, message: msg } });
+      await send(group.id, invite, group.terms, false);
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
-      setBusy(false);
       if (code === 'offline') {
-        // Kept on the phone: it is created by itself when the signal is back, even after Voltar.
-        queueSwapCreate({ kind: 'group', keys: key.current, terms, names, rc });
+        // No signal: the link goes out now and the group is created by itself when the signal is
+        // back, even after Voltar or a restart. Until then the link says to try again in a little while.
+        const link = await linkFor(id, key.current.invite, terms);
+        queueSwapCreate({ kind: 'group', keys: key.current, terms, names, rc, id }, { url: link.url, message: link.message });
         if (!settings.nickname) setSettings({ nickname: me.trim() });
-        setWaiting(true);
+        await send(id, key.current.invite, terms, true, link);
         return;
       }
       notice(
@@ -158,17 +147,26 @@ function NewGroupSwap() {
     }
   }
 
-  const createRef = useRef(create);
-  useEffect(() => {
-    createRef.current = create;
-  });
-  useEffect(() => {
-    if (!waiting) return;
-    return onReconnect(() => {
-      setWaiting(false);
-      void createRef.current();
-    });
-  }, [waiting]);
+  async function linkFor(id: string, invite: string, terms: GroupTerms): Promise<SwapLink> {
+    const ref = await shareRef().catch(() => '');
+    const url = groupUrl(id, invite, ref);
+    return { url, message: t('Swap de grupo de {pct} no {title}. Escolhe o teu nome para entrar: {url}', { pct: pctLabel(terms.pct), title: terms.title, url }) };
+  }
+
+  // Made: the group screen once the link is sent. Waiting for signal: the swaps list, where it shows as waiting.
+  async function send(id: string, invite: string, terms: GroupTerms, queued: boolean, made?: SwapLink) {
+    const link = made ?? (await linkFor(id, invite, terms));
+    track('link_shared', { channel: 'swap' });
+    const open = () => (queued ? router.replace('/swaps') : router.replace({ pathname: '/swap/g/[id]', params: { id } }));
+    if (Platform.OS === 'web') {
+      open();
+      await Clipboard.setStringAsync(link.url);
+      notice(t('Link copiado'), link.url);
+    } else if (sendsToWhatsapp()) {
+      open();
+      await sendWhatsapp(link.message);
+    } else setSent({ id, queued, link: queued ? { ...link, to: t('Sem rede: o swap é criado quando houver sinal e o link abre a partir daí.') } : link });
+  }
 
   return (
     <>
@@ -260,8 +258,8 @@ function NewGroupSwap() {
 
         <View style={{ gap: S.sm }}>
           <Button lines={2}
-            title={busy ? t('A criar…') : waiting && ok ? t('Sem rede: é criado quando houver sinal') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : sendsToWhatsapp() ? t('Criar e enviar por WhatsApp') : t('Criar e enviar link')}
-            icon={sendsToWhatsapp() && !busy && !waiting && size >= GROUP_MIN ? 'logo-whatsapp' : 'paper-plane-outline'}
+            title={busy ? t('A criar…') : size < GROUP_MIN ? t('Junta pelo menos 2 jogadores') : sendsToWhatsapp() ? t('Criar e enviar por WhatsApp') : t('Criar e enviar link')}
+            icon={sendsToWhatsapp() && !busy && size >= GROUP_MIN ? 'logo-whatsapp' : 'paper-plane-outline'}
             disabled={!ok}
             onPress={create}
           />
@@ -276,7 +274,7 @@ function NewGroupSwap() {
       <SwapSend
         link={sent?.link ?? null}
         onDone={() => {
-          if (sent) router.replace({ pathname: '/swap/g/[id]', params: { id: sent.id } });
+          if (sent) router.replace(sent.queued ? '/swaps' : { pathname: '/swap/g/[id]', params: { id: sent.id } });
           setSent(null);
         }}
       />

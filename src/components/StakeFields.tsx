@@ -196,6 +196,7 @@ function AddStake({ s, maxShare, taken, onAdd, onCancel }: { s: Session; maxShar
               packageId: pkg?.id,
               share: finalShare,
               markup: pkg ? pkg.markup : markup,
+              ...(pkg?.bountiesKept ? { bountiesKept: true as const } : null),
               unpaid: paid ? undefined : true,
             })
           }

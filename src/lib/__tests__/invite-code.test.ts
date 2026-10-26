@@ -16,3 +16,13 @@ test('anything else on the clipboard is not a code', () => {
   assert.equal(inviteCodeFrom('IIIIOOOO'), null);
   assert.equal(inviteCodeFrom(''), null);
 });
+
+test('the code is registered once, and once more when RevenueCat gets a user later', async () => {
+  const { shouldRegister } = await import('../invite-code');
+  assert.equal(shouldRegister(null, false), true);
+  assert.equal(shouldRegister(null, true), true);
+  assert.equal(shouldRegister('true', false), false);
+  assert.equal(shouldRegister('true', true), true);
+  assert.equal(shouldRegister('rc', true), false);
+  assert.equal(shouldRegister('rc', false), false);
+});

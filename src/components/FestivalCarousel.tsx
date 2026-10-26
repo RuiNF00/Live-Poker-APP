@@ -7,7 +7,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Text, View } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Defs, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { locale, t } from '@/i18n';
 import { positions, replay } from '@/poker/engine';
@@ -19,7 +19,7 @@ import { dateRange, dayTicks, Logo } from './FestivalCard';
 import { STAGE_RATIO } from './replayer/layout';
 import { viewAt } from './replayer/model';
 import { ReplayerTable } from './replayer/ReplayerTable';
-import { linkHost, Mark } from './StoryCard';
+import { linkHost, Mark } from './story-brand';
 
 export const SLIDE_W = 360;
 export const SLIDE_H = 450;

@@ -10,7 +10,7 @@ import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePro } from '@/billing/pro';
-import { STORY_H, STORY_W } from '@/components/StoryCard';
+import { STORY_H, STORY_W } from '@/components/story-brand';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { OfflineBadge } from '@/components/NetStatus';
 import { Button, Chip, Empty, IconButton, Row, T, tap } from '@/components/ui';

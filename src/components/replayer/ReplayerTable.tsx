@@ -4,7 +4,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PanResponder, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Defs, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { t } from '@/i18n';
 import { pct } from '@/poker/format';
@@ -339,9 +339,13 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
   const pos = { bg: posColor(s.pos), fg: '#0C1311' };
   // The badge is narrow: "Full house" or "Par de Ases"; the line under the table says the rest.
   const winNote = s.run ? RUN_MARK[s.run] : s.handName?.split(/[,:]/)[0];
-  const badge = s.won ? { bg: C.good, fg: '#06200F', label: s.won + (winNote ? ` · ${winNote}` : '') } : s.badge && !s.folded ? { ...BADGE[s.badge.kind], label: s.badge.label } : null;
   // Room beside the plate before the stage edge, on the tighter side.
   const spare = Math.max(5, Math.min(x - pw / 2, w - x - pw / 2) - EDGE * k);
+  // A bet size that wouldn't fit the badge goes (mono: about 0.6 em a character).
+  const room = s.hero ? Math.max(pw, w - (x + pw / 2 + 4) - EDGE * k) : pw + 2 * spare;
+  const fits = (label: string) => label.length * 0.6 * 8.5 * k + 8 * k <= room;
+  const label = s.badge ? (s.badge.short && !fits(s.badge.label) ? s.badge.short : s.badge.label) : '';
+  const badge = s.won ? { bg: C.good, fg: '#06200F', label: s.won + (winNote ? ` · ${winNote}` : '') } : s.badge && !s.folded ? { ...BADGE[s.badge.kind], label } : null;
   const border = s.won ? C.good : s.acting ? C.accent : s.hero ? 'rgba(245,237,216,0.55)' : 'rgba(245,237,216,0.14)';
 
   return (
@@ -354,7 +358,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
           </Text>
         ) : s.cards !== undefined ? (
           <View style={{ flexDirection: 'row', position: 'absolute', top: 0 }}>
-            {(s.cards ?? [null, null]).map((c, ci) => (
+            {(s.cards ?? Array<null>(s.holes ?? 2).fill(null)).map((c, ci) => (
               // Keyed by the card, so a hand turned face up at showdown remounts and flips; hero's are known from the start.
               <FlipIn key={c ?? `back${ci}`} reduce={reduce || s.hero || !c} delay={ci * 70}>
                 <RpCard
@@ -363,7 +367,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
                   corner
                   w={cw}
                   h={ch}
-                  style={{ marginLeft: ci ? -cw * (s.cards && s.cards.length > 2 ? 0.55 : 0.18) : 0, transform: [{ rotate: ci % 2 ? '4deg' : '-4deg' }] }}
+                  style={{ marginLeft: ci ? -cw * ((s.holes ?? 2) > 2 ? (c ? 0.4 : 0.55) : 0.18) : 0, transform: [{ rotate: ci % 2 ? '4deg' : '-4deg' }] }}
                 />
               </FlipIn>
             ))}

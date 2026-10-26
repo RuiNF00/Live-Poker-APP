@@ -18,7 +18,8 @@ import { C, R, S, ff, posColor } from '@/theme';
 import { CardPicker } from '../CardPicker';
 import { PlayingCard } from '../PlayingCard';
 import { STREET_LABEL, spokenCard, timeline } from '../replayer/model';
-import { Button, Field, Row, SheetHeader, T, tap, useSheetPad } from '../ui';
+import { Button, confirmAction, Field, Row, SheetHeader, T, tap, useSheetPad } from '../ui';
+import { DictationHelp } from './DictationHelp';
 
 /** Where a card sits: hero's two, the board's five, or an opponent's two. */
 type Slot = { k: 'hero'; i: number } | { k: 'board'; i: number } | { k: 'seat'; seat: number; i: number };
@@ -77,6 +78,10 @@ function noteText(n: VoiceNote, hand: Hand): string {
       return t('Uma ação não encaixou na mão e ficou de fora.');
     case 'stackGrew':
       return t('O stack do {pos} subiu para caber o valor que disseste.', { pos: n.pos ?? '' });
+    case 'potLimit':
+      return t('Em PLO o máximo é o pote: o valor do {pos} ficou do tamanho do pote.', { pos: n.pos ?? '' });
+    case 'ploOnly':
+      return t('Por agora só guardamos PLO de 4 cartas, sem Hi-Lo: a mão ficou em PLO.');
   }
 }
 
@@ -86,11 +91,14 @@ export function VoiceHandSheet({
   onClose,
   onDone,
   Counted = View,
+  note,
 }: {
   visible: boolean;
   base: Hand;
   onClose: () => void;
   onDone: (hand: Hand, posKnown: boolean) => void;
+  /** The hand's voice note, when it was saved at the table with one: heard here while telling it (a player passed in, so audio stays in its own chunk). */
+  note?: React.ReactNode;
   /** The entry screen's TapCounted, passed in: importing it here would make it a shared module, and shared modules go in the launch bundle. */
   Counted?: React.ComponentType<ViewProps>;
 }) {
@@ -99,6 +107,9 @@ export function VoiceHandSheet({
   const [text, setText] = useState('');
   const [fixes, setFixes] = useState<Record<string, CardCode>>({});
   const [picking, setPicking] = useState<Slot | null>(null);
+  const [help, setHelp] = useState(false);
+  // Back from the help, what matters is the result: no keyboard over it (Design P3).
+  const [fromHelp, setFromHelp] = useState(false);
   const heard = useDeferredValue(text);
   const result = useMemo(() => handFromSpeech(heard, base), [heard, base]);
   const hand = useMemo(() => withFixes(result.hand, fixes), [result.hand, fixes]);
@@ -116,6 +127,8 @@ export function VoiceHandSheet({
   };
   const close = () => {
     setPicking(null);
+    setHelp(false);
+    setFromHelp(false);
     onClose();
   };
   const done = () => {
@@ -209,93 +222,128 @@ export function VoiceHandSheet({
                   {t('Toca no microfone do teclado e conta a mão como a contarias a um amigo. Também podes escrever.')}
                 </T>
               </Row>
-              <Field
-                value={text}
-                onChangeText={change}
-                multiline
-                autoFocus
-                autoCorrect={false}
-                accessibilityLabel={t('A mão, por palavras tuas')}
-                placeholder={t('Estou no botão com ás rei de copas. O UTG abre para 2500, eu pago. Flop rei sete dois, ele faz bet de 3000, eu pago…')}
-                inputStyle={{ minHeight: 120 }}
-              />
-
-              {!result.empty && (
-                <View style={{ gap: S.md }} accessibilityLiveRegion="polite">
-                  <T v="label">{t('O que percebemos')}</T>
-                  <Row gap={10} style={{ flexWrap: 'wrap' }}>
-                    <View style={{ minWidth: 44, minHeight: 28, paddingHorizontal: 8, borderRadius: R.sm, justifyContent: 'center', alignItems: 'center', backgroundColor: result.posKnown ? posColor(pos[hand.hero]) : C.surface2 }}>
-                      <T v="small" color={result.posKnown ? C.bgDeep : C.muted} style={{ fontWeight: '800', fontFamily: ff(800) }}>
-                        {pos[hand.hero]}
-                      </T>
-                    </View>
-                    {heroCards.length ? (
-                      <Row gap={4}>{heroCards.map((_, i) => card({ k: 'hero', i }))}</Row>
-                    ) : (
-                      <T v="small" color={C.muted}>
-                        {t('Cartas por escolher')}
-                      </T>
-                    )}
-                  </Row>
-                  {picker((x) => x.k === 'hero')}
-                  {streets.map(({ street, chips }) =>
-                    chips.length || boardFor(street).length ? (
-                      <View key={street} style={{ gap: 6 }}>
-                        <Row gap={8}>
-                          <T v="tiny" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800), letterSpacing: 1 }}>
-                            {STREET_LABEL[street].toUpperCase()}
-                          </T>
-                          <Row gap={4}>{boardFor(street).map((i) => card({ k: 'board', i }))}</Row>
-                        </Row>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                          {chips.filter(said).map((c, i) => (
-                            <View key={i} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.pill, backgroundColor: c.hero ? C.accentSoft : C.surface2, borderWidth: 1, borderColor: c.hero ? C.accentLine : C.border }}>
-                              <T v="tiny" color={c.hero ? C.accent : C.text}>
-                                {c.label} <T v="tiny" color={C.textDim}>{c.detail}</T>
-                              </T>
-                            </View>
-                          ))}
-                        </View>
-                        {picker((x) => x.k === 'board' && boardFor(street).includes(x.i))}
-                      </View>
-                    ) : null,
-                  )}
-                  {shown.map(({ p, seat }) => (
-                    <View key={seat} style={{ gap: 6 }}>
-                      <Row gap={8}>
-                        <T v="small" style={{ fontWeight: '700', fontFamily: ff(700) }}>
-                          {t('{pos} mostra', { pos: pos[seat] })}
-                        </T>
-                        <Row gap={4}>{p.cards!.map((_, i) => card({ k: 'seat', seat, i }))}</Row>
-                      </Row>
-                      {picker((x) => x.k === 'seat' && x.seat === seat)}
-                    </View>
-                  ))}
-                  {notes.length > 0 && (
+              {help ? (
+                <DictationHelp
+                  onBack={() => {
+                    setHelp(false);
+                    setFromHelp(true);
+                  }}
+                  onTry={(x) => {
+                    const use = () => {
+                      change(x);
+                      setHelp(false);
+                      setFromHelp(true);
+                    };
+                    // What the player already said is never lost without asking (Design P2).
+                    if (text.trim() && text !== x) confirmAction(t('Trocar o que escreveste pelo exemplo?'), '', t('Trocar'), use);
+                    else use();
+                  }}
+                />
+              ) : (
+                <>
+                  <Pressable onPress={() => setHelp(true)} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
+                    <Ionicons name="help-circle-outline" size={16} color={C.accent} />
+                    <T v="small" color={C.accent}>
+                      {t('Como ditar uma mão')}
+                    </T>
+                  </Pressable>
+                  {note ? (
                     <View style={{ gap: 6 }}>
-                      {[...new Map(notes.map((n) => [noteText(n, hand), n])).keys()].map((line) => (
-                        <Row key={line} gap={8} style={{ alignItems: 'flex-start' }}>
-                          <Ionicons name="alert-circle" size={14} color={C.warn} style={{ marginTop: 2 }} />
-                          <T v="tiny" color={C.textDim} style={{ flex: 1 }}>
-                            {line}
-                          </T>
-                        </Row>
-                      ))}
+                      <T v="small" color={C.textDim}>
+                        {t('Gravaste uma nota nesta mão. Ouve-a e conta a mão.')}
+                      </T>
+                      {note}
                     </View>
-                  )}
-                </View>
-              )}
+                  ) : null}
+                <Field
+                  value={text}
+                  onChangeText={change}
+                  multiline
+                  autoFocus={!fromHelp}
+                  autoCorrect={false}
+                  accessibilityLabel={t('A mão, por palavras tuas')}
+                  placeholder={t('Estou no botão com ás rei de copas. O UTG abre para 2500, eu pago. Flop rei sete dois, ele faz bet de 3000, eu pago…')}
+                  inputStyle={{ minHeight: 120 }}
+                />
 
-              {result.empty && heard.trim().length > 12 && (
-                <T v="small" color={C.textDim} accessibilityLiveRegion="polite">
-                  {t('Ainda não percebemos a mão. Diz a tua posição, as tuas cartas ou quem abriu.')}
-                </T>
-              )}
-              <Button title={t('Pôr na mesa')} icon="checkmark" disabled={result.empty} onPress={done} />
-              {!result.empty && (
-                <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>
-                  {t('Depois corriges o que faltar com toques, como numa mão normal.')}
-                </T>
+                {!result.empty && (
+                  <View style={{ gap: S.md }} accessibilityLiveRegion="polite">
+                    <T v="label">{t('O que percebemos')}</T>
+                    <Row gap={10} style={{ flexWrap: 'wrap' }}>
+                      <View style={{ minWidth: 44, minHeight: 28, paddingHorizontal: 8, borderRadius: R.sm, justifyContent: 'center', alignItems: 'center', backgroundColor: result.posKnown ? posColor(pos[hand.hero]) : C.surface2 }}>
+                        <T v="small" color={result.posKnown ? C.bgDeep : C.muted} style={{ fontWeight: '800', fontFamily: ff(800) }}>
+                          {pos[hand.hero]}
+                        </T>
+                      </View>
+                      {heroCards.length ? (
+                        <Row gap={4}>{heroCards.map((_, i) => card({ k: 'hero', i }))}</Row>
+                      ) : (
+                        <T v="small" color={C.muted}>
+                          {t('Cartas por escolher')}
+                        </T>
+                      )}
+                    </Row>
+                    {picker((x) => x.k === 'hero')}
+                    {streets.map(({ street, chips }) =>
+                      chips.length || boardFor(street).length ? (
+                        <View key={street} style={{ gap: 6 }}>
+                          <Row gap={8}>
+                            <T v="tiny" color={C.accent} style={{ fontWeight: '800', fontFamily: ff(800), letterSpacing: 1 }}>
+                              {STREET_LABEL[street].toUpperCase()}
+                            </T>
+                            <Row gap={4}>{boardFor(street).map((i) => card({ k: 'board', i }))}</Row>
+                          </Row>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                            {chips.filter(said).map((c, i) => (
+                              <View key={i} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.pill, backgroundColor: c.hero ? C.accentSoft : C.surface2, borderWidth: 1, borderColor: c.hero ? C.accentLine : C.border }}>
+                                <T v="tiny" color={c.hero ? C.accent : C.text}>
+                                  {c.label} <T v="tiny" color={C.textDim}>{c.detail}</T>
+                                </T>
+                              </View>
+                            ))}
+                          </View>
+                          {picker((x) => x.k === 'board' && boardFor(street).includes(x.i))}
+                        </View>
+                      ) : null,
+                    )}
+                    {shown.map(({ p, seat }) => (
+                      <View key={seat} style={{ gap: 6 }}>
+                        <Row gap={8}>
+                          <T v="small" style={{ fontWeight: '700', fontFamily: ff(700) }}>
+                            {t('{pos} mostra', { pos: pos[seat] })}
+                          </T>
+                          <Row gap={4}>{p.cards!.map((_, i) => card({ k: 'seat', seat, i }))}</Row>
+                        </Row>
+                        {picker((x) => x.k === 'seat' && x.seat === seat)}
+                      </View>
+                    ))}
+                    {notes.length > 0 && (
+                      <View style={{ gap: 6 }}>
+                        {[...new Map(notes.map((n) => [noteText(n, hand), n])).keys()].map((line) => (
+                          <Row key={line} gap={8} style={{ alignItems: 'flex-start' }}>
+                            <Ionicons name="alert-circle" size={14} color={C.warn} style={{ marginTop: 2 }} />
+                            <T v="tiny" color={C.textDim} style={{ flex: 1 }}>
+                              {line}
+                            </T>
+                          </Row>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {result.empty && heard.trim().length > 12 && (
+                  <T v="small" color={C.textDim} accessibilityLiveRegion="polite">
+                    {t('Ainda não percebemos a mão. Diz a tua posição, as tuas cartas ou quem abriu.')}
+                  </T>
+                )}
+                <Button title={t('Pôr na mesa')} icon="checkmark" disabled={result.empty} onPress={done} />
+                {!result.empty && (
+                  <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>
+                    {t('Depois corriges o que faltar com toques, como numa mão normal.')}
+                  </T>
+                )}
+                </>
               )}
             </ScrollView>
           </View>

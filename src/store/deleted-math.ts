@@ -8,13 +8,21 @@
 import { sepId } from './bankroll-math';
 
 export const DELETED_LISTS = ['hands', 'sessions', 'players', 'bankrolls', 'transfers', 'backers', 'packages', 'payments', 'trips', 'backing', 'ownFestivals', 'weekly'] as const;
-export type DeletedList = (typeof DELETED_LISTS)[number];
+/**
+ * Swaps, group swaps, and entries I deleted before they were sent ('swapEntries', see entryId).
+ * Unlike the lists above, a restore doesn't bring these back: the swap is gone from the server,
+ * and a deleted entry sent again would change the other player's accounts.
+ */
+export const SWAP_DELETED_LISTS = ['swaps', 'swapGroups', 'swapEntries'] as const;
+export type DeletedList = (typeof DELETED_LISTS)[number] | (typeof SWAP_DELETED_LISTS)[number];
 /** 'sessions:<id>' → when it was deleted. */
 export type Deleted = Record<string, number>;
 
-/** The newest ones kept: about 150 KB of a 2 MB backup at most. */
+/** The newest ones kept: about 150 KB of a 2 MB backup at most (plus the swaps', below). */
 const MAX = 5000;
-const KEY_RE = new RegExp(`^(${DELETED_LISTS.join('|')}):[^\\n]{1,100}$`);
+/** The swaps' marks are capped apart, so deleting many hands never pushes one out. */
+const MAX_SWAP = 2000;
+const KEY_RE = new RegExp(`^(${[...DELETED_LISTS, ...SWAP_DELETED_LISTS].join('|')}):[^\\n]{1,100}$`);
 
 export const keyOf = (list: DeletedList, id: string) => `${list}:${id}`;
 
@@ -35,10 +43,16 @@ function keysOf(list: DeletedList, x: { id: string; currency?: unknown }): strin
   return keys;
 }
 
+const isSwapMark = (k: string) => SWAP_DELETED_LISTS.some((l) => k.startsWith(l + ':'));
+
 function capped(d: Deleted): Deleted {
   const keys = Object.keys(d);
   if (keys.length <= MAX) return d;
-  return Object.fromEntries(keys.sort((a, b) => d[b] - d[a]).slice(0, MAX).map((k) => [k, d[k]]));
+  const newest = (ks: string[], n: number) => ks.sort((a, b) => d[b] - d[a]).slice(0, n);
+  const swaps = keys.filter(isSwapMark);
+  const rest = keys.filter((k) => !isSwapMark(k));
+  if (rest.length <= MAX && swaps.length <= MAX_SWAP) return d;
+  return Object.fromEntries([...newest(rest, MAX), ...newest(swaps, MAX_SWAP)].map((k) => [k, d[k]]));
 }
 
 /**
@@ -87,3 +101,47 @@ export function revive<B extends Partial<Record<DeletedList, { id: string; updat
   }
   return { backup: out, revived };
 }
+
+/** The 'swapEntries' id of one entry: the swap, whose it is (side or seat) and its cid. */
+export const entryId = (swapId: string, who: string | number, cid: string) => `${swapId}:${who}${cid}`;
+
+/**
+ * Swaps (or group swaps) without the ones I deleted, and without pending entries I deleted.
+ * A swap's delete always wins: it's gone from the server for everyone, so there's nothing for a
+ * later edit to go back to. Entries the server already has are never touched here: those only go
+ * through the server, for both players. The same array when nothing goes.
+ */
+export function liveSwaps<T extends { id: string; entries: { cid: string; pending?: boolean }[] }>(items: T[], list: 'swaps' | 'swapGroups', d: Deleted, who: (e: T['entries'][number]) => string | number): T[] {
+  let changed = false;
+  const out: T[] = [];
+  for (const x of items) {
+    if (d[keyOf(list, x.id)] !== undefined) {
+      changed = true;
+      continue;
+    }
+    const entries = x.entries.filter((e) => !e.pending || d[keyOf('swapEntries', entryId(x.id, who(e), e.cid))] === undefined);
+    if (entries.length !== x.entries.length) changed = true;
+    out.push(entries.length === x.entries.length ? x : { ...x, entries });
+  }
+  return changed ? out : items;
+}
+
+/**
+ * One I deleted while it was still being sent: if the send had landed (its answer lost), the server
+ * hands it back. Out of the list and into `removing`, so the next sync deletes it there too, for both
+ * players, instead of it coming back. The same object when nothing changes.
+ */
+export function reclaimDeleted<T extends { id: string; entries: { id: string; cid: string; pending?: boolean }[]; removing?: string[] }>(
+  x: T,
+  d: Deleted,
+  mine: (e: T['entries'][number]) => boolean,
+  who: (e: T['entries'][number]) => string | number,
+): T {
+  const back = x.entries.filter((e) => !e.pending && mine(e) && d[keyOf('swapEntries', entryId(x.id, who(e), e.cid))] !== undefined);
+  if (!back.length) return x;
+  const ids = new Set(back.map((e) => e.id));
+  return { ...x, entries: x.entries.filter((e) => !ids.has(e.id)), removing: [...(x.removing ?? []).filter((r) => !ids.has(r)), ...ids] };
+}
+
+/** What «Apagar tudo» keeps: only the swaps' marks (see deleted.ts). */
+export const swapMarks = (d: Deleted): Deleted => Object.fromEntries(Object.entries(d).filter(([k]) => isSwapMark(k)));

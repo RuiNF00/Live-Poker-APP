@@ -68,6 +68,18 @@ test('csv says the day a multi-day tournament reached and the bagged stack', () 
   assert.equal(cells[cols.indexOf('bagged_stack')], '154000');
 });
 
+test('csv: bounties in the last column, inside cash_out, never above it', () => {
+  const ko = sess({ kind: 'mtt', name: 'PKO', cashOut: 1650, bounties: 450 });
+  const legacy = sess({ id: 's2', kind: 'mtt', name: 'KO', cashOut: 300, tourney: { bounties: 900 } });
+  const [head, a, b, c] = sessionsCsv([ko, legacy, sess({ id: 's3' })]).trim().split('\n');
+  const cols = head.split(',');
+  assert.equal(cols[cols.length - 1], 'bounties', 'last, so older spreadsheets keep their columns');
+  assert.equal(a.split(',')[cols.indexOf('cash_out')], '1650');
+  assert.equal(a.split(',').at(-1), '450');
+  assert.equal(b.split(',').at(-1), '300', 'tournament mode count, capped at the prize');
+  assert.equal(c.split(',').at(-1), '', 'empty without bounties');
+});
+
 test('importSummary also counts staking packages, payments and players you back', () => {
   const s = importSummary({ hands: 0, sessions: 0, players: 0, packages: 2, payments: 1, backing: 1 });
   assert.ok(s.includes('2 pacotes de staking · 1 pagamento a backers · 1 jogador que apoias'), s);

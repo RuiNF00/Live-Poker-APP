@@ -88,6 +88,38 @@ export function stripPrivate(hand: unknown): unknown {
 export const MAX_CREATE_BYTES = 3_500_000;
 export const MAX_COMMENT_BYTES = 16_000;
 
+/**
+ * The body as JSON, read up to `max` bytes whatever content-length says (a request can leave it out):
+ * 'too_big' past that, null when it isn't JSON.
+ */
+export async function cappedJson(req: Request, max: number): Promise<unknown> {
+  const reader = req.body?.getReader();
+  if (!reader) return null;
+  const parts: Uint8Array[] = [];
+  let n = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    n += value.byteLength;
+    if (n > max) {
+      await reader.cancel().catch(() => {});
+      return 'too_big';
+    }
+    parts.push(value);
+  }
+  const all = new Uint8Array(n);
+  let at = 0;
+  for (const p of parts) {
+    all.set(p, at);
+    at += p.byteLength;
+  }
+  try {
+    return JSON.parse(new TextDecoder().decode(all));
+  } catch {
+    return null;
+  }
+}
+
 /** True when the declared body is too big to read. */
 export function tooBig(req: Request, max: number): boolean {
   const n = Number(req.headers.get('content-length') ?? 0);

@@ -41,12 +41,17 @@ async function drainSoon(force = false) {
   if (due !== null) timer = setTimeout(() => drainSoon(), Math.max(1000, due - Date.now()));
 }
 
-/** Keep `payload` for sending; same kind+key replaces an older one. */
-export function queue(kind: string, payload: unknown, key?: string) {
-  outbox
-    .enqueue(kind, payload, key)
-    .then(() => drainSoon())
-    .catch(() => {});
+/**
+ * Keep `payload` for sending; same kind+key replaces an older one. Resolves once the job is
+ * written (or failed to be), before it goes out, so `queued` answers for it from then on.
+ */
+export function queue(kind: string, payload: unknown, key?: string): Promise<void> {
+  const kept = outbox.enqueue(kind, payload, key);
+  kept.then(() => drainSoon()).catch(() => {});
+  return kept.then(
+    () => {},
+    () => {},
+  );
 }
 
 /**

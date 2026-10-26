@@ -227,3 +227,23 @@ test('a job that could not be saved is not sent from memory either', async () =>
   assert.deepEqual(sent, []);
   assert.equal(await box.size(), 0);
 });
+
+test('a failed write undoes only its own job: one saved meanwhile stays, a replaced one comes back', async () => {
+  const kv = mem();
+  let fail: ((e: Error) => void) | null = null;
+  const slow = {
+    getItem: kv.getItem,
+    setItem: (k: string, v: string) =>
+      fail === null && v.includes('"bad"') ? new Promise<void>((_, rej) => (fail = rej)) : kv.setItem(k, v),
+  };
+  const sent: unknown[] = [];
+  const box = createOutbox(slow, { x: async (p) => (sent.push(p), 'done' as Outcome) });
+  await box.enqueue('x', 'old', 'k');
+  const bad = box.enqueue('x', 'bad', 'k');
+  await new Promise((r) => setTimeout(r, 0));
+  await box.enqueue('x', 'other', 'o');
+  fail!(new Error('disk'));
+  await assert.rejects(bad, /disk/);
+  await box.drain(true);
+  assert.deepEqual([...sent].sort(), ['old', 'other']);
+});

@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePro } from '@/billing/pro';
 import { FESTIVAL_LOOKS, FestivalCard } from '@/components/FestivalCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
-import { STORY_H, STORY_W } from '@/components/StoryCard';
+import { STORY_H, STORY_W } from '@/components/story-brand';
 import { Button, Empty, ListGroup, ListItem, Row, T, tap, ToggleItem } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { useUgcTerms } from '@/components/UgcTerms';

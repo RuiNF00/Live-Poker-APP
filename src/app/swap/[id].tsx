@@ -17,6 +17,7 @@ import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
 import { claimInvite, shareRef } from '@/lib/referrals';
 import { confirmSwap, fetchSwap, newCreateKey, SwapError, swapUrl } from '@/lib/swap-api';
+import { queueSwapCreate, usePendingSwapCreates } from '@/lib/swap-create-queue';
 import { HALF_CENT } from '@/store/swap-groups';
 import { useStore } from '@/store/store';
 import { fromRemote, other, settled, swapLedger, swapNames, waitingOn, type RemoteSwap, type Swap, type SwapEntry } from '@/store/swaps';
@@ -82,6 +83,8 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
   const [busy, setBusy] = useState(false);
   // This screen's own token: a confirm whose answer was lost gets in on the retry.
   const key = useRef(newCreateKey());
+  // Confirmed without signal: it goes out by itself when the signal is back (swap-create-queue.ts).
+  const queued = usePendingSwapCreates().some((p) => p.of === remote.id);
   const tm = remote.terms;
   const names = { a: tm.a.name, b: remote.confirmedName || tm.b.name };
 
@@ -95,6 +98,12 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
       tap('success');
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
+      if (code === 'offline') {
+        queueSwapCreate({ kind: 'confirm', id: remote.id, key: key.current, name: name.trim(), title: tm.title, with: tm.a.name });
+        if (!settings.nickname) setSettings({ nickname: name.trim() });
+        setBusy(false);
+        return;
+      }
       notice(
         t('Não foi possível confirmar'),
         code === 'already_confirmed' ? t('Este swap já foi confirmado.') : code === 'offensive' ? t('Esse nome não é permitido.') : t('Precisa de rede. Tenta de novo quando tiveres sinal.'),
@@ -113,6 +122,8 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
         <Card tone="inset">
           <T v="small">{t('Este swap já foi confirmado. Só os dois jogadores podem registar prémios; quem o confirmou no browser pode usar o botão "Abrir na app" da página.')}</T>
         </Card>
+      ) : queued ? (
+        <Banner tone="info" icon="cloud-offline-outline" title={t('Sem rede')} body={t('A tua confirmação fica guardada e é enviada quando houver sinal.')} />
       ) : (
         <>
           <Section title={t('O teu nome')}>
@@ -194,13 +205,14 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
     const { sessionId, ...entry } = e;
     const res = await addEntry(s.id, entry, sessionId);
     tap('success');
-    if (res === 'queued') setOffline(true);
+    if (res === 'full') notice(t('Swap cheio'), t('Este swap já tem o máximo de registos. Cria um swap novo para os próximos torneios.'));
+    else if (res === 'queued') setOffline(true);
   }
 
   function onEntry(e: SwapEntry) {
     if (e.side !== s.side) return;
     confirmAction(t('Apagar registo?'), t('{name} deixa de o ver. Usa isto só para corrigir um erro.', { name: them }), t('Apagar'), async () => {
-      if (!(await removeEntry(s.id, e))) notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+      if (!(await removeEntry(s.id, e))) notice(t('Não deu para apagar'), t('Tenta outra vez.'));
     });
   }
 
@@ -262,7 +274,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
               <ToggleItem
                 icon="flash-outline"
                 title={t('Enviar o meu resultado sozinho')}
-                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar.')}
+                subtitle={t('Ao acabar um torneio deste swap, o prémio e o evento entram sem perguntar. O swap conta o prémio todo, bounties incluídos.')}
                 value={!!s.autoShare}
                 onChange={(v) => saveSwap({ ...s, autoShare: v, updatedAt: Date.now() })}
               />
@@ -332,7 +344,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
                 t('Apagar'),
                 async () => {
                   if (await deleteSwapEverywhere(s.id)) router.back();
-                  else notice(t('Sem rede'), t('Tenta de novo quando tiveres sinal.'));
+                  else notice(t('Não deu para apagar'), t('Tenta outra vez.'));
                 },
               )
             }

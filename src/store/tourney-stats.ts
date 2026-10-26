@@ -9,7 +9,8 @@
 
 import { inRange } from './bankroll-math';
 import { isBagged } from './multi-day';
-import { cost, gross, mainCurrency, ownBuyIns, profit, soldShare } from './session-math';
+import { bountiesOf, cost, gross, mainCurrency, ownBounties, ownBuyIns, profit, soldShare } from './session-math';
+import { gameOfName } from '@/poker/variant';
 import type { Session, Trip } from './types';
 
 export type StatsView = 'mine' | 'action';
@@ -30,11 +31,10 @@ export const BANDS: { key: string; from: number; to: number }[] = [
 
 export type Game = 'NLH' | 'PLO' | 'Mix';
 
-/** The game from the tournament's name: festivals name them "PLO", "8-Game", "H.O.R.S.E."… No game named means hold'em. */
+/** The game from the tournament's name: festivals name them "PLO", "8-Game", "H.O.R.S.E."… PLO8 groups with PLO here, short deck with hold'em. */
 export function gameOf(name: string): Game {
-  if (/\b(mix(ed)?|h\.?o\.?r\.?s\.?e\.?|[0-9]+[- ]?game|dealer'?s? choice|stud|razz|2-7|triple draw|badugi|o\.?e\.?)\b/i.test(name)) return 'Mix';
-  if (/\b(plo\d?|omaha|pot[- ]limit omaha|big o)\b/i.test(name)) return 'PLO';
-  return 'NLH';
+  const g = gameOfName(name);
+  return g === 'PLO8' ? 'PLO' : g === 'Short Deck' ? 'NLH' : g;
 }
 
 export function bandOf(buyIn: number): string {
@@ -54,7 +54,6 @@ function money(s: Session, view: StatsView) {
 }
 
 /** Bounties are part of the prize; a cash is a prize beyond them. */
-const bountiesOf = (s: Session) => Math.min(Math.max(0, s.tourney?.bounties ?? 0), s.cashOut || 0);
 const cashed = (s: Session) => (s.cashOut || 0) - bountiesOf(s) > 0;
 
 export interface Summary {
@@ -100,8 +99,8 @@ export function summarize(list: Session[], view: StatsView): Summary {
     if (e > 1) reentered++;
     if (cashed(s)) itm++;
     prizes += s.cashOut || 0;
-    // In "mine", bounties are yours only for the share you kept.
-    bounties += bountiesOf(s) * (view === 'mine' ? Math.max(0, 1 - soldShare(s)) : 1);
+    // In "mine", bounties are yours only for the share you kept (and all of them when they stay with you).
+    bounties += view === 'mine' ? ownBounties(s) : bountiesOf(s);
     if (s.finish && s.finish > 0) {
       fin.push(s.finish);
       if (s.field && s.field >= s.finish) pct.push((s.finish / s.field) * 100);
