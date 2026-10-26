@@ -1898,6 +1898,7 @@ const ptBR: Record<string, string> = {
   'Apagar 1 prémio importado?': 'Excluir 1 prêmio importado?',
   'Apagar {n} prémios importados?': 'Excluir {n} prêmios importados?',
   'Só saem os que vieram de listas de resultados. As tuas outras sessões ficam como estão.': 'Só saem os que vieram de listas de resultados. Suas outras sessões ficam como estão.',
+  'Com depósitos, levantamentos, despesas de viagem e os prémios importados de listas de resultados (marcados), para Excel ou Google Sheets': 'Com depósitos, saques, despesas de viagem e os prêmios importados de listas de resultados (marcados), para Excel ou Google Sheets',
 };
 
 export default ptBR;

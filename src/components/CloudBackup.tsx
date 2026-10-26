@@ -319,7 +319,8 @@ export function AutoCloudBackup() {
   latest.current = store;
   // Also when the signal comes back: a backup due while offline goes out then.
   const online = useOnline();
-  const empty = ready && store.hands.length === 0 && store.sessions.length === 0;
+  // Every session: a phone with only cashes from results lists (left out of the totals) is not empty.
+  const empty = ready && store.hands.length === 0 && store.allSessions.length === 0;
   // The offer is a native alert: it waits for the app lock to open (it would sit on top of it).
   const lockUp = useLockScreenUp();
   // Nor over the welcome flow: the offer goes first, the welcome waits for it (restore-offer).
@@ -418,7 +419,8 @@ export function AutoCloudBackup() {
     // On launch and on reconnect only (the store is read through the ref).
   }, [ready, online, sayJoined]);
   // And after a hand is saved or a session closed: once things settle, at most every 10 minutes.
-  const closed = useMemo(() => store.sessions.reduce((n, s) => n + (s.endedAt ? 1 : 0), 0), [store.sessions]);
+  // Every session: a list of results imported while they don't count is a change worth a copy too.
+  const closed = useMemo(() => store.allSessions.reduce((n, s) => n + (s.endedAt ? 1 : 0), 0), [store.allSessions]);
   const changes = useRef(0);
   useEffect(() => {
     // The first run is the store loading, not a change (the launch copy above covers it).

@@ -146,10 +146,10 @@ export default function ImportScreen() {
       if (/^\s*\{/.test(text)) {
         // A Sweatbook backup: hands, sessions and players in one go.
         const backup = parseBackup(text);
-        const had = new Set(store.sessions.map((s) => s.id));
+        const had = new Set(store.allSessions.map((s) => s.id));
         const n = store.importData(backup);
         const fresh = backup.sessions.filter((s) => !had.has(s.id));
-        const recap = importRecap(fresh, [...store.sessions, ...fresh]);
+        const recap = importRecap(fresh, [...store.allSessions, ...fresh], store.settings.countCashLists === true);
         track('import_done', { source: 'sweatbook', sessions: n.sessions, hours: Math.round(recap.hours) });
         setStep({ at: 'done', added: n.sessions + n.hands + n.players, total: n.sessions, summary: importSummary(n), recap, source: 'sweatbook' });
         return;
@@ -282,11 +282,11 @@ export default function ImportScreen() {
           onImport={(r, placement, skipped) => {
             const p = place(r, placement, { source: step.file.source, appName: SOURCE_NAME[step.file.source], bankrolls: store.bankrolls, names: r.bankrollNames });
             const before = new Set(store.transfers.map((x) => x.id));
-            const had = new Set(store.sessions.map((s) => s.id));
+            const had = new Set(store.allSessions.map((s) => s.id));
             const n = store.importData({ app: 'sweatbook', v: 1, exportedAt: Date.now(), hands: [], sessions: p.sessions, players: [], bankrolls: p.bankrolls, transfers: p.transfers });
             const moves = p.transfers.filter((x) => !before.has(x.id)).length;
             const fresh = p.sessions.filter((s) => !had.has(s.id));
-            const recap = importRecap(fresh, [...store.sessions, ...fresh]);
+            const recap = importRecap(fresh, [...store.allSessions, ...fresh], store.settings.countCashLists === true);
             track('import_done', { source: step.file.source, sessions: n.sessions, hours: Math.round(recap.hours) });
             setStep({ at: 'done', added: n.sessions, total: r.sessions.length, skipped, moves, recap, source: step.file.source });
           }}

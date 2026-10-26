@@ -3630,6 +3630,7 @@ const es: Record<string, string> = {
   'Apagar 1 prémio importado?': '¿Borrar 1 premio importado?',
   'Apagar {n} prémios importados?': '¿Borrar {n} premios importados?',
   'Só saem os que vieram de listas de resultados. As tuas outras sessões ficam como estão.': 'Solo se van los que vinieron de listas de resultados. Tus otras sesiones quedan como están.',
+  'Com depósitos, levantamentos, despesas de viagem e os prémios importados de listas de resultados (marcados), para Excel ou Google Sheets': 'Con depósitos, retiros, gastos de viaje y los premios importados de listas de resultados (marcados), para Excel o Google Sheets',
 };
 
 export default es;

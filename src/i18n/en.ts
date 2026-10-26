@@ -3636,6 +3636,7 @@ const en: Record<string, string> = {
   'Apagar 1 prémio importado?': 'Delete 1 imported cash?',
   'Apagar {n} prémios importados?': 'Delete {n} imported cashes?',
   'Só saem os que vieram de listas de resultados. As tuas outras sessões ficam como estão.': 'Only those from results lists go. Your other sessions stay as they are.',
+  'Com depósitos, levantamentos, despesas de viagem e os prémios importados de listas de resultados (marcados), para Excel ou Google Sheets': 'With deposits, withdrawals, trip expenses and the cashes imported from results lists (marked), for Excel or Google Sheets',
 };
 
 export default en;

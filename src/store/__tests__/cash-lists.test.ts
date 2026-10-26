@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { prepare, toSessions } from '../../import/convert';
+import { importRecap } from '../../import/recap';
 import { cashSessions, parseResults } from '../../import/results';
 import { buildReport } from '../../export/report';
 import { yearReview } from '../../share/year-review';
@@ -77,4 +78,19 @@ test('counted, results with no hours never change the hourly rate anywhere', () 
   assert.equal(yearReview(2024, all, []).hourly, 25);
   const r = buildReport({ sessions: all, transfers: [], bankrolls: [], range: { from: 0, to: Number.MAX_SAFE_INTEGER } } as never);
   assert.equal(r.currencies[0].byMonth[0].hourly, 25);
+});
+
+test('the import recap (best year, hours, sessions) follows «Contar nos resultados»', () => {
+  const at = (y: number) => new Date(y, 5, 1, 20).getTime();
+  // Three losing timed sessions in 2023, three big cashes from a list in 2024.
+  const own = [1, 2, 3].map((i) => ({ ...logged, id: 'o' + i, kind: 'mtt', startedAt: at(2023) + i, endedAt: at(2023) + i + 3600000, buyIn: 100, entries: 1, addOn: 0, cashOut: 0 }) as Session);
+  const cashes = [1, 2, 3].map((i) => ({ ...listed[0], id: 'c' + i, startedAt: at(2024) + i, endedAt: at(2024) + i }));
+  const off = importRecap([...own, ...cashes], [...own, ...cashes]);
+  assert.equal(off.sessions, 3);
+  assert.deepEqual([off.from, off.to], [2023, 2023]);
+  assert.equal(off.best?.year, 2023);
+  assert.equal(off.best?.byHours, true, 'no year was up: only the losing one counts');
+  const on = importRecap([...own, ...cashes], [...own, ...cashes], true);
+  assert.equal(on.sessions, 6);
+  assert.deepEqual([on.best?.year, on.best?.byHours], [2024, false]);
 });
