@@ -99,6 +99,8 @@ export default function Paywall() {
   const base = profile ? { title: t(profile.title), body: t(profile.body) } : (PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic);
   const copy = { ...base, ...paywallConfig.copy[reason] };
   const [exitAsk, setExitAsk] = useState(false);
+  // «Ver o mensal» keeps the paywall open: the real close carries exit 'monthly', so it counts once.
+  const [tookMonthly, setTookMonthly] = useState(false);
   // The strongest thing Pro would show them, without the answer (teasers.ts). Result layout, Pro's tab: Plus doesn't open insights.
   const teaser = useMemo(() => (result ? teasers(sessions, defaultBankroll.currency)[0] : undefined), [result, sessions, defaultBankroll.currency]);
 
@@ -151,7 +153,8 @@ export default function Paywall() {
   };
   const leave = (exit?: 'monthly' | 'closed') => {
     setExitAsk(false);
-    track('paywall_closed', { reason, plan, tier: view, offering: paywallConfig.offering, layout: paywallConfig.layout, ...(exit ? { exit } : {}) });
+    const out = exit ?? (tookMonthly ? 'monthly' : undefined);
+    track('paywall_closed', { reason, plan, tier: view, offering: paywallConfig.offering, layout: paywallConfig.layout, ...(out ? { exit: out } : {}) });
     takeResume();
     close();
   };
@@ -432,7 +435,7 @@ export default function Paywall() {
           onMonthly={() => {
             setExitAsk(false);
             setSel('monthly');
-            track('paywall_closed', { reason, plan: 'monthly', offering: paywallConfig.offering, layout: paywallConfig.layout, exit: 'monthly' });
+            setTookMonthly(true);
           }}
           onClose={() => leave('closed')}
         />
