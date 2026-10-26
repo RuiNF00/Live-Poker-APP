@@ -131,3 +131,9 @@ test('the locked «Voz» of a live session opens its own paywall, about updating
   assert.equal(featuresFor('voiceLive')[0].feature.key, 'voiceLive');
   assert.equal(featuresFor('voiceLive')[0].highlight, true);
 });
+
+test('the summary never asks for notifications under the trial offer that slides over it', () => {
+  const s = src.find(([f]) => f === path.join('app', 'summary', '[id].tsx'))![1];
+  assert.match(s, /const trialDue = deferState\(\)\.then\(\(d\) => sessionStartOffer\(d, \{ isPro: isPlus, trialDays \}\)/);
+  assert.match(s, /if \(await trialDue\) return;\n\s+const asks/);
+});

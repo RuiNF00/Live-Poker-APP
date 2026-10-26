@@ -11,6 +11,8 @@ import { SessionEndPro } from '@/components/SessionEndPro';
 import { TellByVoice } from '@/components/entry/TellByVoice';
 import { Banner, Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
 import { weekNotice } from '@/billing/nudges';
+import { usePro } from '@/billing/pro';
+import { deferState, sessionStartOffer } from '@/billing/trial-moments';
 import { t } from '@/i18n';
 import { askOnSummary, kindOn } from '@/lib/notify-policy';
 import { comboLabel } from '@/poker/cards';
@@ -46,6 +48,7 @@ export default function SessionSummary() {
   const { sessions, hands, settings } = useStore();
   const s = sessions.find((x) => x.id === id);
   const [softAsk, askNotify] = useNotifySoftAsk();
+  const { isPlus, trialDays } = usePro();
   const mine = useMemo(() => hands.filter((h) => h.sessionId === id), [hands, id]);
   const { biggest, best } = useMemo(() => standouts(mine), [mine]);
   const left = useMemo(() => unfinished(mine), [mine]);
@@ -59,7 +62,11 @@ export default function SessionSummary() {
   useEffect(() => {
     if (!endedAt) return;
     let off = false;
+    // The trial offer slides over this summary when the session closes (TrialFollowUp): the
+    // notifications ask waits for the next summary. Read now, before that offer marks itself shown.
+    const trialDue = deferState().then((d) => sessionStartOffer(d, { isPro: isPlus, trialDays }), () => false);
     const timer = setTimeout(async () => {
+      if (await trialDue) return;
       const asks = Number(await AsyncStorage.getItem(ASKS_KEY).catch(() => null)) || 0;
       const closed = sessions.filter((x) => x.endedAt).length;
       if (off || !askOnSummary({ closed, asks, weekOn: kindOn(settings, 'week'), endedAt, now: Date.now() })) return;
