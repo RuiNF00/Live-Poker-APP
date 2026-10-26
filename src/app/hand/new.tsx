@@ -400,18 +400,21 @@ export default function NewHand() {
     router.back();
   };
 
-  // A hand won without a showdown is over with its last tap («Todos fold», the last Fold): it saves
-  // itself, with no «Guardar» to find. Only a hand entered here with taps: an edit, a reopened draft
+  // A hand is over with its last tap («Todos fold», the last Fold, the villain's second card at a
+  // heads-up showdown): it saves itself, with no «Guardar» to find. Only a hand entered here with taps: an edit, a reopened draft
   // or a hand told in words waits for «Guardar», so what came in can be checked first. Tags and notes
   // are on the saved hand.
   const autoSaved = useRef(new Set<string>());
   useEffect(() => {
-    if (isEdit || toldRef.current || saved.current || phase !== 'done' || !s.foldWin || !history.length || capturing) return;
+    // A showdown ends the same way once every cards shown are in and the pot has its winner (one board).
+    const shownDown = phase === 'showdown' && r.boards.length < 2 && !!r.result?.resolved && liveVillains.length > 0 && liveVillains.every((i) => hand.players[i].cards?.length === 2);
+    const over = (phase === 'done' && s.foldWin) || shownDown;
+    if (isEdit || toldRef.current || saved.current || !over || !history.length || capturing) return;
     if (autoSaved.current.has(autoKey)) return;
     autoSaved.current.add(autoKey);
     void save();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, autoKey]);
+  }, [phase, autoKey, hand.players]);
 
   // What we know about each opponent, for the seat sheet only. Worked out the
   // first time a seat opens, not on every render: over years of hands it is

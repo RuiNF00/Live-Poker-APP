@@ -199,10 +199,12 @@ class Entry {
     assert.ok(p, 'no all-in preset');
     this.push([{ p: this.s.toAct!, kind: 'raise', to: p.to }]);
   }
-  /** A hand won without showdown saves itself (hand/new.tsx): no tap. */
+  /** A hand won without showdown, or a heads-up showdown with the cards in, saves itself (hand/new.tsx): no tap. */
   autoSave() {
     const r = replay(this.hand);
-    assert.equal(r.final.foldWin, true, 'only a fold win saves itself');
+    const live = this.hand.players.map((_, i) => i).filter((i) => i !== this.hand.hero && !r.final.folded[i]);
+    const shownDown = !r.final.foldWin && r.boards.length < 2 && !!r.result?.resolved && live.length > 0 && live.every((i) => this.hand.players[i].cards?.length === 2);
+    assert.ok(r.final.foldWin || shownDown, 'the hand is not over, so it waits for «Guardar»');
     return r;
   }
   /** Multiway showdown: a tap on the seat, then its two cards. */
@@ -1159,4 +1161,33 @@ test('round 8 · CO opens, hero 3-bets, CO shoves, hero calls, showdown — 16 t
   assert.equal(before.taps, 18);
   assert.equal(after.taps, 16);
   assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 8 · a showdown with the cards in saves itself: UTG opens, hero calls, checked down — 14 taps (was 16)', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.entered('UTG');
+  e.size('2.5x');
+  e.act('call');
+  e.foldsWithCard('As');
+  e.board('7c', '2h');
+  e.checkDown();
+  e.board('9d');
+  e.board('3c');
+  e.shows('UTG', ['Qh', 'Qs']);
+  const r = e.autoSave();
+  assert.deepEqual(r.result!.pots[0].winners, [0]);
+  assert.equal(e.taps, 14);
+});
+
+test('round 8 · a showdown waits for «Guardar» while a cards shown is missing or the pot has no winner', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.entered('UTG');
+  e.size('2.5x');
+  e.act('call');
+  e.foldsWithCard('As');
+  e.board('7c', '2h');
+  e.checkDown();
+  e.board('9d');
+  e.board('3c');
+  assert.throws(() => e.autoSave());
 });
