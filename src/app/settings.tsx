@@ -10,7 +10,7 @@ import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { legalUrl } from '@/billing/disclosure';
-import { INVITE } from '@/billing/plans';
+import { INVITE, tierSummary } from '@/billing/plans';
 import { LOCAL_PRO, restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, hasLifetime, manageSubscription, redeemCode } from '@/billing/purchases';
 import { lockChanged } from '@/components/AppLock';
@@ -96,11 +96,11 @@ export default function SettingsScreen() {
   // Bumped by a restore: a monthly subscriber who restores lifetime is already Pro, so isPro alone wouldn't re-read it.
   const [restored, setRestored] = useState(0);
   useEffect(() => {
-    void (pro.isPro ? getSubscription() : Promise.resolve(null)).then((s) =>
+    void (pro.isPlus ? getSubscription() : Promise.resolve(null)).then((s) =>
       setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew, trial: s.trial } : null),
     );
     void (pro.isPro ? hasLifetime() : Promise.resolve(false)).then(setForGood);
-  }, [pro.isPro, restored]);
+  }, [pro.isPro, pro.isPlus, restored]);
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -163,7 +163,7 @@ export default function SettingsScreen() {
               </T>
               <Ionicons name="chevron-forward" size={17} color={C.accent} />
             </Row>
-            <T v="small">{pro.trialDays ? t('Mãos sem limite, bankroll completo e stories com voz. {days} dias grátis.', { days: pro.trialDays }) : t('Mãos sem limite, bankroll completo e stories com voz.')}</T>
+            <T v="small">{pro.isPlus ? t(tierSummary('pro')) : pro.trialDays ? t('Mãos sem limite, bankroll completo e stories com voz. {days} dias grátis.', { days: pro.trialDays }) : t('Mãos sem limite, bankroll completo e stories com voz.')}</T>
           </Card>
         ) : null}
 
@@ -251,9 +251,9 @@ export default function SettingsScreen() {
           <ListGroup>
             <ListItem
               icon="card-outline"
-              iconColor={pro.isPro ? C.accent : undefined}
+              iconColor={pro.isPlus ? C.accent : undefined}
               title={t('Gerir subscrição')}
-              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : forGood && period?.renews ? t(period.trial ? 'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.' : 'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.', { date: period.date }) : forGood ? t('Pro para sempre') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : t('Mudar de plano ou cancelar na loja')}
+              subtitle={LOCAL_PRO ? t('Pro local (build de teste)') : forGood && period?.renews ? t(period.trial ? 'Pro para sempre. A subscrição começa a cobrar a {date}: cancela-a na loja.' : 'Pro para sempre. A subscrição ainda renova a {date}: cancela-a na loja.', { date: period.date }) : forGood ? t('Pro para sempre') : pro.billingIssue ? t('Pagamento por atualizar na loja') : period ? t(period.renews ? 'Renova a {date}' : 'Termina a {date}', { date: period.date }) : pro.isPro ? 'Sweatbook Pro' : pro.isPlus ? 'Sweatbook Plus' : t('Mudar de plano ou cancelar na loja')}
               // A failed renewal goes straight to the store's page, where the card is changed.
               onPress={() =>
                 // Paid once while a subscription still renews: straight to the store to cancel it.
@@ -263,7 +263,7 @@ export default function SettingsScreen() {
                     ? notice(t('Pro para sempre'), t('Pagaste uma vez: não há subscrição para cancelar nem renovações.'))
                     : pro.billingIssue
                       ? manageSubscription()
-                      : pro.isPro
+                      : pro.isPlus
                         ? router.push('/cancel')
                         : manageSubscription()
               }
@@ -279,7 +279,7 @@ export default function SettingsScreen() {
                       setRestoring(true);
                       const res = await pro.restore();
                       setRestoring(false);
-                      if (res === 'ok' || res === 'lifetime') setRestored((n) => n + 1);
+                      if (res === 'ok' || res === 'lifetime' || res === 'plus') setRestored((n) => n + 1);
                       restoreNotice(res, Platform.OS === 'android' ? 'Google Play' : 'App Store');
                     }
               }

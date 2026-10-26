@@ -1848,6 +1848,19 @@ const ptBR: Record<string, string> = {
   'O organizador ainda não publicou quando fecha o late reg. Marca a hora no plano quando a souberes.': 'O organizador ainda não publicou quando fecha o late reg. Marque o horário no plano quando souber.',
   'Começas com {stack} fichas e os blinds sobem a cada {min} min.': 'Você começa com {stack} fichas e os blinds sobem a cada {min} min.',
   'No plano: {name}': 'No plano: {name}',
+  // Plus and Pro (1st update)
+  'Fica tudo guardado. Sem Plus, voltas às 3 mãos por dia.': 'Fica tudo salvo. Sem o Plus, você volta às 3 mãos por dia.',
+  'Quando voltares, o Plus volta com tudo. Mãos, sessões e bankroll ficam.': 'Quando você voltar, o Plus volta com tudo. Mãos, sessões e bankroll ficam.',
+  'Sem Plus, continuas a registar 3 mãos por dia e a partilhar sem limite.': 'Sem o Plus, você continua registrando 3 mãos por dia e compartilhando sem limite.',
+  'O Plus liga-se sozinho quando a {store} confirmar o pagamento.': 'O Plus ativa sozinho quando a {store} confirmar o pagamento.',
+  'Subscrever Plus': 'Assinar o Plus',
+  'Já tens o Plus': 'Você já tem o Plus',
+  'Com Plus ou Pro, guardas mãos sem limite.': 'Com o Plus ou o Pro, você salva mãos sem limite.',
+  'Esta mão fica guardada como rascunho. Com Plus ou Pro, guardas todas sem limite.': 'Esta mão fica salva como rascunho. Com o Plus ou o Pro, você salva todas sem limite.',
+  'Com Plus ou Pro, guardas todas as mãos da sessão.': 'Com o Plus ou o Pro, você salva todas as mãos da sessão.',
+  'O teu Plus está ativo nesta conta da loja.': 'Seu Plus está ativo nesta conta da loja.',
+  'Não encontrámos nenhuma compra do Plus nem do Pro nesta conta da loja.': 'Não encontramos nenhuma compra do Plus nem do Pro nesta conta da loja.',
+  'Tudo do Plus, mais staking, swaps, relatório do ano, várias moedas, bankrolls e filtros, e onde ganhas e perdes.': 'Tudo do Plus, mais staking, swaps, relatório do ano, várias moedas, bankrolls e filtros, e onde você ganha e perde.',
 };
 
 export default ptBR;

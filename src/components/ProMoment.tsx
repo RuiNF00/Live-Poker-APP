@@ -32,7 +32,7 @@ interface Saved {
  * it shows, so the home keeps a single context card at a time.
  */
 export function useProMoment() {
-  const { isPro, paywall } = usePro();
+  const { isPro, isPlus, paywall } = usePro();
   const { hands, sessions } = useStore();
   const [saved, setSaved] = useState<Saved | null>(null);
   const [now] = useState(() => Date.now());
@@ -69,7 +69,8 @@ export function useProMoment() {
   if (!saved) return null;
   // Reviewing after a bust helps everyone; the Pro offers only show on the free plan.
   const review = reviewAfterBust(sessions, hands, now);
-  const m = pickMoment(isPro ? [review] : [bigWin(sessions, now), review, viewed(saved.counts)], saved.dismissed);
+  // On Plus every hand is already saved: the «being viewed» one is about the free limit.
+  const m = pickMoment(isPro ? [review] : isPlus ? [bigWin(sessions, now), review] : [bigWin(sessions, now), review, viewed(saved.counts)], saved.dismissed);
   if (!m) return null;
 
   const dismiss = (x: Moment) => {

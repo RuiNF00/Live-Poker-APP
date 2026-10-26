@@ -3558,6 +3558,24 @@ const es: Record<string, string> = {
   'Toca para tirar': 'Toca para quitarlo',
   'Abre os detalhes do torneio': 'Abre los detalles del torneo',
   'No plano: {name}': 'En el plan: {name}',
+  // Plus and Pro (1st update)
+  'Fica tudo guardado. Sem Plus, voltas às 3 mãos por dia.': 'Todo queda guardado. Sin Plus, vuelves a 3 manos al día.',
+  'Quando voltares, o Plus volta com tudo. Mãos, sessões e bankroll ficam.': 'Cuando vuelvas, el Plus vuelve con todo. Manos, sesiones y bankroll se quedan.',
+  'Sem Plus, continuas a registar 3 mãos por dia e a partilhar sem limite.': 'Sin Plus, sigues registrando 3 manos al día y compartiendo sin límite.',
+  'Ficar com o Plus': 'Quedarme con Plus',
+  'Tirar a marca é do Plus': 'Quitar la marca es de Plus',
+  'Plus ativo': 'Plus activado',
+  'O Plus liga-se sozinho quando a {store} confirmar o pagamento.': 'Plus se activa solo cuando {store} confirme el pago.',
+  'Subscrever Plus': 'Suscribirse a Plus',
+  'Já tens o Plus': 'Ya tienes Plus',
+  'Com Plus ou Pro, guardas mãos sem limite.': 'Con Plus o Pro, guardas manos sin límite.',
+  'Esta mão fica guardada como rascunho. Com Plus ou Pro, guardas todas sem limite.': 'Esta mano queda guardada como borrador. Con Plus o Pro, guardas todas sin límite.',
+  'Com Plus ou Pro, guardas todas as mãos da sessão.': 'Con Plus o Pro, guardas todas las manos de la sesión.',
+  'O teu Plus está ativo nesta conta da loja.': 'Tu Plus está activo en esta cuenta de la tienda.',
+  'Não encontrámos nenhuma compra do Plus nem do Pro nesta conta da loja.': 'No encontramos ninguna compra de Plus ni de Pro en esta cuenta de la tienda.',
+  'Mãos ilimitadas, mão por voz, Stories com voz e sem marca, win rate por jogo e stake e mês a mês.': 'Manos ilimitadas, mano por voz, Stories con voz y sin marca, win rate por juego y stake y mes a mes.',
+  'Tudo do Plus, mais staking, swaps, relatório do ano, várias moedas, bankrolls e filtros, e onde ganhas e perdes.': 'Todo lo de Plus, más staking, swaps, informe del año, varias monedas, bankrolls y filtros, y dónde ganas y pierdes.',
+  'Win rate por jogo e stake': 'Win rate por juego y stake',
 };
 
 export default es;

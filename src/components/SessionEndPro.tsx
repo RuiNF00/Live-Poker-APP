@@ -15,7 +15,7 @@ import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
 export function SessionEndPro({ sessionId, profit, hours, game, currency, hideMoney }: { sessionId: string; profit: number; hours: number; game: 'mtt' | 'cash'; currency: string; hideMoney: boolean }) {
-  const { isPro, paywall } = usePro();
+  const { isPlus, paywall } = usePro();
   const { hands } = useStore();
   const [blocked, setBlocked] = useState<number | null>(null);
   useEffect(() => {
@@ -27,7 +27,7 @@ export function SessionEndPro({ sessionId, profit, hours, game, currency, hideMo
     };
   }, [sessionId, hands]);
   if (blocked === null) return null;
-  const card = sessionEndCard({ isPro, profit, blocked, hours, game });
+  const card = sessionEndCard({ isPro: isPlus, profit, blocked, hours, game });
   if (!card) return null;
 
   const rate = hideMoney ? '•••' : money(profit / hours, currency);

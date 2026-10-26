@@ -1,6 +1,8 @@
 // Free-plan counters. Pure functions over a small usage log, so they can be
 // tested and the log can't be reset by deleting hands.
 
+import type { Tier } from './plans';
+
 export type UsageKind = 'hand' | 'share';
 
 export interface UsageEvent {
@@ -38,6 +40,7 @@ export function pruneLog(log: UsageEvent[], now = Date.now()): UsageEvent[] {
   return log.filter((e) => e.t >= from);
 }
 
-/** rl.pro.v1: the store's last answer, kept so Pro works offline. '1' Pro, '0' not, since the first Pro build. */
-export const proCache = (isPro: boolean) => (isPro ? '1' : '0');
+/** rl.pro.v1: the store's last answer, kept so Pro works offline. '1' Pro, '0' not, since the first Pro build; 'p' Plus, since Plus. */
+export const proCache = (tier: Tier) => (tier === 'pro' ? '1' : tier === 'plus' ? 'p' : '0');
 export const cachedPro = (v: string | null | undefined) => v === '1';
+export const cachedTier = (v: string | null | undefined): Tier => (v === '1' ? 'pro' : v === 'p' ? 'plus' : 'free');

@@ -7,17 +7,43 @@ import { unbroken } from '../../packages/hand-format/src/money';
 import { t } from '../i18n';
 
 export const ENTITLEMENT = 'pro';
+/**
+ * Plus (1st update, conversao/planos/): the lighter plan. In RevenueCat the Plus products grant
+ * `plus` and the Pro products grant both `pro` and `plus`; the app also counts Pro as Plus, so a
+ * Pro product left without `plus` still unlocks everything.
+ */
+export const PLUS_ENTITLEMENT = 'plus';
 
-/** Store product ids. Create these exactly in App Store Connect and Google Play. */
+/** What the player has: nothing paid, Plus, or Pro (which includes all of Plus). */
+export type Tier = 'free' | 'plus' | 'pro';
+export const TIER_RANK: Record<Tier, number> = { free: 0, plus: 1, pro: 2 };
+/** The tiers that are sold. */
+export type PaidTier = Exclude<Tier, 'free'>;
+
+/**
+ * Store product ids. Create these exactly in App Store Connect and Google Play. On the App Store
+ * all four go in one subscription group, Pro ranked above Plus, so moving up is immediate and
+ * moving down waits for the renewal date.
+ */
 export const PRODUCTS = {
   monthly: 'sweatbook_pro_monthly',
   annual: 'sweatbook_pro_annual',
+  plusMonthly: 'sweatbook_plus_monthly',
+  plusAnnual: 'sweatbook_plus_annual',
 } as const;
 
 export type PlanId = keyof typeof PRODUCTS;
 
+/** Each tier's monthly and yearly plan. */
+export const TIER_PLANS: Record<PaidTier, { monthly: PlanId; annual: PlanId }> = {
+  plus: { monthly: 'plusMonthly', annual: 'plusAnnual' },
+  pro: { monthly: 'monthly', annual: 'annual' },
+};
+
 export interface PlanInfo {
   id: PlanId;
+  /** What buying it unlocks. */
+  tier: PaidTier;
   /** USD price, used when the store prices haven't loaded. */
   price: number;
   /** Portuguese key; show it with t(). */
@@ -27,10 +53,16 @@ export interface PlanInfo {
 }
 
 export const PLANS: Record<PlanId, PlanInfo> = {
-  monthly: { id: 'monthly', price: 29.99, period: 'mês', trialDays: 0 },
+  monthly: { id: 'monthly', tier: 'pro', price: 29.99, period: 'mês', trialDays: 0 },
   // Demo store only: real builds read the trial from the store product (3 days, Rui 17 Oct).
-  annual: { id: 'annual', price: 199.99, period: 'ano', trialDays: 3 },
+  annual: { id: 'annual', tier: 'pro', price: 199.99, period: 'ano', trialDays: 3 },
+  // Plus: proposed prices (conversao/planos/), to confirm. No trial: the 3 days stay on the yearly Pro.
+  plusMonthly: { id: 'plusMonthly', tier: 'plus', price: 6.99, period: 'mês', trialDays: 0 },
+  plusAnnual: { id: 'plusAnnual', tier: 'plus', price: 49.99, period: 'ano', trialDays: 0 },
 };
+
+/** The plan a store product belongs to (Google Play adds `:baseplan`). */
+export const planOfProduct = (product: string): PlanId | undefined => (Object.keys(PRODUCTS) as PlanId[]).find((id) => product.startsWith(PRODUCTS[id]));
 
 /**
  * Offers in the cancel flow. Only ever offered there, never after onboarding.
@@ -113,7 +145,7 @@ export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'stats' | 'stor
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
   hands: {
     title: t('Mão guardada como rascunho'),
-    body: t('Com Pro, guardas mãos sem limite.'),
+    body: t('Com Plus ou Pro, guardas mãos sem limite.'),
   },
   staking: {
     title: t('Staking sem folhas de cálculo'),
@@ -150,11 +182,11 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   handsLive: {
     title: t('A sessão continua'),
-    body: t('Esta mão fica guardada como rascunho. Com Pro, guardas todas sem limite.'),
+    body: t('Esta mão fica guardada como rascunho. Com Plus ou Pro, guardas todas sem limite.'),
   },
   views: {
     title: t('A tua mão está a ser vista'),
-    body: t('Com Pro, guardas todas as mãos da sessão.'),
+    body: t('Com Plus ou Pro, guardas todas as mãos da sessão.'),
   },
   bigWin: {
     title: t('Vê de onde vem o teu lucro'),
@@ -281,6 +313,47 @@ const LEADS: Partial<Record<PaywallReason, FeatureKey>> = {
   voiceHand: 'voiceHand',
 };
 
+/**
+ * What Plus unlocks (proposal, conversao/planos/): unlimited hands, the hand told by voice, Stories
+ * with voice and without the brand, and the two simplest stats screens. Everything else that needs
+ * Pro today stays Pro. Nothing free moves: Plus only takes things from Pro.
+ */
+export const PLUS_UNLOCKS: Partial<Record<FeatureKey, true>> = {
+  hands: true,
+  voiceHand: true,
+  story: true,
+  winrateDetail: true,
+  monthCompare: true,
+};
+
+/** The cheapest tier that unlocks what this paywall is about. Offers with no feature of their own are Pro's (the trial). */
+export function tierFor(reason: PaywallReason): PaidTier {
+  const key = LEADS[reason];
+  return key && PLUS_UNLOCKS[key] && !TRIAL_REASONS.includes(reason) ? 'plus' : 'pro';
+}
+
+/** Paywalls that offer the 3 free days: they open on Pro, with Plus one tap away. */
+const TRIAL_REASONS: PaywallReason[] = ['welcome', 'sessionStart', 'generic', 'plan'];
+
+/** Whether the paywall lets the player pick Plus: when Plus unlocks what was tapped, or when nothing in particular was. */
+export function offersPlus(reason: PaywallReason): boolean {
+  return tierFor(reason) === 'plus' || TRIAL_REASONS.includes(reason);
+}
+
+/** Whether a player on this tier has this feature. Pro has everything; Plus what PLUS_UNLOCKS lists; free what PRO_ONLY leaves free. */
+export function unlocks(tier: Tier, key: FeatureKey): boolean {
+  if (tier === 'pro') return true;
+  if (tier === 'plus' && PLUS_UNLOCKS[key]) return true;
+  return key in PRO_ONLY ? !PRO_ONLY[key as ProFeature] : false;
+}
+
+/** What each paid tier has, for the paywall's two tabs. Portuguese keys; show with t(). */
+export const TIER_SUMMARY: Record<PaidTier, string> = {
+  plus: 'Mãos ilimitadas, mão por voz, Stories com voz e sem marca, win rate por jogo e stake e mês a mês.',
+  pro: 'Tudo do Plus, mais staking, swaps, relatório do ano, várias moedas, bankrolls e filtros, e onde ganhas e perdes.',
+};
+export const tierSummary = (tier: PaidTier) => TIER_SUMMARY[tier];
+
 /** Three rows: the feature the player just reached for first, then generic ones. */
 export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATURES)[number]; highlight: boolean }[] {
   const key = LEADS[reason] ?? null;
@@ -291,21 +364,23 @@ export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATU
 
 type Cell = string | boolean;
 
-/** Free vs Pro, for the "table" paywall. Built from FREE so the limits never drift. Portuguese labels; show with t(). */
-export function freeVsPro(): { label: string; free: Cell; pro: Cell }[] {
+/** Free, Plus and Pro, for the "table" paywall. Built from FREE so the limits never drift. Portuguese labels; show with t(). */
+export function freeVsPro(): { label: string; free: Cell; plus: Cell; pro: Cell }[] {
   const n = (v: number | null): Cell => (v === null ? '∞' : String(v));
+  const row = (label: string, key: FeatureKey | null, free: Cell) => ({ label, free, plus: key ? unlocks('plus', key) : free, pro: true as Cell });
   return [
-    { label: 'Mãos novas por dia', free: n(FREE.handsPerDay), pro: '∞' },
-    { label: 'Replayer e partilha por link', free: true, pro: true },
-    { label: 'Bankrolls', free: n(FREE.bankrolls), pro: '∞' },
-    { label: 'Filtros e salas', free: FREE.bankrollFilters, pro: true },
-    { label: 'Stories com voz', free: false, pro: true },
-    { label: 'Mão contada por voz', free: !PRO_ONLY.voiceHand, pro: true },
-    { label: 'Várias mãos para o solver', free: false, pro: true },
-    { label: 'Torneios por buy-in, festival e jogo', free: false, pro: true },
-    { label: 'Staking e swaps', free: !PRO_ONLY.staking, pro: true },
-    { label: 'Total em todas as moedas', free: !PRO_ONLY.homeTotal, pro: true },
-    { label: 'Onde ganhas e onde perdes', free: !PRO_ONLY.insights, pro: true },
+    { label: 'Mãos novas por dia', free: n(FREE.handsPerDay), plus: '∞', pro: '∞' },
+    { label: 'Replayer e partilha por link', free: true, plus: true, pro: true },
+    { label: 'Bankrolls', free: n(FREE.bankrolls), plus: n(FREE.bankrolls), pro: '∞' },
+    row('Filtros e salas', 'stats', FREE.bankrollFilters),
+    row('Stories com voz', 'story', false),
+    row('Mão contada por voz', 'voiceHand', !PRO_ONLY.voiceHand),
+    row('Win rate por jogo e stake', 'winrateDetail', !PRO_ONLY.winrateDetail),
+    row('Várias mãos para o solver', 'solver', false),
+    row('Torneios por buy-in, festival e jogo', 'mttStats', false),
+    row('Staking e swaps', 'staking', !PRO_ONLY.staking),
+    row('Total em todas as moedas', 'homeTotal', !PRO_ONLY.homeTotal),
+    row('Onde ganhas e onde perdes', 'insights', !PRO_ONLY.insights),
   ];
 }
 

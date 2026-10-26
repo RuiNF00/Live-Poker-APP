@@ -53,7 +53,7 @@ export default function FestivalCarouselScreen() {
   const events = useMemo(() => (trip ? eventRows(trip, sessions) : []), [trip, sessions]);
   if (!trip || !recap) return <Empty title={t('Esta viagem já não existe')} />;
 
-  const withBrand = brand || !pro.isPro;
+  const withBrand = brand || !pro.can('story');
   const slides = carouselSlides(recap, events, { showHand, brand: withBrand });
   const stats = recapStats(recap);
   const scale = Math.min((width - 48) / SLIDE_W, (height * 0.5) / SLIDE_H, 1);
@@ -165,9 +165,9 @@ export default function FestivalCarouselScreen() {
             <ToggleItem
               icon="pricetag-outline"
               title={t('Com marca Sweatbook')}
-              subtitle={pro.isPro ? undefined : t('Tirar a marca é do Pro')}
+              subtitle={pro.can('story') ? undefined : t('Tirar a marca é do Plus')}
               value={withBrand}
-              onChange={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+              onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))}
             />
           </ListGroup>
 

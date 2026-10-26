@@ -45,7 +45,7 @@ export default function TournamentCardScreen() {
   if (!list.length) return <Empty title={t('Ainda sem torneios terminados')} />;
 
   const scale = Math.min((width - 64) / STORY_W, (height * 0.6) / STORY_H, 1);
-  const withBrand = brand || !pro.isPro;
+  const withBrand = brand || !pro.can('story');
   const post = async () => {
     tap('medium');
     setBusy(true);
@@ -121,7 +121,7 @@ export default function TournamentCardScreen() {
         <View style={{ paddingHorizontal: S.gutter, alignSelf: 'stretch' }}>
           <ListGroup>
             <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Mostra lugares e múltiplos do buy-in, sem dinheiro')} value={hideMoney} onChange={setHideMoney} />
-            <ToggleItem icon="pricetag-outline" title={t('Com marca Sweatbook')} subtitle={pro.isPro ? undefined : t('Tirar a marca é do Pro')} value={withBrand} onChange={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))} />
+            <ToggleItem icon="pricetag-outline" title={t('Com marca Sweatbook')} subtitle={pro.can('story') ? undefined : t('Tirar a marca é do Plus')} value={withBrand} onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))} />
           </ListGroup>
         </View>
       </ScrollView>

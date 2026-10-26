@@ -12,7 +12,7 @@ import { currencyAfter, decimalComma, lang, variant } from '../i18n';
 import { buyError, playSubscriptionId, restoreFound, type BuyResult } from './buy-result';
 import { offerMonths } from './disclosure';
 import { DEFAULT_PAYWALL, parsePaywallConfig, type PaywallConfig } from './experiments';
-import { ENTITLEMENT, INVITE, LIFETIME, PLANS, PRODUCTS, RETENTION, type PlanId } from './plans';
+import { ENTITLEMENT, INVITE, LIFETIME, PLANS, PLUS_ENTITLEMENT, PRODUCTS, RETENTION, TIER_RANK, planOfProduct, type PaidTier, type PlanId, type Tier } from './plans';
 
 // RevenueCat's public iOS SDK key, meant to ship inside the app. Release builds
 // fall back to it so a local Xcode build matches EAS; dev and local-Pro test
@@ -57,9 +57,9 @@ function rcModule() {
 }
 const rc = async () => (await rcModule()).default;
 
-export function configure(onChange: (isPro: boolean) => void): () => void {
+export function configure(onChange: (tier: Tier) => void): () => void {
   if (!LIVE) return () => {};
-  const listener = (info: CustomerInfo) => onChange(hasPro(info));
+  const listener = (info: CustomerInfo) => onChange(tierOf(info));
   let stop: (() => void) | null = null;
   let stopped = false;
   rc()
@@ -75,9 +75,14 @@ export function configure(onChange: (isPro: boolean) => void): () => void {
   };
 }
 
-function hasPro(info: CustomerInfo): boolean {
-  return !!info.entitlements.active[ENTITLEMENT];
+/** Pro wins over Plus: a Pro product also grants `plus`, and a player moving up holds both for a moment. */
+export function tierOf(info: Pick<CustomerInfo, 'entitlements'>): Tier {
+  const active = info.entitlements.active;
+  return active[ENTITLEMENT] ? 'pro' : active[PLUS_ENTITLEMENT] ? 'plus' : 'free';
 }
+
+/** The paid entitlement in force: Pro's, else Plus's. */
+const paidEntitlement = (info: Pick<CustomerInfo, 'entitlements'>) => info.entitlements.active[ENTITLEMENT] ?? info.entitlements.active[PLUS_ENTITLEMENT];
 
 function usd(n: number) {
   const s = decimalComma ? n.toFixed(2).replace('.', ',') : n.toFixed(2);
@@ -118,7 +123,11 @@ async function loadPlans(): Promise<StorePlan[] | null> {
   const pkgs = offerings.current?.availablePackages ?? [];
   const plans: StorePlan[] = [];
   for (const id of Object.keys(PRODUCTS) as PlanId[]) {
-    const pkg = pkgs.find((p) => p.product.identifier.startsWith(PRODUCTS[id]) || p.packageType === (id === 'monthly' ? 'MONTHLY' : 'ANNUAL'));
+    // RevenueCat's own monthly and yearly packages are Pro's (the only plans before Plus), never a Plus product.
+    const proType = id === 'monthly' ? 'MONTHLY' : id === 'annual' ? 'ANNUAL' : null;
+    const pkg =
+      pkgs.find((p) => p.product.identifier.startsWith(PRODUCTS[id])) ??
+      (proType ? pkgs.find((p) => p.packageType === proType && !planOfProduct(p.product.identifier)) : undefined);
     if (pkg) plans.push({ id, pkg, price: pkg.product.price, priceString: unbroken(pkg.product.priceString), currency: pkg.product.currencyCode || 'USD', trialDays: trialDays(pkg) });
   }
   if (Platform.OS === 'ios' && plans.length) {
@@ -154,10 +163,10 @@ function trialDays(pkg: PurchasesPackage): number {
   return unit * intro.periodNumberOfUnits;
 }
 
-export async function getIsPro(): Promise<boolean | null> {
+export async function getTier(): Promise<Tier | null> {
   if (!LIVE) return null;
   try {
-    return hasPro(await (await rc()).getCustomerInfo());
+    return tierOf(await (await rc()).getCustomerInfo());
   } catch {
     return null;
   }
@@ -180,9 +189,9 @@ export async function getSubscription(): Promise<{ plan: PlanId; willRenew: bool
   if (!LIVE) return null;
   try {
     const info = await (await rc()).getCustomerInfo();
-    const e = info.entitlements.active[ENTITLEMENT];
+    const e = paidEntitlement(info);
     if (!e || e.store === 'PROMOTIONAL') return null;
-    const planOf = (product: string) => (Object.keys(PRODUCTS) as PlanId[]).find((id) => product.startsWith(PRODUCTS[id]));
+    const planOf = planOfProduct;
     const plan = planOf(e.productIdentifier);
     if (plan) return { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null };
     // «Pagar uma vez» bought while a subscription still runs: the entitlement shows the lifetime
@@ -212,7 +221,7 @@ export async function hasLifetime(): Promise<boolean> {
 export async function getBillingIssue(): Promise<{ since: number } | null> {
   if (!LIVE) return null;
   try {
-    const e = (await (await rc()).getCustomerInfo()).entitlements.active[ENTITLEMENT];
+    const e = paidEntitlement(await (await rc()).getCustomerInfo());
     return e?.billingIssueDetectedAtMillis ? { since: e.billingIssueDetectedAtMillis } : null;
   } catch {
     return null;
@@ -307,12 +316,13 @@ export function inviteOfferPrice(plans: StorePlan[]): { priceString: string; pri
 const BUYING_STALE_MS = 5 * 60_000;
 let buying = 0;
 
-async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>): Promise<BuyResult> {
+/** `want`: the tier the purchase is for; anything below it after the sheet closes is still syncing. */
+async function attempt(run: () => Promise<{ customerInfo: CustomerInfo }>, want: PaidTier = 'pro'): Promise<BuyResult> {
   if (buying && Date.now() - buying < BUYING_STALE_MS) return 'busy';
   const mine = (buying = Date.now());
   try {
     // The store finished the purchase but Pro isn't on yet (RevenueCat still syncing): never say nothing was charged.
-    return hasPro((await run()).customerInfo) ? 'ok' : 'pending';
+    return TIER_RANK[tierOf((await run()).customerInfo)] >= TIER_RANK[want] ? 'ok' : 'pending';
   } catch (e) {
     return buyError(e);
   } finally {
@@ -363,9 +373,9 @@ export async function lifetimeOffer(): Promise<StoreOffer | null> {
 }
 
 /**
- * Buys a plan. `replacing` is the store product of the plan being left (monthly to annual):
- * the App Store swaps plans inside the subscription group by itself; Google Play needs it said,
- * or the player would end up with two subscriptions.
+ * Buys a plan. `replacing` is the store product of the plan being left (monthly to annual, Plus to
+ * Pro): the App Store swaps plans inside the subscription group by itself; Google Play needs it
+ * said, or the player would end up with two subscriptions.
  */
 export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResult> {
   if (!LIVE) return __DEV__ ? 'ok' : 'unavailable';
@@ -377,12 +387,12 @@ export async function buy(plan: StorePlan, replacing?: string): Promise<BuyResul
     Platform.OS === 'android' && replacing
       ? { oldProductIdentifier: playSubscriptionId(replacing), prorationMode: PRORATION_MODE.IMMEDIATE_WITH_TIME_PRORATION }
       : null;
-  return attempt(() => P.purchasePackage(plan.pkg!, null, change));
+  return attempt(() => P.purchasePackage(plan.pkg!, null, change), PLANS[plan.id].tier);
 }
 
-/** 'none': the store answered and this account has no Pro; 'lifetime': it has the one-time Pro; 'error': it didn't answer. */
+/** 'none': the store answered and this account has no Pro nor Plus; 'plus': it has Plus only; 'lifetime': it has the one-time Pro; 'error': it didn't answer. */
 /** 'slow': the store is still answering (an Apple ID sign-in can take a while); Pro turns on by itself if it finds the purchase. 'busy': one is already running. */
-export type RestoreResult = 'ok' | 'lifetime' | 'none' | 'error' | 'slow' | 'busy';
+export type RestoreResult = 'ok' | 'plus' | 'lifetime' | 'none' | 'error' | 'slow' | 'busy';
 
 // Held until the store answers, also after we stop waiting: a second restore never runs alongside the first
 // (a call that never answers stops holding it after a few minutes, as with purchases).
@@ -398,7 +408,7 @@ export async function restore(): Promise<RestoreResult> {
     () => void (restoring === mine && (restoring = 0)),
   );
   try {
-    return restoreFound(await withTimeout(run, RESTORE_TIMEOUT_MS), ENTITLEMENT, LIFETIME.product);
+    return restoreFound(await withTimeout(run, RESTORE_TIMEOUT_MS), ENTITLEMENT, LIFETIME.product, PLUS_ENTITLEMENT);
   } catch (e) {
     return (e as Error)?.message === 'timeout' ? 'slow' : 'error';
   }

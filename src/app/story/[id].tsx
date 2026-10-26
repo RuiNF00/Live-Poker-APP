@@ -99,7 +99,7 @@ export default function StoryScreen() {
     setFace(clip);
   }, []);
   const withFace = video && !!face && !faceLocked;
-  const withVoice = !!voice && pro.isPro && !withFace && !isPoster;
+  const withVoice = !!voice && pro.can('story') && !withFace && !isPoster;
   const direct = withVoice || to === 'instagram';
   // Whether the Instagram button opens Instagram's editor (where the Poll sticker goes) rather than the system sheet.
   const [igDirect, setIgDirect] = useState(false);
@@ -357,7 +357,7 @@ export default function StoryScreen() {
       <Stack.Screen options={{ title: t('Story no Instagram') }} />
       {/* The 4:5 poster for X and other apps: drawn off screen, only ever captured. */}
       <View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ position: 'absolute', left: -2 * STORY_W, top: 0 }}>
-        <HandPoster ref={poster} hand={shown} moment={moment} comment={comment} brand={brand || !pro.isPro} format="post" />
+        <HandPoster ref={poster} hand={shown} moment={moment} comment={comment} brand={brand || !pro.can('story')} format="post" />
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
@@ -379,9 +379,9 @@ export default function StoryScreen() {
                   transform: [{ scale }],
                 }}>
                 {isPoster ? (
-                  <HandPoster ref={card} hand={shown} moment={moment} comment={comment} brand={brand || !pro.isPro} />
+                  <HandPoster ref={card} hand={shown} moment={moment} comment={comment} brand={brand || !pro.can('story')} />
                 ) : (
-                  <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB brand={brand || !pro.isPro} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : direct && igDirect ? 'hint' : null} face={withFace ? faceView : null} />
+                  <StoryCard ref={card} hand={shown} moment={moment} comment={comment} inBB brand={brand || !pro.can('story')} voice={withVoice ? chip : null} step={video ? (reel[step]?.k ?? 0) : undefined} at={video ? reel[step]?.at : undefined} poll={capture === 'post' ? null : capture === 'instagram' ? 'empty' : direct && igDirect ? 'hint' : null} face={withFace ? faceView : null} />
                 )}
               </View>
             </View>
@@ -427,7 +427,7 @@ export default function StoryScreen() {
           ) : null}
           {canShareStory && !withFace && !isPoster ? (
             <Suspense fallback={null}>
-              <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.isPro} onLocked={() => pro.paywall('story')} />
+              <VoiceRecorder uri={voice} onChange={onVoice} locked={!pro.can('story')} onLocked={() => pro.paywall('story')} />
             </Suspense>
           ) : null}
 
@@ -444,9 +444,9 @@ export default function StoryScreen() {
             <ToggleItem
               icon="pricetag-outline"
               title={t('Com marca Sweatbook')}
-              subtitle={pro.isPro ? undefined : t('Tirar a marca é do Pro')}
-              value={brand || !pro.isPro}
-              onChange={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+              subtitle={pro.can('story') ? undefined : t('Tirar a marca é do Plus')}
+              value={brand || !pro.can('story')}
+              onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))}
             />
           </ListGroup>
         </ScrollView>

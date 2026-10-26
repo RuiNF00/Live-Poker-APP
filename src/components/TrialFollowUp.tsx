@@ -18,7 +18,7 @@ import { useStore } from '@/store/store';
 import { useLockScreenUp } from './AppLock';
 
 export function TrialFollowUp() {
-  const { isPro, trialDays, paywall } = usePro();
+  const { isPro, isPlus, trialDays, paywall } = usePro();
   const { ready, activeSession, sessions } = useStore();
   const sessionId = activeSession?.id ?? null;
   // Never over the app lock: a native alert or the paywall would sit on top of it. They wait for the unlock.
@@ -34,13 +34,13 @@ export function TrialFollowUp() {
   }
   const closedId = ended && sessions.some((s) => s.id === ended && s.endedAt) ? ended : null;
   useEffect(() => {
-    if (!closedId || isPro || trialDays < 1 || lockUp) return;
+    if (!closedId || isPlus || trialDays < 1 || lockUp) return;
     let live = true;
     const timer = setTimeout(async () => {
       const [s, claim] = await Promise.all([deferState(), claimState()]);
       // An invite reward is already on its way: no trial pitch on top of it.
       const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
-      if (!live || invited || !sessionStartOffer(s, { isPro, trialDays })) return;
+      if (!live || invited || !sessionStartOffer(s, { isPro: isPlus, trialDays })) return;
       await markSessionOffer(s);
       if (live) paywall('sessionStart');
     }, 1200);
@@ -48,7 +48,7 @@ export function TrialFollowUp() {
       live = false;
       clearTimeout(timer);
     };
-  }, [closedId, isPro, trialDays, paywall, lockUp]);
+  }, [closedId, isPlus, trialDays, paywall, lockUp]);
 
   // Checked on launch and each time the app comes back (a trial is cancelled in the phone's settings).
   const [tick, setTick] = useState(0);

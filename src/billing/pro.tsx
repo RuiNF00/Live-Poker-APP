@@ -11,9 +11,9 @@ import { DEFAULT_PAYWALL, type PaywallConfig } from './experiments';
 import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
 import { shouldOfferWelcome } from './offers';
-import { cachedPro, canUse, proCache, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
+import { cachedTier, canUse, proCache, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { invitePct } from './disclosure';
-import { FREE, INVITE, type PaywallReason, type PlanId } from './plans';
+import { FREE, INVITE, PLANS, TIER_RANK, unlocks, type FeatureKey, type PaywallReason, type PlanId, type Tier } from './plans';
 import { deferState, markProEnded, markSessionOffer } from './trial-moments';
 import * as store from './purchases';
 import { useLockScreenUp } from '@/components/AppLock';
@@ -55,7 +55,13 @@ const KEYS = { pro: 'rl.pro.v1', usage: 'rl.usage.v1', welcome: 'rl.offer.welcom
 const inviteNews = inviteNewsBox(AsyncStorage);
 
 interface ProValue {
+  /** Pro: everything. */
   isPro: boolean;
+  /** Plus or Pro: unlimited hands and what PLUS_UNLOCKS lists. */
+  isPlus: boolean;
+  tier: Tier;
+  /** Whether this player has the feature (free, Plus or Pro). Locks ask this, not isPro, for what Plus unlocks. */
+  can: (key: FeatureKey) => boolean;
   plans: store.StorePlan[];
   /** The store couldn't be reached for prices; `reloadPlans` tries again. */
   plansFailed: boolean;
@@ -88,9 +94,12 @@ if (TEST_BUILD_MARK) console.info(TEST_BUILD_MARK);
 export const LOCAL_PRO = localProFrom(process.env.EXPO_PUBLIC_LOCAL_PRO, store.LIVE);
 
 export function ProProvider({ children }: { children: React.ReactNode }) {
-  const [storePro, setIsPro] = useState(false);
+  const [storeTier, setStoreTier] = useState<Tier>('free');
   // Screenshot builds can force Pro (dev-pro.ts); always false in a store build.
-  const isPro = storePro || DEV_PRO || LOCAL_PRO;
+  const isPro = storeTier === 'pro' || DEV_PRO || LOCAL_PRO;
+  const tier: Tier = isPro ? 'pro' : storeTier;
+  const isPlus = TIER_RANK[tier] >= TIER_RANK.plus;
+  const can = useCallback((key: FeatureKey) => unlocks(tier, key), [tier]);
   const isProRef = useRef(isPro);
   useEffect(() => {
     isProRef.current = isPro;
@@ -122,11 +131,11 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const draftWaiting = !!useStore().draft;
   const trialDays = plans.find((p) => p.id === 'annual')?.trialDays ?? 0;
 
-  const setPro = useCallback((v: boolean) => {
-    setIsPro(v);
-    // The store said Pro is gone where the last answer had it: remember when, for the one notice (TrialFollowUp).
+  const setTier = useCallback((v: Tier) => {
+    setStoreTier(v);
+    // The store said Pro is gone where the last answer had it (also down to Plus): remember when, for the one notice (TrialFollowUp).
     AsyncStorage.getItem(KEYS.pro)
-      .then((prev) => (cachedPro(prev) && !v ? markProEnded() : undefined))
+      .then((prev) => (cachedTier(prev) === 'pro' && v !== 'pro' ? markProEnded() : undefined))
       .catch(() => {})
       .finally(() => AsyncStorage.setItem(KEYS.pro, proCache(v)).catch(() => {}));
   }, []);
@@ -137,25 +146,26 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.multiGet([KEYS.pro, KEYS.usage])
       .then(([[, pro], [, u]]) => {
         // Only until the store has spoken: a late cache read must not turn an expired Pro back on.
-        if (cachedPro(pro) && !storeAnswered) setIsPro(true);
+        const cached = cachedTier(pro);
+        if (cached !== 'free' && !storeAnswered) setStoreTier(cached);
         if (u) setUsage(pruneLog(JSON.parse(u) as UsageEvent[]));
       })
       .catch(() => {});
     const off = store.configure((v) => {
       storeAnswered = true;
-      setPro(v);
+      setTier(v);
       checkBilling();
     });
     checkBilling();
-    store.getIsPro().then((v) => {
+    store.getTier().then((v) => {
       if (v === null) return;
       storeAnswered = true;
-      setPro(v);
+      setTier(v);
     });
     store.getPlans().then((p) => (p ? setPlans(p) : setPlansFailed(true)));
     store.getPaywallConfig().then(setPaywallConfig);
     return off;
-  }, [setPro, checkBilling]);
+  }, [setTier, checkBilling]);
 
   const record = useCallback((kind: UsageKind, props?: Record<string, string | number | boolean>) => {
     track(kind === 'hand' ? 'hand_saved' : 'share_created', props);
@@ -176,7 +186,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const canSaveHand = useCallback(() => canUse(usage, 'hand', FREE.handsPerDay, isPro), [usage, isPro]);
+  const canSaveHand = useCallback(() => canUse(usage, 'hand', FREE.handsPerDay, isPlus), [usage, isPlus]);
 
   const resume = useRef<(() => void) | null>(null);
   const takeResume = useCallback(() => {
@@ -199,9 +209,10 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       const res = await store.buy(plan, replacing);
       if (res === 'error' || res === 'network') noteVisibleError();
       if (res === 'ok') {
-        setPro(true);
+        // Never down: a Pro player isn't offered Plus, but a late answer must not take Pro away.
+        setTier(TIER_RANK[PLANS[id].tier] > TIER_RANK[storeTier] ? PLANS[id].tier : storeTier);
         void noteReviewBlocker('bought');
-        const props = { plan: id, reason, trial: plan.trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout };
+        const props = { plan: id, tier: PLANS[id].tier, reason, trial: plan.trialDays, offering: paywallConfig.offering, layout: paywallConfig.layout };
         // A hand waiting as a draft when buying: usually the one the free limit held back.
         track('purchase', { ...props, drafts: draftWaiting ? 1 : 0 });
         if (plan.trialDays) {
@@ -211,16 +222,17 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       }
       return res;
     },
-    [plans, setPro, paywallConfig, draftWaiting],
+    [plans, setTier, storeTier, paywallConfig, draftWaiting],
   );
 
   const restore = useCallback(async () => {
     const res = await store.restore();
-    if (res === 'ok' || res === 'lifetime') setPro(true);
+    if (res === 'ok' || res === 'lifetime') setTier('pro');
+    else if (res === 'plus') setTier('plus');
     return res;
-  }, [setPro]);
+  }, [setTier]);
 
-  const handsLeft = isPro ? null : remainingToday(usage, 'hand', FREE.handsPerDay);
+  const handsLeft = isPlus ? null : remainingToday(usage, 'hand', FREE.handsPerDay);
 
   // Trial and come-back notifications follow the data: re-planned when it
   // changes and each time the app comes back to the front.
@@ -270,8 +282,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [nudgeTick, isPro, annualPrice, hands, sessions, activeSession, tipsOn]);
 
   const value = useMemo(
-    () => ({ isPro, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),
-    [isPro, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges],
+    () => ({ isPro, isPlus, tier, can, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),
+    [isPro, isPlus, tier, can, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -325,20 +337,21 @@ export function useOnboarding() {
  * (TrialFollowUp). See shouldOfferWelcome.
  */
 export function useWelcomeOffer(handsSaved: number) {
-  const { isPro, trialDays, paywall } = usePro();
+  // A Plus player already pays: no unprompted offer (and the App Store gives no second trial in the group).
+  const { isPlus, trialDays, paywall } = usePro();
   // At the table the offer waits: a live session gets it once it is closed (TrialFollowUp).
   const atTable = !!useStore().activeSession;
   // Never over the app lock: the paywall would sit on top of it (as in TrialFollowUp). It waits for the unlock.
   const lockUp = useLockScreenUp();
   useFocusEffect(
     useCallback(() => {
-      if (isPro || atTable || lockUp || handsSaved < 1 || trialDays < 1) return;
+      if (isPlus || atTable || lockUp || handsSaved < 1 || trialDays < 1) return;
       let live = true;
       // Let the screen settle after coming back before sliding the offer up.
       const timer = setTimeout(async () => {
         const [shown, claim, atSession] = await Promise.all([AsyncStorage.getItem(KEYS.welcome).catch(() => null), claimState(), deferState()]);
         const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
-        if (!live || !shouldOfferWelcome({ isPro, handsSaved, shown: shown === '1' || !!atSession?.shown, trialDays, invited })) return;
+        if (!live || !shouldOfferWelcome({ isPro: isPlus, handsSaved, shown: shown === '1' || !!atSession?.shown, trialDays, invited })) return;
         await Promise.all([AsyncStorage.setItem(KEYS.welcome, '1').catch(() => {}), markSessionOffer(atSession)]);
         if (live) paywall('welcome');
       }, 700);
@@ -346,7 +359,7 @@ export function useWelcomeOffer(handsSaved: number) {
         live = false;
         clearTimeout(timer);
       };
-    }, [isPro, atTable, lockUp, handsSaved, trialDays, paywall]),
+    }, [isPlus, atTable, lockUp, handsSaved, trialDays, paywall]),
   );
 }
 
@@ -361,9 +374,10 @@ export function buyNotice(res: store.BuyResult, storeName: string) {
 
 export function restoreNotice(res: store.RestoreResult, storeName: string) {
   if (res === 'ok') notice(t('Compras restauradas'), t('O teu Pro está ativo nesta conta da loja.'));
+  else if (res === 'plus') notice(t('Compras restauradas'), t('O teu Plus está ativo nesta conta da loja.'));
   // The one-time Pro is no subscription: said as what it is.
   else if (res === 'lifetime') notice(t('Compras restauradas'), t('O teu Pro para sempre está ativo nesta conta da loja.'));
-  else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma compra do Pro nesta conta da loja.'));
+  else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma compra do Plus nem do Pro nesta conta da loja.'));
   else if (res === 'busy') return;
   else if (res === 'slow') notice(t('A {store} ainda está a responder', { store: storeName }), t('Se encontrar a compra, o Pro liga-se sozinho.'));
   else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Verifica a rede e tenta outra vez daqui a pouco.'));

@@ -63,7 +63,7 @@ export default function YearScreen() {
   const cards = useMemo(() => yearCards(review), [review]);
   const kind = cards[Math.min(page, cards.length - 1)];
   const locked = !pro.isPro && page >= FREE_YEAR_CARDS;
-  const withBrand = brand || !pro.isPro;
+  const withBrand = brand || !pro.can('story');
 
   const scale = Math.min((width - 48) / STORY_W, (height - insets.top - insets.bottom - 210) / STORY_H, 1);
   const go = (p: number) => {
@@ -217,7 +217,7 @@ export default function YearScreen() {
             icon="pricetag-outline"
             label={t('Com marca Sweatbook')}
             active={withBrand}
-            onPress={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+            onPress={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))}
           />
         </Row>
         {locked ? (

@@ -42,9 +42,10 @@ export interface RestoredInfo {
 /**
  * What a restore found. Pro is the active entitlement, whatever bought it: a subscription, or the
  * one-time Pro, which has no end date and is no subscription ('lifetime', said in its own words).
+ * With only the Plus entitlement active, 'plus'.
  */
-export function restoreFound(info: RestoredInfo, entitlement: string, lifetimeProduct: string): 'ok' | 'lifetime' | 'none' {
+export function restoreFound(info: RestoredInfo, entitlement: string, lifetimeProduct: string, plusEntitlement?: string): 'ok' | 'plus' | 'lifetime' | 'none' {
   const e = info.entitlements.active[entitlement];
-  if (!e) return 'none';
+  if (!e) return plusEntitlement && info.entitlements.active[plusEntitlement] ? 'plus' : 'none';
   return e.productIdentifier === lifetimeProduct || !e.expirationDate ? 'lifetime' : 'ok';
 }

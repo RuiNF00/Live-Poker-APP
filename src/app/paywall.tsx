@@ -4,15 +4,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, PAYWALL_COPY, perMonth, PLANS, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
 import { invitePct } from '@/billing/disclosure';
 import { chargeNoticeAt } from '@/billing/nudges';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
-import { inviteOfferPrice, LIVE } from '@/billing/purchases';
+import { getSubscription, inviteOfferPrice, LIVE } from '@/billing/purchases';
 import { deferTrial } from '@/billing/trial-moments';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
-import { Button, IconButton, Pill, Row, T, tap, type IconName } from '@/components/ui';
+import { Button, IconButton, Pill, Row, Segmented, T, tap, type IconName } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
 import { notice } from '@/lib/notice';
@@ -49,30 +49,46 @@ export default function Paywall() {
     if (plans > scroll) setCrowded(true);
   };
   const { reason = 'generic' } = useLocalSearchParams<{ reason?: PaywallReason }>();
-  const { plans, plansFailed, reloadPlans, purchase, restore, isPro, paywallConfig, takeResume, refreshNudges } = usePro();
+  const { plans, plansFailed, reloadPlans, purchase, restore, tier, isPlus, paywallConfig, takeResume, refreshNudges } = usePro();
   const { hands } = useStore();
-  const [sel, setSel] = useState<PlanId>('annual');
+  const [sel, setSel] = useState<'annual' | 'monthly'>('annual');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
-  // Only a player who was already Pro on arrival sees "Já és Pro"; Pro arriving here goes straight back.
-  const [wasPro] = useState(isPro);
+  // Plus or Pro: the cheapest tier that unlocks what was tapped comes first. The trial offers open on
+  // Pro (the 3 days are Pro's) with Plus one tap away. A Plus player is only shown Pro.
+  const needs = tierFor(reason);
+  const tabs = offersPlus(reason) && !isPlus;
+  const [tab, setTab] = useState<PaidTier>(needs);
+  const view: PaidTier = tabs ? tab : 'pro';
+  const viewName = view === 'plus' ? 'Sweatbook Plus' : 'Sweatbook Pro';
+  // What was tapped is open once the player's tier reaches what it needs.
+  const covered = TIER_RANK[tier] >= TIER_RANK[needs];
+  // Only a player who already had it on arrival sees "Já és Pro"; a plan arriving here goes straight back.
+  const [wasCovered] = useState(covered);
+  // Plus to Pro on Google Play replaces the Plus subscription (purchases.buy); the App Store swaps it inside the group.
+  const [replacing, setReplacing] = useState<string | undefined>();
+  useEffect(() => {
+    if (isPlus && tier !== 'pro') getSubscription().then((s) => setReplacing(s?.product));
+  }, [isPlus, tier]);
   const [sheet, ask] = useNotifySoftAsk();
   // The offering can replace the headline for an A/B test; the offer itself never changes.
   const copy = { ...(PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic), ...paywallConfig.copy[reason] };
   const table = paywallConfig.layout === 'table';
 
-  const monthly = plans.find((p) => p.id === 'monthly');
-  const annual = plans.find((p) => p.id === 'annual');
+  const monthly = plans.find((p) => p.id === TIER_PLANS[view].monthly);
+  const annual = plans.find((p) => p.id === TIER_PLANS[view].annual);
+  // The invite discount is on the monthly Pro.
+  const proMonthly = plans.find((p) => p.id === 'monthly');
   // Only from two store prices: never a saving against a price the store didn't give.
   const saving = monthly && annual ? annualSavingPct(monthly.price, annual.price) : null;
   // An offering without one of the plans still buys in one tap: the other one is chosen.
   const chosen = sel === 'annual' ? (annual ?? monthly) : (monthly ?? annual);
-  const plan: PlanId = chosen?.id ?? sel;
+  const plan: PlanId = chosen?.id ?? TIER_PLANS[view][sel];
   const trial = chosen?.trialDays ?? 0;
 
   // An invite discount still open: one line to where it's used, so it isn't missed here.
   const [inviteOffer, setInviteOffer] = useState<InviteOffer | null>(null);
   // On Google Play the % is the store offer's own (as on the invite screen); without it no figure is claimed.
-  const invitePctShown = invitePct(Platform.OS === 'android' && LIVE, monthly?.price, inviteOfferPrice(plans)?.price, INVITE.pct);
+  const invitePctShown = invitePct(Platform.OS === 'android' && LIVE, proMonthly?.price, inviteOfferPrice(plans)?.price, INVITE.pct);
   useEffect(() => {
     savedInviteOffer().then(setInviteOffer);
   }, []);
@@ -92,7 +108,7 @@ export default function Paywall() {
     close();
   };
   const dismiss = () => {
-    track('paywall_closed', { reason, plan: sel, offering: paywallConfig.offering, layout: paywallConfig.layout });
+    track('paywall_closed', { reason, plan, tier: view, offering: paywallConfig.offering, layout: paywallConfig.layout });
     takeResume();
     close();
   };
@@ -101,7 +117,7 @@ export default function Paywall() {
 
   // Pro arrived: straight back to the screen that was tapped, now unlocked, and finish what was tapped there.
   // Said out loud before closing, so a screen reader doesn't land back on the screen in silence.
-  const unlocked = (said = t('Pro ativo')) => {
+  const unlocked = (said = view === 'plus' ? t('Plus ativo') : t('Pro ativo')) => {
     AccessibilityInfo.announceForAccessibility(said);
     const then = takeResume();
     close();
@@ -112,15 +128,15 @@ export default function Paywall() {
   // Ask to Buy approved, a code redeemed): back to what was tapped, same as a purchase.
   const acting = useRef(false);
   useEffect(() => {
-    if (isPro && !wasPro && !acting.current) unlocked();
+    if (covered && !wasCovered && !acting.current) unlocked();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPro]);
+  }, [covered]);
 
   const onBuy = async () => {
     if (acting.current) return;
     acting.current = true;
     setBusy('buy');
-    const res = await purchase(plan, reason);
+    const res = await purchase(plan, reason, PLANS[plan].tier === 'pro' ? replacing : undefined);
     setBusy(null);
     if (res !== 'ok') acting.current = false;
     if (res === 'ok') {
@@ -138,7 +154,7 @@ export default function Paywall() {
     // Cancelled in the store sheet: stay here, nothing to say.
     if (res === 'pending') {
       // Ask to Buy or a card still being checked: nothing more to do here, Pro turns on by itself.
-      notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store }));
+      notice(t('Compra pendente'), view === 'plus' ? t('O Plus liga-se sozinho quando a {store} confirmar o pagamento.', { store }) : t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store }));
       takeResume();
       close();
     } else if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
@@ -151,8 +167,8 @@ export default function Paywall() {
     setBusy('restore');
     const res = await restore();
     setBusy(null);
-    // The one-time Pro restores as 'lifetime': it unlocks just the same.
-    const found = res === 'ok' || res === 'lifetime';
+    // The one-time Pro restores as 'lifetime': it unlocks just the same. Plus found: back only if Plus is enough here.
+    const found = res === 'ok' || res === 'lifetime' || (res === 'plus' && needs === 'plus');
     if (!found) acting.current = false;
     if (found) return unlocked(res === 'lifetime' ? t('O teu Pro para sempre está ativo nesta conta da loja.') : t('Compras restauradas'));
     restoreNotice(res, store);
@@ -222,7 +238,7 @@ export default function Paywall() {
               {trial ? ' ' + t('depois de {days} dias grátis', { days: trial }) : ''}
             </T>
           ) : null}
-          <Button title={trial ? t('Continuar') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
+          <Button title={trial ? t('Continuar') : view === 'plus' ? t('Subscrever Plus') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
         </>
       )}
       {deferable && trial ? (
@@ -238,7 +254,7 @@ export default function Paywall() {
     </View>
   );
 
-  if (isPro && wasPro) return <AlreadyPro onDone={close} />;
+  if (covered && wasCovered) return <AlreadyPro plus={tier === 'plus'} onDone={close} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -255,6 +271,20 @@ export default function Paywall() {
           <T v="callout">{copy.body}</T>
           {hands.length >= 3 && reason !== 'welcome' && !medium ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
+
+        {tabs ? (
+          <View style={{ gap: S.sm }}>
+            <Segmented
+              options={[
+                { key: 'plus' as const, label: 'Plus' },
+                { key: 'pro' as const, label: 'Pro' },
+              ]}
+              value={tab}
+              onChange={setTab}
+            />
+            <T v="small">{t(tierSummary(tab))}</T>
+          </View>
+        ) : null}
 
         {table && !compact && !medium ? <FreeVsPro /> : null}
 
@@ -291,8 +321,8 @@ export default function Paywall() {
         ) : (
           <View onLayout={(e) => measure('plans', e.nativeEvent.layout.y + e.nativeEvent.layout.height)} style={{ gap: short ? S.sm : S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
-            <T v="label">Sweatbook Pro</T>
-            {inviteOffer ? (
+            <T v="label">{viewName}</T>
+            {inviteOffer && view === 'pro' ? (
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.replace('/invite')}
@@ -308,7 +338,8 @@ export default function Paywall() {
             ) : null}
             {annual ? (
               <PlanCard
-                active={plan === 'annual'}
+                name={viewName}
+                active={plan === annual.id}
                 onPress={() => setSel('annual')}
                 title={t('Anual')}
                 big={annual.priceString}
@@ -318,7 +349,7 @@ export default function Paywall() {
                 compact={compact}
               />
             ) : null}
-            {monthly ? <PlanCard active={plan === 'monthly'} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} compact={compact} /> : null}
+            {monthly ? <PlanCard name={viewName} active={plan === monthly.id} onPress={() => setSel('monthly')} title={t('Mensal')} big={monthly.priceString} unit={t('/mês')} line={t('Cancela quando quiseres')} compact={compact} /> : null}
             {trial ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
@@ -333,6 +364,7 @@ export default function Paywall() {
 }
 
 function PlanCard({
+  name,
   active,
   onPress,
   title,
@@ -343,6 +375,8 @@ function PlanCard({
   tags = [],
   compact,
 }: {
+  /** The subscription's name, Sweatbook Plus or Sweatbook Pro. */
+  name: string;
   active: boolean;
   onPress: () => void;
   title: string;
@@ -360,7 +394,7 @@ function PlanCard({
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={`Sweatbook Pro, ${title}, ${big} ${unit}, ${line}`}
+      accessibilityLabel={`${name}, ${title}, ${big} ${unit}, ${line}`}
       onPress={() => {
         tap('select');
         onPress();
@@ -433,7 +467,7 @@ function PlanCard({
   );
 }
 
-/** The "table" layout: what stays free and what Pro adds, side by side. */
+/** The "table" layout: what stays free, what Plus adds and what Pro adds, side by side. */
 function FreeVsPro() {
   const cell = (v: string | boolean, pro: boolean) =>
     typeof v === 'boolean' ? (
@@ -450,6 +484,9 @@ function FreeVsPro() {
         <T v="label" style={{ width: 56, textAlign: 'center' }}>
           {t('Grátis')}
         </T>
+        <T v="label" style={{ width: 56, textAlign: 'center' }}>
+          Plus
+        </T>
         <T v="label" color={C.accent} style={{ width: 56, textAlign: 'center' }}>
           Pro
         </T>
@@ -460,6 +497,7 @@ function FreeVsPro() {
             {t(r.label)}
           </T>
           <View style={{ width: 56, alignItems: 'center' }}>{cell(r.free, false)}</View>
+          <View style={{ width: 56, alignItems: 'center' }}>{cell(r.plus, false)}</View>
           <View style={{ width: 56, alignItems: 'center' }}>{cell(r.pro, true)}</View>
         </Row>
       ))}
@@ -512,15 +550,15 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
   );
 }
 
-/** Opened while already Pro (a stale link or a second tap): say so and go back. */
-function AlreadyPro({ onDone }: { onDone: () => void }) {
+/** Opened while already Pro, or Plus where Plus is enough (a stale link or a second tap): say so and go back. */
+function AlreadyPro({ plus, onDone }: { plus: boolean; onDone: () => void }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: S.md, padding: S.xxl }}>
       <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', ...SHADOW, shadowColor: C.accent, shadowOpacity: 0.45 }}>
         <Ionicons name="checkmark" size={40} color={C.accentInk} />
       </View>
       <T v="title" style={{ textAlign: 'center' }}>
-        {t('Já és Pro')}
+        {plus ? t('Já tens o Plus') : t('Já és Pro')}
       </T>
       <Button title={t('Continuar')} onPress={onDone} style={{ alignSelf: 'stretch', marginTop: S.md }} />
     </View>

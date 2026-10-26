@@ -3564,6 +3564,24 @@ const en: Record<string, string> = {
   'Toca para tirar': 'Tap to remove',
   'Abre os detalhes do torneio': 'Opens the tournament details',
   'No plano: {name}': 'In the plan: {name}',
+  // Plus and Pro (1st update)
+  'Fica tudo guardado. Sem Plus, voltas às 3 mãos por dia.': 'Everything stays saved. Without Plus, you go back to 3 hands a day.',
+  'Quando voltares, o Plus volta com tudo. Mãos, sessões e bankroll ficam.': 'When you come back, Plus picks up where you left off. Hands, sessions and bankroll stay.',
+  'Sem Plus, continuas a registar 3 mãos por dia e a partilhar sem limite.': 'Without Plus, you still log 3 hands a day and share without limit.',
+  'Ficar com o Plus': 'Keep Plus',
+  'Tirar a marca é do Plus': 'Removing the branding comes with Plus',
+  'Plus ativo': 'Plus is on',
+  'O Plus liga-se sozinho quando a {store} confirmar o pagamento.': 'Plus turns on by itself once {store} confirms the payment.',
+  'Subscrever Plus': 'Subscribe to Plus',
+  'Já tens o Plus': 'You have Plus',
+  'Com Plus ou Pro, guardas mãos sem limite.': 'With Plus or Pro, save hands without limits.',
+  'Esta mão fica guardada como rascunho. Com Plus ou Pro, guardas todas sem limite.': 'This hand is kept as a draft. With Plus or Pro, save them all without limits.',
+  'Com Plus ou Pro, guardas todas as mãos da sessão.': 'With Plus or Pro, save every hand of the session.',
+  'O teu Plus está ativo nesta conta da loja.': 'Your Plus is active on this store account.',
+  'Não encontrámos nenhuma compra do Plus nem do Pro nesta conta da loja.': 'We couldn\'t find a Plus or Pro purchase on this store account.',
+  'Mãos ilimitadas, mão por voz, Stories com voz e sem marca, win rate por jogo e stake e mês a mês.': 'Unlimited hands, hands told by voice, Stories with voice and without branding, win rate by game and stake, and month by month.',
+  'Tudo do Plus, mais staking, swaps, relatório do ano, várias moedas, bankrolls e filtros, e onde ganhas e perdes.': 'Everything in Plus, along with staking, swaps, the yearly report, several currencies, bankrolls and filters, and where you win and lose.',
+  'Win rate por jogo e stake': 'Win rate by game and stake',
 };
 
 export default en;

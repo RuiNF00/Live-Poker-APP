@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cancelReasons, logged, markOfferSeen, offerOnScreen, offersSeen, offerTaken, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
 import { pctOff } from '@/billing/disclosure';
-import { annualSavingPct, priceLike, perMonth, RETENTION } from '@/billing/plans';
+import { annualSavingPct, priceLike, perMonth, PLANS, RETENTION, TIER_PLANS, type PlanId } from '@/billing/plans';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, hasLifetime, lifetimeOffer, manageSubscription, retentionOffer, type BuyResult, type StoreOffer } from '@/billing/purchases';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
@@ -25,25 +25,29 @@ type Offer = Awaited<ReturnType<typeof retentionOffer>>;
 export default function Cancel() {
   const insets = useSafeAreaInsets();
   const { hands, sessions } = useStore();
-  const { plans, purchase, restore } = usePro();
+  const { plans, purchase, restore, tier } = usePro();
   const [reason, setReason] = useState<CancelReason | null>(null);
-  const [plan, setPlan] = useState<'monthly' | 'annual' | null>(null);
+  const [plan, setPlan] = useState<PlanId | null>(null);
+  // On Plus: no −40% and no Pro for good (both are Pro's); the yearly switch is to the yearly Plus.
+  const onPlus = (plan ? PLANS[plan].tier : tier) === 'plus';
   const [willRenew, setWillRenew] = useState<boolean | null>(null);
   const [product, setProduct] = useState<string | null>(null);
   const [storeOffer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<StoreOffer | null>(null);
+  const lifetimeShown = onPlus ? null : lifetime;
   // Pro for good already: no reasons, no offers, nothing about losing Pro.
   const [forGood, setForGood] = useState(false);
   // Paid once: the subscription still renews until it is cancelled in the store, which stays one tap away.
   const [paidOnce, setPaidOnce] = useState(false);
-  const annual = plans.find((p) => p.id === 'annual');
-  const monthly = plans.find((p) => p.id === 'monthly');
+  const ownPlans = TIER_PLANS[onPlus ? 'plus' : 'pro'];
+  const annual = plans.find((p) => p.id === ownPlans.annual);
+  const monthly = plans.find((p) => p.id === ownPlans.monthly);
   // The discount shows only with the store's own numbers for every part of its line: price, % off, months and the price after.
   const discountPct = storeOffer && monthly ? pctOff(monthly.price, storeOffer.price) : null;
   const offer = storeOffer && monthly && discountPct !== null && storeOffer.months !== null ? { ...storeOffer, pct: discountPct, months: storeOffer.months } : null;
   const [seen, setSeen] = useState<CancelOffer[] | null>(null);
   // The reason shows only when there's a one-time Pro in the store to offer for it.
-  const CANCEL_REASONS = cancelReasons(!!lifetime);
+  const CANCEL_REASONS = cancelReasons(!!lifetimeShown);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
   const store = Platform.OS === 'android' ? 'Google Play' : 'App Store';
@@ -70,15 +74,15 @@ export default function Cancel() {
   }, [seen, plans, plan, product]);
   // An offer is used up only once it is taken or turned down with a tap («Continuar a cancelar»):
   // going back, or a purchase that fails, leaves it there for the next visit (App Store 2.1).
-  const shownOffer = offerOnScreen(reason, { discount: !!offer, lifetime: !!lifetime });
+  const shownOffer = offerOnScreen(reason, { discount: !!offer, lifetime: !!lifetimeShown });
 
   // Lifetime is judged on long-term revenue: who saw it, from which plan, and
   // whether the subscription was still set to renew (i.e. they were about to cancel).
   const lifetimeProps = () => ({ reason: reason ?? '', plan: plan ?? '', will_renew: willRenew ?? '' });
   const pick = (r: CancelReason) => {
     // Which offer this reason puts on screen (discount = the −40%), so the funnel counts the offer shown, not just the reason.
-    track('cancel_flow', { step: 'reason', reason: r, offer: offerOnScreen(r, { discount: !!offer, lifetime: !!lifetime }) ?? 'none' });
-    if (r === 'noSubscription' && lifetime) track('lifetime_offer_shown', { reason: r, plan: plan ?? '', will_renew: willRenew ?? '' });
+    track('cancel_flow', { step: 'reason', reason: r, offer: offerOnScreen(r, { discount: !!offer, lifetime: !!lifetimeShown }) ?? 'none' });
+    if (r === 'noSubscription' && lifetimeShown) track('lifetime_offer_shown', { reason: r, plan: plan ?? '', will_renew: willRenew ?? '' });
     setReason(r);
     // The list turns into the answer for this reason: say which, so a screen reader isn't left on nothing.
     AccessibilityInfo.announceForAccessibility(t(CANCEL_REASONS.find((x) => x.key === r)!.label));
@@ -130,7 +134,8 @@ export default function Cancel() {
   };
 
   // Inside one App Store group the switch is a plain purchase; on Google Play it replaces the monthly product (purchases.buy).
-  const toAnnual = plan === 'monthly' && annual && (Platform.OS === 'ios' || !!product);
+  const toAnnual = plan === ownPlans.monthly && annual && (Platform.OS === 'ios' || !!product);
+  const planName = onPlus ? 'Plus' : 'Pro';
 
   return (
     <>
@@ -156,7 +161,7 @@ export default function Cancel() {
                   month: new Date(mine.since).toLocaleDateString(locale, { month: 'long', year: 'numeric' }),
                 })}
               </T>
-              {forGood ? null : <T v="small">{t('Fica tudo guardado. Sem Pro, voltas às 3 mãos por dia.')}</T>}
+              {forGood ? null : <T v="small">{onPlus ? t('Fica tudo guardado. Sem Plus, voltas às 3 mãos por dia.') : t('Fica tudo guardado. Sem Pro, voltas às 3 mãos por dia.')}</T>}
             </View>
           ) : null}
 
@@ -193,7 +198,7 @@ export default function Cancel() {
                     <Button kind="secondary" title={t('Pausar na Google Play')} onPress={toStore} />
                   </OfferCard>
                 ) : (
-                  <OfferCard icon="bookmark" title={t('Fica tudo guardado')} body={t('Quando voltares, o Pro volta com tudo. Mãos, sessões e bankroll ficam.')} />
+                  <OfferCard icon="bookmark" title={t('Fica tudo guardado')} body={onPlus ? t('Quando voltares, o Plus volta com tudo. Mãos, sessões e bankroll ficam.') : t('Quando voltares, o Pro volta com tudo. Mãos, sessões e bankroll ficam.')} />
                 )
               ) : null}
 
@@ -214,7 +219,7 @@ export default function Cancel() {
                           ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
                           : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })
                       }>
-                      <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase('annual', undefined, product ?? undefined), 'annual')} />
+                      <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase(ownPlans.annual, undefined, product ?? undefined), 'annual')} />
                     </OfferCard>
                   ) : null}
                   {offer || toAnnual ? (
@@ -222,7 +227,7 @@ export default function Cancel() {
                       {t('Renova automaticamente até cancelares nas definições da {store}, pelo menos 24 horas antes do fim do período.', { store })}
                     </T>
                   ) : null}
-                  {!offer && !toAnnual ? <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} /> : null}
+                  {!offer && !toAnnual ? <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={onPlus ? t('Sem Plus, continuas a registar 3 mãos por dia e a partilhar sem limite.') : t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} /> : null}
                 </>
               ) : null}
 
@@ -231,12 +236,12 @@ export default function Cancel() {
                   <OfferCard icon="infinite" title={t('Pro para sempre')} body={t('A tua subscrição continua a renovar até a cancelares na {store}.', { store })}>
                     <Button kind="secondary" title={t('Gerir subscrição')} onPress={() => void manageSubscription()} />
                   </OfferCard>
-                ) : lifetime ? (
-                  <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetime.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
-                    <Button kind="secondary" title={t('Pagar uma vez')} onPress={async () => lifetimeResult(await lifetime.buy())} />
+                ) : lifetimeShown ? (
+                  <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetimeShown.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
+                    <Button kind="secondary" title={t('Pagar uma vez')} onPress={async () => lifetimeResult(await lifetimeShown.buy())} />
                   </OfferCard>
                 ) : (
-                  <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} />
+                  <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={onPlus ? t('Sem Plus, continuas a registar 3 mãos por dia e a partilhar sem limite.') : t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} />
                 )
               ) : null}
 
@@ -261,7 +266,7 @@ export default function Cancel() {
                 )
               ) : null}
 
-              <Button kind="ghost" title={t('Ficar com o Pro')} onPress={keep} />
+              <Button kind="ghost" title={planName === 'Plus' ? t('Ficar com o Plus') : t('Ficar com o Pro')} onPress={keep} />
             </View>
           )}
         </ScrollView>

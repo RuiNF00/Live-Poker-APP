@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import React, { createContext, useContext } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { PAYWALL_COPY, PRO_ONLY, type PaywallReason, type ProFeature } from '@/billing/plans';
+import { PAYWALL_COPY, type PaywallReason, type ProFeature } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { Button, Card, Empty, Screen, T } from '@/components/ui';
 import { t } from '@/i18n';
@@ -12,9 +12,9 @@ import { C, R, S } from '@/theme';
 
 const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer', monthCompare: 'calendar', moveUpPlan: 'layers', villainRange: 'grid', faceVideo: 'videocam', voiceHand: 'mic' } as const satisfies Record<ProFeature, string>;
 
-/** True when this feature needs Pro and the player doesn't have it. */
+/** True when this feature needs a paid plan the player doesn't have (Plus is enough for what PLUS_UNLOCKS lists). */
 export function useLocked(feature: ProFeature): boolean {
-  return !usePro().isPro && PRO_ONLY[feature];
+  return !usePro().can(feature);
 }
 
 /** What a locked screen shows: what the feature does, and the one Pro paywall. */

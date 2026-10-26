@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
-import { FREE, PRO_ONLY } from '@/billing/plans';
+import { FREE } from '@/billing/plans';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
@@ -219,8 +219,8 @@ export default function NewHand() {
   };
   const openVoice = () => {
     tap();
-    // Pro: telling the hand. Entering it with taps stays free.
-    if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
+    // Plus (and Pro): telling the hand. Entering it with taps stays free.
+    if (!pro.can('voiceHand')) return pro.paywall('voiceHand');
     setToldOpened(true);
     setTelling(true);
   };
@@ -465,7 +465,7 @@ export default function NewHand() {
     if (spoken && Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(spoken);
   }, [spoken]);
   const heldBackText =
-    heldBack && !pro.isPro
+    heldBack && !pro.isPlus
       ? t('Mão guardada como rascunho. Mãos grátis hoje: {left} de {n}.', { left: pro.handsLeft ?? 0, n: FREE.handsPerDay ?? 0 })
       : '';
   const heldBackRef = useRef('');
@@ -610,7 +610,7 @@ export default function NewHand() {
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
                 {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
                 {shortScreen && !hand.actions.length ? (
-                  <Chip label={!pro.isPro && PRO_ONLY.voiceHand ? t('Voz') + ' · Pro' : t('Voz')} icon={!pro.isPro && PRO_ONLY.voiceHand ? 'lock-closed' : 'mic'} onPress={openVoice} />
+                  <Chip label={!pro.can('voiceHand') ? t('Voz') + ' · Plus' : t('Voz')} icon={!pro.can('voiceHand') ? 'lock-closed' : 'mic'} onPress={openVoice} />
                 ) : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
                 <Pressable accessibilityRole="button" accessibilityLabel={t('O teu stack: {amount}. Toca para mudar', { amount: amount(hand.players[hand.hero].stack, hand, inBB) })} onPress={() => setSeatEdit(hand.hero)} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }}>
@@ -657,14 +657,14 @@ export default function NewHand() {
             {!hand.actions.length && !shortScreen && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={!pro.isPro && PRO_ONLY.voiceHand ? `${t('Contar a mão por voz')}, Pro` : t('Contar a mão por voz')}
+                accessibilityLabel={!pro.can('voiceHand') ? `${t('Contar a mão por voz')}, Plus` : t('Contar a mão por voz')}
                 onPress={openVoice}
                 style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
                 <Ionicons name="mic" size={16} color={C.accent} />
                 <T v="body" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
                   {t('Contar a mão por voz')}
                 </T>
-                {!pro.isPro && PRO_ONLY.voiceHand ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
+                {!pro.can('voiceHand') ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
               </Pressable>
             )}
             {!settings.onboarded && !isEdit ? (

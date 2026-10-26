@@ -51,7 +51,7 @@ test('buying from a bankroll lock carries on with what was tapped', () => {
 test('a lifetime owner is never told they will lose Pro in the cancel flow', () => {
   const c = src.find(([f]) => f === path.join('app', 'cancel.tsx'))![1];
   assert.match(c, /hasLifetime\(\)\.then\(setForGood\)/);
-  assert.match(c, /forGood \? null : <T v="small">\{t\('Fica tudo guardado\. Sem Pro/);
+  assert.match(c, /forGood \? null : <T v="small">\{onPlus \? t\('Fica tudo guardado\. Sem Plus[^}]+: t\('Fica tudo guardado\. Sem Pro/);
 });
 
 test('on 760-900 pt screens the paywall keeps both plans above the footer', () => {
@@ -66,7 +66,7 @@ test('on 760-900 pt screens the paywall keeps both plans above the footer', () =
 test('restoring the one-time Pro on the paywall unlocks like a subscription', () => {
   const p = src.find(([f]) => f === path.join('app', 'paywall.tsx'))![1];
   const body = /const onRestore = async \(\) => \{([\s\S]*?)\n {2}\};/.exec(p)?.[1] ?? '';
-  assert.match(body, /const found = res === 'ok' \|\| res === 'lifetime';/);
+  assert.match(body, /const found = res === 'ok' \|\| res === 'lifetime' \|\| \(res === 'plus' && needs === 'plus'\);/);
   assert.match(body, /if \(found\) return unlocked\(/);
   assert.doesNotMatch(body, /res === 'ok'\) return unlocked/);
 });
@@ -95,8 +95,8 @@ test('nothing floats over the paywall plans, and the trial steps stack with larg
 
 test('Settings reads the plan again after a restore, also when already Pro', () => {
   const st = src.find(([f]) => f === path.join('app', 'settings.tsx'))![1];
-  assert.match(st, /\}, \[pro\.isPro, restored\]\);/);
-  assert.match(st, /if \(res === 'ok' \|\| res === 'lifetime'\) setRestored\(\(n\) => n \+ 1\);/);
+  assert.match(st, /\}, \[pro\.isPro, pro\.isPlus, restored\]\);/);
+  assert.match(st, /if \(res === 'ok' \|\| res === 'lifetime' \|\| res === 'plus'\) setRestored\(\(n\) => n \+ 1\);/);
 });
 
 test('the paywall at the hand limit says the hand is kept as a draft, at the table too', () => {
@@ -108,7 +108,7 @@ test('the paywall at the hand limit says the hand is kept as a draft, at the tab
 
 test('the funnel counts the cancel offer shown and the invite discount used', () => {
   const c = src.find(([f]) => f === path.join('app', 'cancel.tsx'))![1];
-  assert.match(c, /track\('cancel_flow', \{ step: 'reason', reason: r, offer: offerOnScreen\(r, \{ discount: !!offer, lifetime: !!lifetime \}\) \?\? 'none' \}\)/);
+  assert.match(c, /track\('cancel_flow', \{ step: 'reason', reason: r, offer: offerOnScreen\(r, \{ discount: !!offer, lifetime: !!lifetimeShown \}\) \?\? 'none' \}\)/);
   const inv = src.find(([f]) => f === path.join('app', 'invite.tsx'))![1];
   assert.match(inv, /if \(res === 'ok'\) \{\n      track\('purchase', \{ plan: 'monthly', reason: 'invite', offer: 'invite' \}\)/);
 });

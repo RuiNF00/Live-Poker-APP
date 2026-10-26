@@ -53,7 +53,7 @@ export default function FestivalCardScreen() {
   const stats = recapStats(recap);
   const scale = Math.min((width - 64) / STORY_W, (height * 0.58) / STORY_H, 1);
   const look = FESTIVAL_LOOKS[page];
-  const withBrand = brand || !pro.isPro;
+  const withBrand = brand || !pro.can('story');
   const best = showHand ? recap.bestHand : null;
 
   const post = async () => {
@@ -172,9 +172,9 @@ export default function FestivalCardScreen() {
             <ToggleItem
               icon="pricetag-outline"
               title={t('Com marca Sweatbook')}
-              subtitle={pro.isPro ? undefined : t('Tirar a marca é do Pro')}
+              subtitle={pro.can('story') ? undefined : t('Tirar a marca é do Plus')}
               value={withBrand}
-              onChange={() => (pro.isPro ? setBrand((b) => !b) : pro.paywall('story'))}
+              onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))}
             />
           </ListGroup>
           <ListGroup style={{ marginTop: S.lg }}>
