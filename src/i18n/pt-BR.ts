@@ -1827,6 +1827,9 @@ const ptBR: Record<string, string> = {
   'Valores com vírgula por extenso («um vírgula dois»): diz «1200» ou «mil e duzentos».': 'Valores com vírgula por extenso («um vírgula dois»): diga «1200» ou «mil e duzentos».',
   'Duas mãos de seguida: conta uma de cada vez.': 'Duas mãos seguidas: conte uma de cada vez.',
   'Trocar o que escreveste pelo exemplo?': 'Trocar o que você escreveu pelo exemplo?',
+  'O que já estava nesta mão fica substituído pelo que contaste.': 'O que já estava nesta mão é substituído pelo que você contou.',
+  'Gravaste uma nota nesta mão. Ouve-a e conta a mão.': 'Você gravou uma nota nesta mão. Ouça e conte a mão.',
+  'Contas a mão e ela fica na mesa': 'Você conta a mão e ela fica na mesa',
 };
 
 export default ptBR;

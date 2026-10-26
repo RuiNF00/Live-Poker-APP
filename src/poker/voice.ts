@@ -144,7 +144,7 @@ verbs('fold', ['fold', 'folded', 'foldeo', 'tiro', 'retiro'], ['foldo', 'foldei'
 verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee', 'checo', 'cheque'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou', 'checa']);
 verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
 verbs('bet', ['bet', 'betted', 'cbet', 'donk', 'lead', 'barrel', 'beteo', 'probe'], ['aposto', 'apostei', 'apuesto', 'aposte', 'beto', 'betei', 'cbeto', 'disparo', 'disparei'], ['bets', 'aposta', 'apostou', 'apuesta', 'beta', 'betou', 'cbets', 'leads', 'barrels', 'donks', 'betea', 'dispara', 'disparou']);
-verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
+verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'resubi', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
 verbs('bet', ['cbet'], ['cbeto'], ['cbets'], { cbet: true });
 verbs('raise', ['3bet', '4bet', '5bet', 'treebet', 'tribet'], ['3beto', '4beto', '3betei', '4betei'], ['3bets', '4bets', '5bets', '3beta', '4beta', '3betou', '4betou'], { open: true });
 verbs('fold', [], [], ['foldam', 'foldaram', 'desistem', 'desistiram', 'largam', 'largaram', 'correm', 'correram', 'foldean', 'foldearon'], { plural: true });
@@ -159,6 +159,8 @@ const ES_PAST_3: Record<string, VerbDef> = {
   'pagó': { kind: 'call', person: 3 }, 'pasó': { kind: 'check', person: 3 }, 'apostó': { kind: 'bet', person: 3 }, 'subió': { kind: 'raise', person: 3 },
   'igualó': { kind: 'call', person: 3 }, 'foldeó': { kind: 'fold', person: 3 }, 'chequeó': { kind: 'check', person: 3 }, 'abrió': { kind: 'raise', person: 3 },
   'retiró': { kind: 'fold', person: 3 }, 'tiró': { kind: 'fold', person: 3 }, 'resubió': { kind: 'raise', person: 3 }, 'ganó': { kind: 'call', person: 3 },
+  // es-MX, told after the hand: «checó», «beteó», «empujó».
+  'checó': { kind: 'check', person: 3 }, 'beteó': { kind: 'bet', person: 3 }, 'empujó': { kind: 'allin', person: 3 },
 };
 
 /** "Faço fold", "dei check", "vai all-in": the helper says who, the noun says what. */
@@ -293,9 +295,9 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     // «Me voy.» on its own is a fold; «sube a mil, voy.» a call.
     [/\bme voy(?=\s*(?:[.,;!?]|$))/g, ' foldo '],
     [/\bvoy(?=\s*(?:[.,;!?]|$))/g, ' pago '],
-    [/\bse (?:la|lo) (?=\p{L})/gu, ' '],
-    [/\bme (?:la|lo) (?=\p{L})/gu, ' me '],
-    [/\ble (?=\p{L})/gu, ' '],
+    [/\bse (?:la|lo) (?=[\p{L}§])/gu, ' '],
+    [/\bme (?:la|lo) (?=[\p{L}§])/gu, ' me '],
+    [/\ble (?=[\p{L}§])/gu, ' '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
     // "PLO5", "Omaha de 5 cartas", "Omaha Hi-Lo": not dealt by the app, kept as PLO with a note.
     [/\bplo5\b|\b(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)(?: de)? (?:5|five|cinco)[\s-]*(?:cartas|card|cards)\b|\b(?:5|five|cinco)[\s-]*(?:card|cards|cartas)[\s-]*(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)\b|\b(?:plo|omaha)[\s-]*(?:hi[\s-]*lo|high[\s-]*low|o8|8 or better)\b/g, ' plo plox '],
@@ -648,8 +650,10 @@ export function atomise(text: string, hole = 2): Atom[] {
     }
     // "O big me dá 3-bet", "la ciega grande me sube": "me" says whom it was against, the seat acts.
     // "Apuesto 1000, me paga": a third-person verb after "me" is the villain's too.
-    const villainAct = (out.length > 0 && out[out.length - 1].t === 'actor' && (out[out.length - 1] as { a: { k: string } }).a.k !== 'hero') || VERBS[w[i + 1] ?? '']?.person === 3 || AUX_3.has(w[i + 1] ?? '');
-    const clitic = x === 'me' && villainAct && !!w[i + 1] && (w[i + 1] in VERBS || AUX_3.has(w[i + 1]));
+    // «me la pagó»: an accented past form (§) is the villain's too.
+    const past3 = (w[i + 1] ?? '').startsWith('§');
+    const villainAct = (out.length > 0 && out[out.length - 1].t === 'actor' && (out[out.length - 1] as { a: { k: string } }).a.k !== 'hero') || VERBS[w[i + 1] ?? '']?.person === 3 || AUX_3.has(w[i + 1] ?? '') || past3;
+    const clitic = x === 'me' && villainAct && !!w[i + 1] && (w[i + 1] in VERBS || AUX_3.has(w[i + 1]) || past3);
     if (clitic) {
       i++;
       continue;

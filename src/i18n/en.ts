@@ -3527,6 +3527,12 @@ const en: Record<string, string> = {
   'Jogos que não sejam Hold\'em ou PLO (Omaha de 4 cartas, sem Hi-Lo).': 'Games other than Hold\'em or PLO (4-card Omaha, no Hi-Lo).',
   'Trocar o que escreveste pelo exemplo?': 'Replace what you wrote with the example?',
   'Trocar': 'Replace',
+  'Trocar pela mão contada?': 'Replace it with the hand you described?',
+  'O que já estava nesta mão fica substituído pelo que contaste.': 'What was already in this hand is replaced by what you described.',
+  'Gravaste uma nota nesta mão. Ouve-a e conta a mão.': 'You recorded a note on this hand. Play it back, then tell the hand.',
+  'Contar por voz': 'Tell by voice',
+  'Contas a mão e ela fica na mesa': 'Tell the hand and it goes on the table',
+  'Contar a primeira por voz': 'Tell the first one by voice',
 };
 
 export default en;

@@ -21,7 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { usePro } from '@/billing/pro';
-import { FREE, PRO_ONLY } from '@/billing/plans';
+import { FREE } from '@/billing/plans';
+import { voiceLocked, voicePlanName } from '@/billing/voice-access';
 import { noteBlocked } from '@/billing/session-limit';
 import { AmountPad } from '@/components/AmountPad';
 import { CardPicker } from '@/components/CardPicker';
@@ -31,7 +32,7 @@ import { SeatSheet } from '@/components/entry/SeatSheet';
 import { VoiceCapture, VoiceNotePlayer } from '@/components/audio';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
-import { Button, Chip, ChipRow, Field, IconButton, Row, T, tap } from '@/components/ui';
+import { Button, Chip, ChipRow, confirmAction, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { entrySeconds } from '@/lib/friction';
 import { levelsDue } from '@/lib/lock-screen/live-state';
@@ -69,7 +70,7 @@ export default function NewHand() {
   const insets = useSafeAreaInsets();
   // 568-pt phones (iPhone SE): the hero step has to fit without the voice button under the cards.
   const shortScreen = useWindowDimensions().height < 640;
-  const params = useLocalSearchParams<{ edit?: string }>();
+  const params = useLocalSearchParams<{ edit?: string; tell?: string }>();
   const store = useStore();
   const pro = usePro();
   const { activeSession, settings, hands } = store;
@@ -104,6 +105,15 @@ export default function NewHand() {
   const [toldOpened, setToldOpened] = useState(false);
   // Set once a hand came from "Contar a mão": the hand_saved event says so.
   const toldRef = useRef(false);
+  // «Contar por voz» on a hand saved half-done, after the hand: the tap that brought us here was
+  // the ask, so the sheet opens on arrival. Never the paywall: that only opens on a tap.
+  const toldOnArrival = useRef(false);
+  useEffect(() => {
+    if (params.tell !== '1' || toldOnArrival.current || voiceLocked(pro)) return;
+    toldOnArrival.current = true;
+    setToldOpened(true);
+    setTelling(true);
+  }, [params.tell, pro]);
 
   const hand = draft.hand;
   const n = hand.players.length;
@@ -222,8 +232,8 @@ export default function NewHand() {
   };
   const openVoice = () => {
     tap();
-    // Pro: telling the hand. Entering it with taps stays free.
-    if (!pro.isPro && PRO_ONLY.voiceHand) return pro.paywall('voiceHand');
+    // Telling the hand needs the voice's plan (voice-access). Entering it with taps stays free.
+    if (voiceLocked(pro)) return pro.paywall('voiceHand');
     setToldOpened(true);
     setTelling(true);
   };
@@ -397,11 +407,16 @@ export default function NewHand() {
   // "Contar a mão": the told hand replaces this one (same id, session and voice note). What it
   // already has is kept as entered: no automatic folds on top of it, like a reopened draft.
   const fromWords = (told: Hand, posKnown: boolean) => {
-    setTelling(false);
-    const next = { ...told, id: hand.id, createdAt: hand.createdAt, sessionId: hand.sessionId, voiceNote: hand.voiceNote, tags: hand.tags, notes: hand.notes };
-    autoDone.current = new Set(Array.from({ length: next.actions.length + 1 }, (_, k) => stateKey(next, k)));
-    toldRef.current = true;
-    update(next, posKnown || next.actions.length > 0 || draft.posChosen);
+    const apply = () => {
+      setTelling(false);
+      const next = { ...told, id: hand.id, createdAt: hand.createdAt, sessionId: hand.sessionId, voiceNote: hand.voiceNote, tags: hand.tags, notes: hand.notes };
+      autoDone.current = new Set(Array.from({ length: next.actions.length + 1 }, (_, k) => stateKey(next, k)));
+      toldRef.current = true;
+      update(next, posKnown || next.actions.length > 0 || draft.posChosen);
+    };
+    // A half-saved hand told again: what was entered with taps goes, so ask first.
+    if (hand.actions.length) return confirmAction(t('Trocar pela mão contada?'), t('O que já estava nesta mão fica substituído pelo que contaste.'), t('Trocar'), apply);
+    apply();
   };
 
   const discard = () => {
@@ -621,7 +636,7 @@ export default function NewHand() {
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
                 {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
                 {shortScreen && !hand.actions.length ? (
-                  <Chip label={!pro.isPro && PRO_ONLY.voiceHand ? t('Voz') + ' · Pro' : t('Voz')} icon={!pro.isPro && PRO_ONLY.voiceHand ? 'lock-closed' : 'mic'} onPress={openVoice} />
+                  <Chip label={voiceLocked(pro) ? `${t('Voz')} · ${voicePlanName()}` : t('Voz')} icon={voiceLocked(pro) ? 'lock-closed' : 'mic'} onPress={openVoice} />
                 ) : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
                 <Chip label="PLO" active={holes === 4} onPress={togglePLO} />
@@ -669,14 +684,14 @@ export default function NewHand() {
             {!hand.actions.length && !shortScreen && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={!pro.isPro && PRO_ONLY.voiceHand ? `${t('Contar a mão por voz')}, Pro` : t('Contar a mão por voz')}
+                accessibilityLabel={voiceLocked(pro) ? `${t('Contar a mão por voz')}, ${voicePlanName()}` : t('Contar a mão por voz')}
                 onPress={openVoice}
                 style={({ pressed }) => ({ minHeight: 44, borderRadius: R.md, borderWidth: 1, borderColor: C.accentLine, backgroundColor: C.accentSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
                 <Ionicons name="mic" size={16} color={C.accent} />
                 <T v="body" color={C.accent} style={{ fontWeight: '700', fontFamily: ff(700) }}>
                   {t('Contar a mão por voz')}
                 </T>
-                {!pro.isPro && PRO_ONLY.voiceHand ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
+                {voiceLocked(pro) ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
               </Pressable>
             )}
             {!settings.onboarded && !isEdit ? (
@@ -959,7 +974,20 @@ export default function NewHand() {
 
       {toldOpened ? (
         <Suspense fallback={null}>
-          <VoiceHandSheet visible={telling} base={hand} onClose={() => setTelling(false)} onDone={fromWords} Counted={TapCounted} />
+          <VoiceHandSheet
+            visible={telling}
+            base={hand}
+            onClose={() => setTelling(false)}
+            onDone={fromWords}
+            Counted={TapCounted}
+            note={
+              hand.voiceNote ? (
+                <Suspense fallback={null}>
+                  <VoiceNotePlayer uri={hand.voiceNote} />
+                </Suspense>
+              ) : undefined
+            }
+          />
         </Suspense>
       ) : null}
 

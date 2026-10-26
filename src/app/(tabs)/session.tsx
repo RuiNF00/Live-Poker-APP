@@ -41,7 +41,7 @@ import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-pla
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
 import { usePro } from '@/billing/pro';
-import { PRO_ONLY } from '@/billing/plans';
+import { voiceLocked as lockedForVoice } from '@/billing/voice-access';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
@@ -363,7 +363,7 @@ function Live({ s }: { s: Session }) {
   const full = useAfterFirstFrame();
   const [noteOpen, setNoteOpen] = useState(false);
   const pro = usePro();
-  const voiceLocked = !pro.isPro && PRO_ONLY.voiceHand;
+  const voiceLocked = lockedForVoice(pro);
   // Four buttons beside «Nova mão»: on a narrow phone they sit closer, so «Re-entry» keeps its size.
   const tight = useWindowDimensions().width < 380;
   // Mounted on first open, so the parser isn't loaded for players who never use it.

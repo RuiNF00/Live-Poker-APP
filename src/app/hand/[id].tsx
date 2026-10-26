@@ -16,6 +16,7 @@ import { HandHeader } from '@/components/HandHeader';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ShareSheet, type ShareOption } from '@/components/ShareSheet';
 import { OfflineBadge } from '@/components/NetStatus';
+import { TellByVoice } from '@/components/entry/TellByVoice';
 import { Banner, Button, Card, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -462,6 +463,8 @@ ${link}`;
           {nextHere ? <Button kind="secondary" title={t('Próxima mão')} icon="add" onPress={() => router.replace('/hand/new')} style={{ flex: 1 }} lines={2} /> : null}
         </Row>
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
+        {/* After the hand: tell it instead of tapping it in (the voice note, if any, plays in the sheet). */}
+        {!isComplete(hand) && <TellByVoice handId={hand.id} />}
         {nextLeft ? (
           <Banner
             tone="warn"

@@ -91,11 +91,14 @@ export function VoiceHandSheet({
   onClose,
   onDone,
   Counted = View,
+  note,
 }: {
   visible: boolean;
   base: Hand;
   onClose: () => void;
   onDone: (hand: Hand, posKnown: boolean) => void;
+  /** The hand's voice note, when it was saved at the table with one: heard here while telling it (a player passed in, so audio stays in its own chunk). */
+  note?: React.ReactNode;
   /** The entry screen's TapCounted, passed in: importing it here would make it a shared module, and shared modules go in the launch bundle. */
   Counted?: React.ComponentType<ViewProps>;
 }) {
@@ -244,6 +247,14 @@ export function VoiceHandSheet({
                       {t('Como ditar uma mão')}
                     </T>
                   </Pressable>
+                  {note ? (
+                    <View style={{ gap: 6 }}>
+                      <T v="small" color={C.textDim}>
+                        {t('Gravaste uma nota nesta mão. Ouve-a e conta a mão.')}
+                      </T>
+                      {note}
+                    </View>
+                  ) : null}
                 <Field
                   value={text}
                   onChangeText={change}

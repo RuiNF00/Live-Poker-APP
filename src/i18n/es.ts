@@ -3521,6 +3521,12 @@ const es: Record<string, string> = {
   'Jogos que não sejam Hold\'em ou PLO (Omaha de 4 cartas, sem Hi-Lo).': 'Juegos que no sean Hold\'em o PLO (Omaha de 4 cartas, sin Hi-Lo).',
   'Trocar o que escreveste pelo exemplo?': '¿Cambiar lo que escribiste por el ejemplo?',
   'Trocar': 'Cambiar',
+  'Trocar pela mão contada?': '¿Cambiar por la mano que contaste?',
+  'O que já estava nesta mão fica substituído pelo que contaste.': 'Lo que ya había en esta mano se sustituye por lo que contaste.',
+  'Gravaste uma nota nesta mão. Ouve-a e conta a mão.': 'Grabaste una nota en esta mano. Escúchala y cuenta la mano.',
+  'Contar por voz': 'Contar por voz',
+  'Contas a mão e ela fica na mesa': 'Cuentas la mano y queda en la mesa',
+  'Contar a primeira por voz': 'Contar la primera por voz',
 };
 
 export default es;
