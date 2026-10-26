@@ -305,7 +305,7 @@ export default function Welcome() {
           </View>
         ) : null}
         {at === 'goals' ? <Button title={t('Continuar')} disabled={!a.goals.length} onPress={next} /> : null}
-        {at === 'plan' ? (
+        {at === 'plan' && !preparing ? (
           <View style={{ gap: S.xs }}>
             <Button title={t(FIRST_ACTION_LABEL[firstAction(a)])} iconRight="chevron-forward" onPress={() => finish(firstAction(a))} lines={2} />
             <Button kind="ghost" size="sm" title={t('Ver a app primeiro')} onPress={() => finish()} />

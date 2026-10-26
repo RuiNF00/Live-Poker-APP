@@ -117,6 +117,17 @@ export default function SessionSummary() {
         <Tile label={t('Maior pote')} value={biggest ? bbs(biggest.bb, 1) : '—'} />
       </Row>
 
+      {/* The marked hands come before the Pro teaser: reviewing them is what the session asks for now (Design). */}
+      {toReview.length > 0 ? (
+        <Banner
+          icon="school-outline"
+          title={toReview.length === 1 ? t('Marcaste 1 mão. Rever agora?') : t('Marcaste {n} mãos. Rever agora?', { n: toReview.length })}
+          body={t('Enquanto ainda te lembras de tudo. As que ficarem esperam em «Por rever».')}
+          action={t('Rever')}
+          onPress={() => router.push({ pathname: '/hand/[id]', params: { id: toReview[0].id, q: s.id } })}
+        />
+      ) : null}
+
       <SessionEndPro sessionId={s.id} profit={p} hours={playedMs(s) / 3_600_000} game={s.kind} currency={s.currency} hideMoney={hideMoney} />
 
       {best ? (
@@ -154,16 +165,6 @@ export default function SessionSummary() {
       ) : null}
       {/* The session is over: the oldest half-saved hand can be told now, with its voice note. */}
       {left.length > 0 ? <TellByVoice handId={left[0].id} first={left.length > 1} /> : null}
-
-      {toReview.length > 0 ? (
-        <Banner
-          icon="school-outline"
-          title={toReview.length === 1 ? t('Marcaste 1 mão. Rever agora?') : t('Marcaste {n} mãos. Rever agora?', { n: toReview.length })}
-          body={t('Enquanto ainda te lembras de tudo. As que ficarem esperam em «Por rever».')}
-          action={t('Rever')}
-          onPress={() => router.push({ pathname: '/hand/[id]', params: { id: toReview[0].id, q: s.id } })}
-        />
-      ) : null}
 
       <Card padded={false}>
         <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Para mostrar ou tirar print sem dinheiro à vista')} value={hideMoney} onChange={setHideMoney} />
