@@ -328,8 +328,8 @@ export interface Settings {
   shareNotes: boolean;
   /** Shared hands: your own seat shows "Hero" instead of your name. Missing = your name shows. */
   shareHideMe?: boolean;
-  /** Shared hands: leave out the game's name (for cash often the casino). Missing = it shows. */
-  shareHideGame?: boolean;
+  /** Shared hands: a cash game's name (often the casino) goes too. Missing = it stays here. */
+  shareCashName?: boolean;
   /** Bankroll new sessions go to. */
   bankrollId?: string;
   /** Privacy mode: every amount on screen shows ••• (at the table, on a train). Files and share images keep real figures. */

@@ -198,7 +198,7 @@ export default function SettingsScreen() {
             <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={settings.shareNames ? t('Os nomes que lhes deste aparecem no link') : t('Aparecem como BTN, SB, BB…')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
             <ToggleItem icon="document-text-outline" title={t('As minhas notas da mão')} value={settings.shareNotes} onChange={(shareNotes) => setSettings({ shareNotes })} />
             <ToggleItem icon="person-circle-outline" title={t('O teu nome')} subtitle={settings.shareHideMe ? t('Apareces como Hero') : t('O nome que deste ao teu lugar')} value={!settings.shareHideMe} onChange={(v) => setSettings({ shareHideMe: !v })} />
-            <ToggleItem icon="location-outline" title={t('Nome do jogo')} subtitle={settings.shareHideGame ? t('Só «Cash» ou «Torneio»') : t('O torneio, ou a sala no cash')} value={!settings.shareHideGame} onChange={(v) => setSettings({ shareHideGame: !v })} />
+            <ToggleItem icon="location-outline" title={t('Nome do jogo no cash')} subtitle={settings.shareCashName ? t('O nome que deste ao jogo, muitas vezes a sala') : t('Só «Cash»')} value={!!settings.shareCashName} onChange={(shareCashName) => setSettings({ shareCashName })} />
           </ListGroup>
         </Section>
 

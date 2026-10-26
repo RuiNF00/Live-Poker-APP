@@ -42,8 +42,8 @@ export function WhatFriendsSee({ hand, shared = false }: { hand: Hand; shared?: 
     );
   }
   const me = ownName(hand);
-  const game = hand.game.name.trim();
-  const plain = hand.game.kind === 'mtt' ? t('Torneio') : 'Cash';
+  // Tournament names always go; a cash game's name is often the casino, so it stays here unless switched on.
+  const game = hand.game.kind === 'cash' ? hand.game.name.trim() : '';
   const named = hand.players.some((p, i) => i !== hand.hero && !!p.name?.trim());
   const notes = !!hand.notes?.trim();
   return (
@@ -70,9 +70,9 @@ export function WhatFriendsSee({ hand, shared = false }: { hand: Hand; shared?: 
             <ToggleItem
               icon="location-outline"
               title={t('Nome do jogo')}
-              subtitle={settings.shareHideGame ? t('Aparece só «{plain}»', { plain }) : t('Aparece «{name}»', { name: game })}
-              value={!settings.shareHideGame}
-              onChange={(v) => setSettings({ shareHideGame: !v })}
+              subtitle={settings.shareCashName ? t('Aparece «{name}»', { name: game }) : t('Aparece só «{plain}»', { plain: 'Cash' })}
+              value={!!settings.shareCashName}
+              onChange={(shareCashName) => setSettings({ shareCashName })}
             />
           ) : null}
           {named ? (

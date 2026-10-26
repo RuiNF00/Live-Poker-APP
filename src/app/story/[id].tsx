@@ -114,7 +114,7 @@ export default function StoryScreen() {
   const poster = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
-  const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes, me: !settings.shareHideMe, game: !settings.shareHideGame }) : undefined), [hand, settings.shareNames, settings.shareNotes, settings.shareHideMe, settings.shareHideGame]);
+  const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes, me: !settings.shareHideMe, cashName: !!settings.shareCashName }) : undefined), [hand, settings.shareNames, settings.shareNotes, settings.shareHideMe, settings.shareCashName]);
   // Shared pictures are always in big blinds, like the poster: in cash, chips are money.
   const moment = useMemo(() => (shown ? storyMoment(shown, mode === 'question' ? 'question' : 'result', true) : null), [shown, mode]);
   // The replayer's own motion timeline, so the video plays what the app shows.

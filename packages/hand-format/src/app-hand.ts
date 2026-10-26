@@ -138,7 +138,8 @@ export function fromAppHand(a: AppHand): Converted {
         : undefined,
     tags: a.tags,
     notes: a.notes || undefined,
-    location: g.venue || (g.kind === 'cash' ? g.name : undefined) || undefined,
+    // Only a venue the hand carries (the app no longer sends one). A cash game's name is often the casino: never shown as the place.
+    location: g.venue || undefined,
     playedAt: a.createdAt ? new Date(a.createdAt).toISOString() : undefined,
   };
 

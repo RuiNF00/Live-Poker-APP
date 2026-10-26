@@ -41,6 +41,11 @@ describe('fromAppHand', () => {
     expect(hand.location).toBe('Casino Estoril');
   });
 
+  it('a cash game name never becomes the place', () => {
+    const cash = { ...APP_HAND, game: { ...APP_HAND.game, kind: 'cash' as const, name: 'Casino da Póvoa 2/5', venue: undefined } };
+    expect(fromAppHand(cash).hand.location).toBeUndefined();
+  });
+
   it('replays to the same result as the native sample', () => {
     const a = buildReplay(fromAppHand(APP_HAND).hand).at(-1)!;
     const b = buildReplay(SAMPLE_TOURNAMENT_HAND).at(-1)!;

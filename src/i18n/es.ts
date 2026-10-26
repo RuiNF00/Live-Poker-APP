@@ -3582,8 +3582,6 @@ const es: Record<string, string> = {
   'Apareces como Hero': 'Apareces como Hero',
   'O nome que deste ao teu lugar': 'El nombre que le diste a tu asiento',
   'Nome do jogo': 'Nombre de la partida',
-  'Só «Cash» ou «Torneio»': 'Solo «Cash» o «Torneo»',
-  'O torneio, ou a sala no cash': 'El torneo, o la sala en cash',
   'Nunca veem o buy-in, os teus resultados, a bankroll nem as notas por rua.': 'Nunca ven el buy-in, tus resultados, la bankroll ni las notas por calle.',
   'O que os amigos veem': 'Lo que ven tus amigos',
   'As cartas, as ações e as fichas desta mão.': 'Las cartas, las acciones y las fichas de esta mano.',
@@ -3594,6 +3592,9 @@ const es: Record<string, string> = {
   'As cartas, as ações e as fichas desta mão, com o título e as etiquetas.': 'Las cartas, las acciones y las fichas de esta mano, con el título y las etiquetas.',
   'As cartas, as ações e as fichas desta mão, com o título.': 'Las cartas, las acciones y las fichas de esta mano, con el título.',
   'As cartas, as ações e as fichas desta mão, com as etiquetas.': 'Las cartas, las acciones y las fichas de esta mano, con las etiquetas.',
+  'Nome do jogo no cash': 'Nombre de la partida de cash',
+  'Só «Cash»': 'Solo «Cash»',
+  'O nome que deste ao jogo, muitas vezes a sala': 'El nombre que le diste a la partida, a menudo la sala',
 };
 
 export default es;

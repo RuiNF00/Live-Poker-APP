@@ -325,7 +325,7 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('shareNames', isBool),
     ...pick('shareNotes', isBool),
     ...pick('shareHideMe', isBool),
-    ...pick('shareHideGame', isBool),
+    ...pick('shareCashName', isBool),
     ...pick('bankrollId', isStr),
     ...pick('hideAmounts', isBool),
     ...pick('includeSwaps', isBool),

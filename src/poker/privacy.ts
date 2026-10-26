@@ -14,8 +14,8 @@ export interface ShareOptions {
   notes: boolean;
   /** Your own name on your seat; false: the seat shows "Hero". Missing = shown. */
   me?: boolean;
-  /** The game's name (a tournament, or for cash often the casino); false: just "Cash" or "Torneio". Missing = shown. */
-  game?: boolean;
+  /** A cash game's name, often the casino: only with this set; otherwise just "Cash". Tournament names always go. */
+  cashName?: boolean;
 }
 
 export const DEFAULT_SHARE: ShareOptions = { names: false, notes: false };
@@ -33,7 +33,7 @@ export function publicHand(hand: Hand, opts: ShareOptions = DEFAULT_SHARE): Hand
   const { buyIn: _b, venue: _vn, ...game } = hand.game;
   return {
     ...rest,
-    game: opts.game === false ? { ...game, name: '' } : game,
+    game: game.kind === 'cash' && !opts.cashName ? { ...game, name: '' } : game,
     // Cut to what the share page accepts: hands saved before the inputs had a limit still share.
     // Your own seat without your name reads "Hero", as in the app; an opponent without one, their position.
     players: hand.players.map(({ playerId: _p, ...p }, i) =>

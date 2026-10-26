@@ -3,6 +3,6 @@
 import type { ShareOptions } from '@/poker/privacy';
 import type { Settings } from '@/store/types';
 
-export function shareOptions(s: Pick<Settings, 'shareNames' | 'shareNotes' | 'shareHideMe' | 'shareHideGame'>): ShareOptions {
-  return { names: s.shareNames, notes: s.shareNotes, me: !s.shareHideMe, game: !s.shareHideGame };
+export function shareOptions(s: Pick<Settings, 'shareNames' | 'shareNotes' | 'shareHideMe' | 'shareCashName'>): ShareOptions {
+  return { names: s.shareNames, notes: s.shareNotes, me: !s.shareHideMe, cashName: !!s.shareCashName };
 }

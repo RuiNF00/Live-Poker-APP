@@ -1867,8 +1867,6 @@ const ptBR: Record<string, string> = {
   'Apareces como Hero': 'Você aparece como Hero',
   'O nome que deste ao teu lugar': 'O nome que você deu ao seu lugar',
   'Nome do jogo': 'Nome do jogo',
-  'Só «Cash» ou «Torneio»': 'Só “Cash” ou “Torneio”',
-  'O torneio, ou a sala no cash': 'O torneio, ou a sala no cash',
   'Nunca veem o buy-in, os teus resultados, a bankroll nem as notas por rua.': 'Nunca veem o buy-in, os seus resultados, a bankroll nem as notas por street.',
   'O que os amigos veem': 'O que os amigos veem',
   'As cartas, as ações e as fichas desta mão.': 'As cartas, as ações e as fichas desta mão.',
@@ -1879,6 +1877,9 @@ const ptBR: Record<string, string> = {
   'As cartas, as ações e as fichas desta mão, com o título e as etiquetas.': 'As cartas, as ações e as fichas desta mão, com o título e as tags.',
   'As cartas, as ações e as fichas desta mão, com o título.': 'As cartas, as ações e as fichas desta mão, com o título.',
   'As cartas, as ações e as fichas desta mão, com as etiquetas.': 'As cartas, as ações e as fichas desta mão, com as tags.',
+  'Nome do jogo no cash': 'Nome do jogo no cash',
+  'Só «Cash»': 'Só “Cash”',
+  'O nome que deste ao jogo, muitas vezes a sala': 'O nome que você deu ao jogo, muitas vezes a sala',
 };
 
 export default ptBR;

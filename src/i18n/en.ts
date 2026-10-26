@@ -3588,8 +3588,6 @@ const en: Record<string, string> = {
   'Apareces como Hero': 'You show as Hero',
   'O nome que deste ao teu lugar': 'The name you gave your seat',
   'Nome do jogo': 'Game name',
-  'Só «Cash» ou «Torneio»': 'Just “Cash” or “Tournament”',
-  'O torneio, ou a sala no cash': 'The tournament, or the card room in cash',
   'Nunca veem o buy-in, os teus resultados, a bankroll nem as notas por rua.': 'They never see the buy-in, your results, your bankroll or your street notes.',
   'O que os amigos veem': 'What friends see',
   'As cartas, as ações e as fichas desta mão.': 'The cards, the actions and the chips of this hand.',
@@ -3600,6 +3598,9 @@ const en: Record<string, string> = {
   'As cartas, as ações e as fichas desta mão, com o título e as etiquetas.': 'The cards, the actions and the chips of this hand, with its title and tags.',
   'As cartas, as ações e as fichas desta mão, com o título.': 'The cards, the actions and the chips of this hand, with its title.',
   'As cartas, as ações e as fichas desta mão, com as etiquetas.': 'The cards, the actions and the chips of this hand, with its tags.',
+  'Nome do jogo no cash': 'Cash game name',
+  'Só «Cash»': 'Just “Cash”',
+  'O nome que deste ao jogo, muitas vezes a sala': 'The name you gave the game, often the card room',
 };
 
 export default en;
