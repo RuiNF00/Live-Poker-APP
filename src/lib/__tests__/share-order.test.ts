@@ -19,3 +19,8 @@ test('a last one this sheet lacks changes nothing', () => {
   const out = orderShare(opts(['whatsapp', 'copy', 'other']), 'instagram');
   assert.deepEqual(out.map((o) => o.key), ['whatsapp', 'copy', 'other']);
 });
+
+test('Messages sits right after WhatsApp', () => {
+  const out = orderShare(opts(['other', 'messages', 'x', 'whatsapp']), null);
+  assert.deepEqual(out.map((o) => o.key), ['whatsapp', 'messages', 'x', 'other']);
+});

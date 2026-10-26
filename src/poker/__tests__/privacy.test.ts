@@ -60,3 +60,19 @@ test('names and notes longer than the share page accepts are cut, so old hands s
   assert.equal(p.notes.length, MAX_NOTES_LENGTH);
   assert.deepEqual(validateHand(fromAppHand(p).hand), []);
 });
+
+test('your name and the game name can stay out, and the page shows Hero and just Cash', () => {
+  const cash = { ...hand, game: { ...hand.game, name: 'Casino Estoril' } } as Hand;
+  const p = publicHand(cash, { names: true, notes: false, me: false, game: false });
+  assert.equal(p.players[0].name, 'Hero');
+  assert.equal(p.players[1].name, 'Zé do boné', 'opponents follow their own switch');
+  assert.equal(p.game.name, '');
+  assert.equal(cash.game.name, 'Casino Estoril', 'the hand on the phone keeps it');
+  const rec = fromAppHand(p).hand;
+  assert.deepEqual(validateHand(rec), []);
+  assert.equal(rec.location, undefined, 'the shared page has no place to show');
+  assert.equal(rec.players.find((x) => x.isHero)?.name, 'Hero');
+  // Missing switches keep what the link always showed.
+  assert.equal(publicHand(cash).game.name, 'Casino Estoril');
+  assert.equal(publicHand(cash).players[0].name, 'Rui');
+});

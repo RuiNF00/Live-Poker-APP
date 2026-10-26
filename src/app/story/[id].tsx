@@ -12,6 +12,7 @@ import { useLocked } from '@/components/ProGate';
 import { faceSlotPx, STORY_H, STORY_W, StoryCard, voiceSlotPx } from '@/components/StoryCard';
 import { Button, Chip, ChipRow, Empty, Field, ListGroup, ListItem, Segmented, T, tap, ToggleItem } from '@/components/ui';
 import { VoiceRecorder } from '@/components/audio';
+import { WhatFriendsSee } from '@/components/WhatFriendsSee';
 import { t } from '@/i18n';
 import { useUgcTerms } from '@/components/UgcTerms';
 import { track } from '@/lib/events';
@@ -39,6 +40,7 @@ import {
   type FaceClip,
 } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
+import { shareOptions } from '@/lib/share-options';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
 import { canAsk, storyMoment, type StoryMode } from '@/story/moment';
@@ -112,7 +114,7 @@ export default function StoryScreen() {
   const poster = useRef<React.ComponentRef<typeof View>>(null);
 
   // The image goes public too: same privacy as the link.
-  const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes }) : undefined), [hand, settings.shareNames, settings.shareNotes]);
+  const shown = useMemo(() => (hand ? publicHand(hand, { names: settings.shareNames, notes: settings.shareNotes, me: !settings.shareHideMe, game: !settings.shareHideGame }) : undefined), [hand, settings.shareNames, settings.shareNotes, settings.shareHideMe, settings.shareHideGame]);
   // Shared pictures are always in big blinds, like the poster: in cash, chips are money.
   const moment = useMemo(() => (shown ? storyMoment(shown, mode === 'question' ? 'question' : 'result', true) : null), [shown, mode]);
   // The replayer's own motion timeline, so the video plays what the app shows.
@@ -161,7 +163,7 @@ export default function StoryScreen() {
     try {
       // The link is made on the server while the frames are captured, not before.
       let idErr: unknown;
-      const idP = ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes }).then(
+      const idP = ensureShareId(linked, saveHand, shareOptions(settings)).then(
         (id) => id,
         (e: unknown) => ((idErr = e), null),
       );
@@ -205,7 +207,7 @@ export default function StoryScreen() {
       }
       if (withFace) setFaceClip(null);
       try {
-        await shareVideo(file, `${handShareText(hand.game.name, 'video')}\n${link}`);
+        await shareVideo(file, `${handShareText(shown?.game.name, 'video')}\n${link}`);
       } finally {
         // With a face in it, the MP4 isn't kept either once the share sheet closes.
         if (withFace) dropLocal(file);
@@ -230,7 +232,7 @@ export default function StoryScreen() {
     try {
       let shareId: string;
       try {
-        shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+        shareId = await ensureShareId(linked, saveHand, shareOptions(settings));
       } catch (e) {
         if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
         else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
@@ -286,7 +288,7 @@ export default function StoryScreen() {
     if (isNew && !(await acceptUgcTerms())) return null;
     let shareId: string;
     try {
-      shareId = await ensureShareId(linked, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+      shareId = await ensureShareId(linked, saveHand, shareOptions(settings));
     } catch (e) {
       if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
       else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
@@ -296,7 +298,7 @@ export default function StoryScreen() {
     const ref = await shareRef();
     return { link: shareLink(shareId, channel, { quiz: mode === 'question', ref }), shareId, ref };
   };
-  const postText = (link: string) => `${comment.trim() || handShareText(hand.game.name, mode === 'question' ? 'challenge' : 'link')}\n${link}`;
+  const postText = (link: string) => `${comment.trim() || handShareText(shown?.game.name, mode === 'question' ? 'challenge' : 'link')}\n${link}`;
 
   // X or any other app: the card as a picture, the replay link in the text.
   const postTo = async (to: 'x' | 'whatsapp' | 'any') => {
@@ -440,6 +442,7 @@ export default function StoryScreen() {
               ))}
             </ChipRow>
           </View>
+          {hand ? <WhatFriendsSee hand={hand} shared={!!hand.shareId} /> : null}
           <ListGroup>
             <ToggleItem
               icon="pricetag-outline"

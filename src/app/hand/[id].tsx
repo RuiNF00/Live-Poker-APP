@@ -16,6 +16,7 @@ import { HandHeader } from '@/components/HandHeader';
 import { Replayer } from '@/components/Replayer';
 import { ReviewCard } from '@/components/ReviewCard';
 import { ShareSheet, type ShareOption } from '@/components/ShareSheet';
+import { WhatFriendsSee } from '@/components/WhatFriendsSee';
 import { OfflineBadge } from '@/components/NetStatus';
 import { Banner, Button, Card, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
@@ -34,6 +35,8 @@ import { kindOn } from '@/lib/notify-policy';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { streetOfNew } from '@/lib/friend-hands-core';
 import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
+import { shareOptions } from '@/lib/share-options';
+import { canSendMessages, sendMessages, sendWhatsapp } from '@/lib/direct-share';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
 import { saveSolverFile } from '@/lib/solver-export';
@@ -213,13 +216,13 @@ export default function HandScreen() {
         return null;
       }
       const asked = { ...hand, ask: ask.trim().slice(0, 140) || undefined };
-      const { id: shareId, token } = await uploadHand(asked, { names: settings.shareNames, notes: settings.shareNotes });
+      const { id: shareId, token } = await uploadHand(asked, shareOptions(settings));
       made.current = { shareId, shareToken: token };
       saveHand({ ...asked, shareId, shareToken: token });
       return shareId;
     } catch (e) {
       if (isNetworkError(e)) {
-        const opts = { names: settings.shareNames, notes: settings.shareNotes };
+        const opts = shareOptions(settings);
         queueShare({ ...hand, ask: ask.trim().slice(0, 140) || undefined }, opts);
         notice(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
       } else if ((e as Error)?.message === 'upload 422') notice(t('Não deu para criar o link'), t('Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.'));
@@ -231,7 +234,7 @@ export default function HandScreen() {
     }
   };
 
-  const share = async (quiz = false, to?: 'x' | 'whatsapp') => {
+  const share = async (quiz = false, to?: 'x' | 'whatsapp' | 'messages') => {
     tap('medium');
     const isNew = !hand.shareId;
     const refP = readyRef();
@@ -243,7 +246,7 @@ export default function HandScreen() {
     const channel = to ?? (quiz ? 'challenge' : 'link');
     const link = shareLink(shareId, channel, { quiz, ref });
     track('link_shared', { channel, share_id: shareId, ref });
-    const head = handShareText(hand.game.name, quiz ? 'challenge' : 'comment');
+    const head = handShareText(settings.shareHideGame ? undefined : hand.game.name, quiz ? 'challenge' : 'comment');
     const msg = `${head}
 ${link}`;
     if (to === 'x') {
@@ -252,11 +255,9 @@ ${link}`;
       if (isNew) void offerCommentPush();
       return;
     }
-    if (to === 'whatsapp') {
-      // Straight to WhatsApp's chat picker: one tap less than the system sheet. Without WhatsApp, the usual sheet.
-      const text = encodeURIComponent(msg);
-      const url = Platform.OS === 'web' ? `https://wa.me/?text=${text}` : `whatsapp://send?text=${text}`;
-      await Linking.openURL(url).catch(() => Share.share({ message: msg }));
+    if (to === 'whatsapp' || to === 'messages') {
+      // Straight to WhatsApp's chat picker or a new message: one tap less than the system sheet. The link shows the hand's picture.
+      await (to === 'whatsapp' ? sendWhatsapp(msg) : sendMessages(msg));
       if (isNew) void offerCommentPush();
       return;
     }
@@ -397,15 +398,16 @@ ${link}`;
   // The destinations the sheet lists first; the one used last is also the button on the screen.
   const destinations: ShareOption[] = [
     { key: 'whatsapp', icon: 'logo-whatsapp', label: 'WhatsApp', onPress: () => share(false, 'whatsapp') },
+    ...(canSendMessages ? [{ key: 'messages' as const, icon: 'chatbubble-outline' as const, label: t('Mensagens'), sub: Platform.OS === 'ios' ? 'iMessage' : undefined, onPress: () => share(false, 'messages') }] : []),
     { key: 'instagram', icon: 'logo-instagram', label: t('Story no Instagram'), onPress: () => router.push({ pathname: '/story/[id]', params: { id: hand.id, to: 'instagram', ...((ask.trim() || hand.ask) ? { ask: ask.trim() || hand.ask } : {}) } }) },
     { key: 'x', icon: 'logo-x', label: t('Publicar no X'), onPress: () => share(false, 'x') },
-    { key: 'other', icon: 'share-outline', label: t('Outras apps'), sub: t('Mensagens, Telegram…'), onPress: () => share() },
+    { key: 'other', icon: 'share-outline', label: t('Outras apps'), sub: t('Telegram, Signal, e-mail…'), onPress: () => share() },
     { key: 'copy', icon: 'link-outline', label: t('Copiar link'), onPress: copyLink },
   ];
   // Sent to WhatsApp last time: the button goes straight there (one tap less); the sheet stays one tap away.
   // "Outras apps" keeps the sheet, so the system one never opens unasked.
   const last = lastShare();
-  const quick = last === 'whatsapp' ? { icon: 'logo-whatsapp' as const, label: 'WhatsApp' } : last === 'instagram' ? { icon: 'logo-instagram' as const, label: t('Story no Instagram') } : last === 'x' ? { icon: 'logo-x' as const, label: t('Publicar no X') } : last === 'copy' ? { icon: 'link-outline' as const, label: t('Copiar link') } : null;
+  const quick = last === 'whatsapp' ? { icon: 'logo-whatsapp' as const, label: 'WhatsApp' } : last === 'messages' && canSendMessages ? { icon: 'chatbubble-outline' as const, label: t('Mensagens') } : last === 'instagram' ? { icon: 'logo-instagram' as const, label: t('Story no Instagram') } : last === 'x' ? { icon: 'logo-x' as const, label: t('Publicar no X') } : last === 'copy' ? { icon: 'link-outline' as const, label: t('Copiar link') } : null;
   const sendLast = () => {
     const o = destinations.find((d) => d.key === last);
     if (!o?.key) return;
@@ -530,9 +532,12 @@ ${link}`;
       <ShareSheet
         visible={shareOpen}
         header={
-          hand.shareId ? null : (
-            <Field label={t('O que queres saber? (opcional)')} value={ask} onChangeText={setAsk} placeholder={t('Ex.: call ou fold no river?')} maxLength={140} />
-          )
+          <>
+            <WhatFriendsSee hand={hand} shared={!!hand.shareId} />
+            {hand.shareId ? null : (
+              <Field label={t('O que queres saber? (opcional)')} value={ask} onChangeText={setAsk} placeholder={t('Ex.: call ou fold no river?')} maxLength={140} />
+            )}
+          </>
         }
         onClose={() => setShareOpen(false)}
         groups={[

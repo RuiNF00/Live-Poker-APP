@@ -23,6 +23,7 @@ import { canShareStory, captureStory, ensureShareId, sharePost, shareStory } fro
 import { notice } from '@/lib/notice';
 import { shareRef } from '@/lib/referrals';
 import { shareLink } from '@/lib/share-api';
+import { shareOptions } from '@/lib/share-options';
 import { carouselCaption, festivalRecap, recapStats } from '@/share/festival-card';
 import { useStore } from '@/store/store';
 import { BRAND, C, R, S } from '@/theme';
@@ -66,7 +67,7 @@ export default function FestivalCardScreen() {
       if (best && (best.hand.shareId || (await acceptUgcTerms()))) {
         try {
           const isNew = !best.hand.shareId;
-          const shareId = await ensureShareId(best.hand, saveHand, { names: settings.shareNames, notes: settings.shareNotes });
+          const shareId = await ensureShareId(best.hand, saveHand, shareOptions(settings));
           if (isNew) pro.record('share');
           link = shareLink(shareId, 'story', { ref });
         } catch {

@@ -14,6 +14,7 @@ import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
 import { withLang } from '@/lib/link-lang';
 import { createPack } from '@/lib/pack-api';
+import { shareOptions } from '@/lib/share-options';
 import { MAX_PACK_HANDS, packHands } from '@/lib/pack-core';
 import { shareRef } from '@/lib/referrals';
 import { useUgcTerms } from '@/components/UgcTerms';
@@ -54,7 +55,7 @@ export default function NewPack() {
     if (!(await acceptUgcTerms())) return;
     setBusy(true);
     const name = title.trim().slice(0, 80);
-    const r = await createPack({ hands: send, title: name, hideAmounts: !chips, share: { names: settings.shareNames, notes: settings.shareNotes }, saveHand });
+    const r = await createPack({ hands: send, title: name, hideAmounts: !chips, share: shareOptions(settings), saveHand });
     setBusy(false);
     if (!r.ok) {
       note(

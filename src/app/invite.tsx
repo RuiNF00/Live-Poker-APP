@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, Share, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { INVITE } from '@/billing/plans';
 import { buyNotice, usePro } from '@/billing/pro';
@@ -14,6 +14,7 @@ import { LegalLinks } from '@/components/LegalLinks';
 import { Button, Card, ListGroup, ListItem, Stat, StatGrid, T, tap } from '@/components/ui';
 import { t, variant } from '@/i18n';
 import { track } from '@/lib/events';
+import { canSendMessages, sendMessages, sendWhatsapp } from '@/lib/direct-share';
 import { notice } from '@/lib/notice';
 import { withLang } from '@/lib/link-lang';
 import { markShared, inviteStatus, type InviteStatus } from '@/lib/referrals';
@@ -44,18 +45,16 @@ export default function InviteScreen() {
   }, []);
 
   // The friend's page opens in the inviter's language (the link carries ?lang=).
-  const share = async (to?: 'whatsapp') => {
+  const share = async (to?: 'whatsapp' | 'messages') => {
     if (!s) return;
     tap('medium');
     const msg = t('Uso o Sweatbook para guardar as minhas mãos de póquer ao vivo. Experimenta: se guardares a primeira mão, recebemos os dois {pct}% no primeiro mês do Pro. {url}', { pct: INVITE.pct, url: withLang(s.url, variant) });
-    track('link_shared', { channel: to === 'whatsapp' ? 'invite_whatsapp' : 'invite' });
+    track('link_shared', { channel: to ? `invite_${to}` : 'invite' });
     void markShared();
-    if (to === 'whatsapp') {
-      // Straight to WhatsApp's chat picker: one tap less than the system sheet. Without WhatsApp, the usual sheet.
-      const text = encodeURIComponent(msg);
-      const url = Platform.OS === 'web' ? `https://wa.me/?text=${text}` : `whatsapp://send?text=${text}`;
-      await Linking.openURL(url).catch(() => Share.share({ message: msg }));
-    } else if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
+    // Straight to WhatsApp's chat picker or a new message: one tap less than the system sheet.
+    if (to === 'whatsapp') await sendWhatsapp(msg);
+    else if (to === 'messages') await sendMessages(msg);
+    else if (Platform.OS === 'web') await Clipboard.setStringAsync(msg);
     else await Share.share({ message: msg });
   };
 
@@ -163,6 +162,7 @@ export default function InviteScreen() {
                 <Ionicons name="copy-outline" size={18} color={C.accent} />
               </Pressable>
               <Button title={t('Enviar no WhatsApp')} icon="logo-whatsapp" onPress={() => share('whatsapp')} />
+              {canSendMessages ? <Button kind="secondary" title={t('Enviar por Mensagens')} icon="chatbubble-outline" onPress={() => share('messages')} /> : null}
               <Button kind="secondary" title={t('Outras apps')} icon="share-social" onPress={() => share()} />
             </View>
             <StatGrid cols={3}>

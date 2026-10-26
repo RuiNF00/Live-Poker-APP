@@ -324,6 +324,8 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('defaultTableSize', (v) => typeof v === 'number' && Number.isInteger(v) && v >= 2 && v <= 10),
     ...pick('shareNames', isBool),
     ...pick('shareNotes', isBool),
+    ...pick('shareHideMe', isBool),
+    ...pick('shareHideGame', isBool),
     ...pick('bankrollId', isStr),
     ...pick('hideAmounts', isBool),
     ...pick('includeSwaps', isBool),
