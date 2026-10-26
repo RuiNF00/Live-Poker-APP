@@ -63,6 +63,19 @@ export function autoBackup(c: CloudState | null, data: Counts, now: number): 'sk
   return uploadBlock(data, c) ? 'skip' : 'upload';
 }
 
+/** A device whose code another one uses reads the server copy at most this often (on opening, back from the background). */
+export const PULL_GAP_MS = 5 * 60_000;
+
+/**
+ * Time to read the server copy and join in what another device sent? Only once a copy exists, for a
+ * code another device uses (one device alone has nothing to fetch: its 6-hourly copy stays as it was),
+ * and not again within PULL_GAP_MS of the last read or upload (each one downloads the whole copy).
+ */
+export function pullDue(c: CloudState | null, now: number): boolean {
+  if (!c || c.gone || !c.lastAt || !c.shared) return false;
+  return now - Math.max(c.lastAt, c.checkedAt ?? 0) >= PULL_GAP_MS;
+}
+
 /** After a saved hand or a closed session, the copy waits this long for the next change... */
 export const CHANGE_DEBOUNCE_MS = 30_000;
 /** ...and goes out at most this often (a live session saves hand after hand). */

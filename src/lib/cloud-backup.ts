@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 
 import type { BackupData } from '@/store/backup';
 import { parseBackup } from '@/store/backup';
-import { mergeBackups, writtenElsewhere } from '@/store/backup-merge';
+import { mergeBackups, syncPlan, writtenElsewhere } from '@/store/backup-merge';
 import { BRAND } from '@/theme';
 
 import { ALPHA, parseCloud, type CloudState } from './cloud-code';
@@ -116,13 +116,26 @@ export interface UploadOpts {
   onRemote?: (remote: BackupData) => void;
 }
 
+// One read or write of the server copy at a time on this phone: a sync on opening and a copy after a
+// saved hand must not each read the copy and then write over what the other just sent.
+let line: Promise<unknown> = Promise.resolve();
+function inLine<T>(job: () => Promise<T>): Promise<T> {
+  const run = line.then(job, job);
+  line = run.catch(() => {});
+  return run;
+}
+
 /**
  * Replaces the server copy. Refuses ('would_shrink') when this phone is empty
  * or has less than half of the copy it would replace, unless force (a brand-new code, or the user
  * confirmed they deleted things on purpose). When another phone with the same
  * code wrote the copy since this one did, its items are joined in first, so neither phone's work is lost.
  */
-export async function upload(c: CloudState, data: BackupData, opts: UploadOpts = {}): Promise<CloudState> {
+export function upload(c: CloudState, data: BackupData, opts: UploadOpts = {}): Promise<CloudState> {
+  return inLine(() => uploadNow(c, data, opts));
+}
+
+async function uploadNow(c: CloudState, data: BackupData, opts: UploadOpts): Promise<CloudState> {
   try {
     await reach();
     const next = await put(c, data, opts);
@@ -181,6 +194,7 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
   // Deleted on purpose somewhere else: this code is never written again, not even when forced.
   if (c.gone) throw new Error('gone');
   let data = local;
+  let next = c;
   if (c.lastAt) {
     // Read and decrypted here, on the phone; the server never sees either copy.
     // Also when forced: a copy this phone wrote or restored that is no longer there was deleted
@@ -191,15 +205,19 @@ async function put(c: CloudState, local: BackupData, opts: UploadOpts): Promise<
       if (opts.force) return null;
       throw e;
     });
+    if (remote) next = { ...next, checkedAt: Date.now() };
     if (remote && !opts.force && writtenElsewhere(remote, c.sent)) {
       data = mergeBackups(local, remote);
+      // Another device uses this code: from now on this one reads the copy when it opens, too.
+      next = { ...next, shared: true, seen: remote.exportedAt };
       opts.onRemote?.(remote);
     }
   }
-  return send(c, data, opts);
+  return send(next, data, opts);
 }
 
-async function send(c: CloudState, data: BackupData, opts: UploadOpts): Promise<CloudState> {
+/** `echo`: sent because a read found the copy behind, not because something changed here (CloudState.echo). */
+async function send(c: CloudState, data: BackupData, opts: UploadOpts & { echo?: boolean }): Promise<CloudState> {
   const block = uploadBlock(countsOf(data), c, opts.force);
   if (block) throw new Error(block);
   const cr = await crypto();
@@ -221,9 +239,67 @@ async function send(c: CloudState, data: BackupData, opts: UploadOpts): Promise<
   if (res.status === 429) throw new Error('rate_limited');
   if (!res.ok) throw new Error(res.status === 403 ? 'forbidden' : 'network');
   const { failedAt: _f, failure: _r, ...ok } = c;
-  const next: CloudState = { ...ok, lastAt: Date.now(), counts: countsOf(data), sent: data.exportedAt, bytes: body.length };
+  const at = Date.now();
+  const next: CloudState = { ...ok, lastAt: at, counts: countsOf(data), sent: data.exportedAt, bytes: body.length, syncedAt: at, echo: !!opts.echo };
   if (savesOver(await loadCloud(), c.id)) await saveCloud(next);
   return next;
+}
+
+/**
+ * Reads the server copy and brings here what another device sent (onRemote: importData with sync),
+ * then sends back only what the copy lacks (syncPlan): on opening and back from the background, for a
+ * code two devices use. Never forces: an upload that would shrink the copy is left for the player
+ * (cloud-guard). A copy deleted elsewhere marks the code gone, as an upload does. Resolves with the
+ * state saved; throws 'offline' and the like as download does, and then nothing changed.
+ */
+export function syncCloud(c: CloudState, local: BackupData, opts: Pick<UploadOpts, 'onRemote'> = {}): Promise<CloudState> {
+  return inLine(async () => {
+    // An upload queued before this one may have moved the state on (sent, lastAt): read it again.
+    const saved = await loadCloud();
+    if (saved && saved.id === c.id) c = saved;
+    if (c.gone) throw new Error('gone');
+    await reach();
+    const remote = await get(c).catch(async (e: Error) => {
+      if (e.message !== 'not_found' || !c.lastAt) throw e;
+      // This phone wrote or read that copy: it was deleted on purpose elsewhere, never written again.
+      const now = await loadCloud();
+      if (now && now.id === c.id) await saveCloud({ ...now, gone: true, failedAt: Date.now(), failure: 'gone' }).catch(() => {});
+      throw new Error('gone');
+    });
+    const at = Date.now();
+    const plan = syncPlan(local, remote, c, at);
+    let next: CloudState = { ...c, checkedAt: at, ...(plan.other ? { shared: true, seen: remote.exportedAt } : null) };
+    if (plan.join) opts.onRemote?.(remote);
+    if (plan.push) {
+      try {
+        return await send(next, plan.data, { echo: true });
+      } catch (e) {
+        // Fewer things here than in the copy: the player's call («Sincronizar agora»), not a failure.
+        if ((e as Error)?.message !== 'would_shrink') throw e;
+      }
+    } else if (!plan.ahead) next = { ...next, syncedAt: at };
+    if (savesOver(await loadCloud(), c.id)) await saveCloud(next);
+    return next;
+  });
+}
+
+/**
+ * «Usar noutro aparelho» on the device that receives the code: brings the copy here (onRemote:
+ * importData with sync, so nothing on either side is lost or doubled) and sends back what only this
+ * device had, so the other one gets it on its next read. From then on this device syncs with that code.
+ * A different code it had before stops being used here (its copy stays on the server until it expires).
+ */
+export async function joinCloud(code: Pick<CloudState, 'id' | 'secret'>, local: BackupData, onRemote: (remote: BackupData) => void): Promise<CloudState> {
+  const remote = await download({ id: code.id, secret: code.secret });
+  onRemote(remote);
+  const at = Date.now();
+  // sent 0: no copy from here is on the server yet, so the next read joins it in again before
+  // sending (with what the store holds by then); seen keeps that read from importing it twice.
+  // counts: no upload may send less than the copy holds, even before the imported items are saved.
+  const next: CloudState = { id: code.id, secret: code.secret, lastAt: at, checkedAt: at, counts: countsOf(remote), sent: 0, seen: remote.exportedAt, shared: true, saved: true };
+  await saveCloud(next);
+  // Offline after the download: the next sync (on opening, on reconnect) sends it.
+  return syncCloud(next, mergeBackups(local, remote, at)).catch(() => next);
 }
 
 export async function download(c: CloudState): Promise<BackupData> {
