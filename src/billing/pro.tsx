@@ -1,6 +1,7 @@
 // Who is Pro, and what the free plan has left today. Screens ask this
 // context before saving or sharing, and open the paywall when they can't.
 
+import { kindOn } from '@/lib/notify-policy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -240,6 +241,8 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   const { hands, sessions, activeSession, settings, players } = useStore();
   // «Lembretes» switched off or on in Settings: the come-back reminder already planned follows it.
   const tipsOn = settings.notify?.tips !== false;
+  // The Sunday week has its own switch: turning it off must cancel the one already scheduled.
+  const weekOn = kindOn(settings, 'week');
   useEffect(() => setLiveSession(!!activeSession), [activeSession]);
   const [nudgeTick, setNudgeTick] = useState(0);
   const refreshNudges = useCallback(() => setNudgeTick((n) => n + 1), []);
@@ -282,7 +285,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
       void syncNudges({ now, isPro, annualPrice, hands, sessions, sessionActive: !!activeSession, streakWeeks });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [nudgeTick, isPro, annualPrice, hands, sessions, players, settings.streakPauses, activeSession, tipsOn]);
+  }, [nudgeTick, isPro, annualPrice, hands, sessions, players, settings.streakPauses, activeSession, tipsOn, weekOn]);
 
   const value = useMemo(
     () => ({ isPro, isPlus, tier, can, billingIssue, plans, plansFailed, reloadPlans, paywallConfig, handsLeft, trialDays, canSaveHand, record, paywall, takeResume, purchase, restore, refreshNudges }),
