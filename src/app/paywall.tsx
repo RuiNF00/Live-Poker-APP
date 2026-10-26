@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, unlocks, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
 import { invitePct } from '@/billing/disclosure';
 import { ONBOARDING_KEY, proHeadline, type Answers } from '@/billing/onboarding';
 import { chargeNoticeAt } from '@/billing/nudges';
@@ -89,7 +89,8 @@ export default function Paywall() {
       .then((v) => setAnswers(v ? (JSON.parse(v) as Answers) : null))
       .catch(() => {});
   }, [result]);
-  const profile = result && PROFILE_REASONS.includes(reason) ? proHeadline(answers) : null;
+  // The profile headline promises Pro things (backers, where you win and lose): on Pro's tab only.
+  const profile = result && view === 'pro' && PROFILE_REASONS.includes(reason) ? proHeadline(answers) : null;
   const base = profile ? { title: t(profile.title), body: t(profile.body) } : (PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic);
   const copy = { ...base, ...paywallConfig.copy[reason] };
   const [exitAsk, setExitAsk] = useState(false);
@@ -230,11 +231,8 @@ export default function Paywall() {
       {short ? <LegalLinks /> : <LegalLinks>{restoreLink}</LegalLinks>}
     </>
   );
-  const shieldLine = compact ? null : result ? (
-    <T v="small" color={C.text} style={{ textAlign: 'center' }}>
-      {t('Sem compromisso. Cancela quando quiseres.')}
-    </T>
-  ) : (
+  // Same line in every layout: "sem compromisso" would overstate an annual plan once it's paid.
+  const shieldLine = compact ? null : (
     <Row gap={6} style={{ justifyContent: 'center' }}>
       <Ionicons name="shield-checkmark" size={14} color={C.good} />
       <T v="small" color={C.text}>
@@ -328,7 +326,19 @@ export default function Paywall() {
         {table && !compact && !medium ? <FreeVsPro /> : null}
 
         {/* Short screens (SE, large text) keep the strip and both plans above the footer: the notebook card goes. */}
-        {result && !compact ? <Notebook hands={hands.length} sessions={sessions} pro={featuresFor(reason).map((f) => f.feature).slice(0, medium ? 0 : 3)} compact={medium} /> : null}
+        {/* On Plus's tab only what Plus unlocks, under its own name. */}
+        {result && !compact ? (
+          <Notebook
+            hands={hands.length}
+            sessions={sessions}
+            tier={view}
+            pro={featuresFor(reason)
+              .map((f) => f.feature)
+              .filter((f) => view === 'pro' || unlocks('plus', f.key))
+              .slice(0, medium ? 0 : 3)}
+            compact={medium}
+          />
+        ) : null}
 
         {/* Small phones skip the feature list so both plans fit above the footer. */}
         <View style={{ gap: S.sm, display: compact || table || result ? 'none' : 'flex' }}>
@@ -364,7 +374,7 @@ export default function Paywall() {
           <View onLayout={(e) => measure('plans', e.nativeEvent.layout.y + e.nativeEvent.layout.height)} style={{ gap: short ? S.sm : S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">{viewName}</T>
-            {result && trial ? <TrialStrip days={trial} /> : null}
+            {result && trial ? <TrialStrip days={trial} compact={compact} /> : null}
             {inviteOffer && view === 'pro' ? (
               <Pressable
                 accessibilityRole="button"
@@ -613,7 +623,7 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
  * (never money: this screen can be open at the table), and the Pro feature this paywall is about.
  * Nothing logged yet: the three Pro rows instead, so the card never shows zeros.
  */
-function Notebook({ hands, sessions, pro, compact }: { hands: number; sessions: { endedAt?: number; startedAt: number }[]; pro: { key: string; icon: string; title: string; body: string }[]; compact: boolean }) {
+function Notebook({ hands, sessions, tier, pro, compact }: { hands: number; sessions: { endedAt?: number; startedAt: number }[]; tier: PaidTier; pro: { key: string; icon: string; title: string; body: string }[]; compact: boolean }) {
   const done = sessions.filter((s) => s.endedAt);
   const hours = Math.round(done.reduce((a, s) => a + playedMs(s as Parameters<typeof playedMs>[0]), 0) / 3_600_000);
   const stats = [
@@ -655,7 +665,7 @@ function Notebook({ hands, sessions, pro, compact }: { hands: number; sessions: 
       {pro.length ? (
         <>
           <View style={{ height: 1, backgroundColor: C.border }} />
-          <T v="label">{t('Com Pro, também')}</T>
+          <T v="label">{tier === 'plus' ? t('Com Plus, também') : t('Com Pro, também')}</T>
           {rows}
         </>
       ) : null}
@@ -663,9 +673,14 @@ function Notebook({ hands, sessions, pro, compact }: { hands: number; sessions: 
   );
 }
 
-/** The trial in one strip above the plans: today free, the warning day, the first charge. Real dates, as in TrialSteps. */
-function TrialStrip({ days }: { days: number }) {
+/**
+ * The trial in one strip above the plans: today free, the warning day, the first charge. Real dates, as in TrialSteps.
+ * On the smallest iPhones the icons go, so both plans stay above the footer in every language.
+ * At 160%+ text the three columns broke words ("Avisamos-/te"): one line per step instead.
+ */
+function TrialStrip({ days, compact }: { days: number; compact?: boolean }) {
   const [now] = useState(() => Date.now());
+  const big = useWindowDimensions().fontScale >= 1.6;
   const end = now + days * 86_400_000;
   const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   const steps: { icon: IconName; when: string; what: string }[] = [
@@ -673,15 +688,25 @@ function TrialStrip({ days }: { days: number }) {
     days >= 3 ? { icon: 'notifications-outline', when: day(chargeNoticeAt(end)), what: t('Avisamos-te') } : { icon: 'close-circle-outline', when: t('Antes disso'), what: t('Cancelas') },
     { icon: 'card-outline', when: day(end), what: t('Começa a cobrança') },
   ];
+  const label = steps.map((s) => `${s.when}: ${s.what}`).join('. ');
+  if (big)
+    return (
+      <View accessible accessibilityLabel={label} style={{ borderRadius: R.md, backgroundColor: C.surface2, padding: S.sm, gap: S.xs }}>
+        {steps.map((s) => (
+          <T key={s.when} v="body">
+            <T v="body" style={{ fontFamily: ff(700) }}>
+              {s.when}
+            </T>
+            {' · ' + s.what}
+          </T>
+        ))}
+      </View>
+    );
   return (
-    <Row
-      gap={0}
-      accessible
-      accessibilityLabel={steps.map((s) => `${s.when}: ${s.what}`).join('. ')}
-      style={{ borderRadius: R.md, backgroundColor: C.surface2, paddingVertical: S.sm, alignItems: 'flex-start' }}>
+    <Row gap={0} accessible accessibilityLabel={label} style={{ borderRadius: R.md, backgroundColor: C.surface2, paddingVertical: S.sm, alignItems: 'flex-start' }}>
       {steps.map((s, i) => (
         <View key={s.when} style={{ flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 4 }}>
-          <Ionicons name={s.icon} size={16} color={i === 0 ? C.accent : C.textDim} />
+          {compact ? null : <Ionicons name={s.icon} size={16} color={i === 0 ? C.accent : C.textDim} />}
           <T v="h3" style={{ textAlign: 'center' }}>
             {s.when}
           </T>

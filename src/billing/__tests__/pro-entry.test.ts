@@ -62,7 +62,10 @@ test('on 760-900 pt screens the paywall keeps both plans above the footer', () =
   assert.match(p, /table && !compact && !medium \? <FreeVsPro/);
   assert.match(p, /reason !== 'welcome' && !medium && !result \? <Pill/);
   // The result layout: the notebook card goes on short screens and keeps only its counts at 760-900.
-  assert.match(p, /result && !compact \? <Notebook .*slice\(0, medium \? 0 : 3\)\} compact=\{medium\} \/>/);
+  assert.match(p, /result && !compact \? \(\s*<Notebook[\s\S]*?\.slice\(0, medium \? 0 : 3\)\}\s*compact=\{medium\}/);
+  // On Plus's tab the notebook lists only what Plus unlocks, and the Pro headline stays on Pro's tab.
+  assert.match(p, /\.filter\(\(f\) => view === 'pro' \|\| unlocks\('plus', f\.key\)\)/);
+  assert.match(p, /result && view === 'pro' && PROFILE_REASONS\.includes\(reason\)/);
 });
 
 test('restoring the one-time Pro on the paywall unlocks like a subscription', () => {

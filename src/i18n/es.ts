@@ -3863,6 +3863,7 @@ const es: Record<string, string> = {
   'Mãos sem limite, e backers e makeup sempre certos.': 'Manos sin límite, y backers y makeup siempre cuadrados.',
   'Mãos sem limite, e onde ganhas e onde perdes.': 'Manos sin límite, y dónde ganas y dónde pierdes.',
   'Mãos sem limite, e ROI e ITM por buy-in e festival.': 'Manos sin límite, y ROI e ITM por buy-in y festival.',
+  'Com Plus, também': 'Con Plus, también',
 };
 
 export default es;
