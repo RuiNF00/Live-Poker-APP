@@ -61,6 +61,8 @@ export function buildBackup(
   d: {
     hands: Hand[];
     sessions: Session[];
+    /** Every session, those from results lists left out of `sessions` included (the store's). */
+    allSessions?: Session[];
     players: PlayerNote[];
     bankrolls?: Bankroll[];
     transfers?: Transfer[];
@@ -85,7 +87,7 @@ export function buildBackup(
     v: 1,
     exportedAt: now,
     hands: d.hands,
-    sessions: d.sessions,
+    sessions: d.allSessions ?? d.sessions,
     players: d.players,
     bankrolls: d.bankrolls ?? [],
     transfers: d.transfers ?? [],
@@ -329,6 +331,7 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('bankrollId', isStr),
     ...pick('hideAmounts', isBool),
     ...pick('includeSwaps', isBool),
+    ...pick('countCashLists', isBool),
     ...pick('mindAsk', isBool),
     ...pick('widgetResult', isBool),
     ...pick('haptics', isBool),
@@ -379,7 +382,7 @@ function stampOf(ts: number): string {
 
 export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfers: Transfer[] = [], expenses: { trip: Trip; x: Expense }[] = [], sep: CsvSep = ','): string {
   const cell = (v: string | number | undefined) => csvCell(v, sep);
-  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'makeup_cut', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id'];
+  const head = ['date', 'start_time', 'type', 'format', 'bankroll', 'game', 'venue', 'currency', 'hours', 'hands', 'buy_in', 'entries', 'add_on', 'total_cost', 'cash_out', 'sold_pct', 'markup', 'expenses', 'tips', 'profit', 'swaps', 'makeup_cut', 'place', 'field', 'mtt_day', 'bagged_stack', 'country', 'tax_withheld', 'tax_form', 'tax_status', 'notes', 'started_at', 'ended_at', 'id', 'cash_list'];
   const rows = list
     .filter((s) => s.endedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
@@ -424,6 +427,8 @@ export function sessionsCsv(list: Session[], bankrolls: Bankroll[] = [], transfe
         stampOf(s.startedAt),
         stampOf(s.endedAt!),
         s.id,
+        // From a list of tournament results (only cashes): the import marks it again.
+        s.cashList ? 1 : '',
       ]
         .map(cell)
         .join(sep),

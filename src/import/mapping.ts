@@ -44,6 +44,8 @@ export const FIELDS = [
   'taxWithheld',
   'taxForm',
   'taxStatus',
+  // From a list of tournament results: only cashes (Session.cashList).
+  'cashList',
 ] as const;
 export type Field = (typeof FIELDS)[number];
 
@@ -91,6 +93,7 @@ const SYN: Record<Field, string[]> = {
   taxWithheld: [],
   taxForm: [],
   taxStatus: [],
+  cashList: [],
 };
 
 const ALL_SYN = new Set(Object.values(SYN).flat());
@@ -226,6 +229,7 @@ export function mappingFor(source: SourceId, headers: string[], rows: string[][]
       taxWithheld: idx(headers, 'taxwithheld'),
       taxForm: idx(headers, 'taxform'),
       taxStatus: idx(headers, 'taxstatus'),
+      cashList: idx(headers, 'cashlist'),
       hours: idx(headers, 'hours'),
       handsDealt: idx(headers, 'hands'),
       kind: idx(headers, 'type'),

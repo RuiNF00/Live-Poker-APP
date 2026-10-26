@@ -20,6 +20,7 @@ import { usePaged } from '@/components/ShowMore';
 import { YearReviewEntry } from '@/components/YearReviewEntry';
 import { WinRateCard } from '@/components/WinRate';
 import { HomeCurrencyCard } from '@/components/HomeCurrencyCard';
+import { CashListCard } from '@/components/CashListCard';
 import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, IconButton, ListGroup, ListItem, Row, Screen, Section, Segmented, Stat, StatGrid, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { track } from '@/lib/events';
@@ -266,6 +267,8 @@ function BankrollTab() {
             <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => withdraw()} />
           </Row>
         </Card>
+
+        <CashListCard />
 
         {fresh ? (
           // A new player's one next step sits right under the balance, not below rules and tools.
@@ -871,7 +874,7 @@ function SessionRow({ s, bankroll, onEdit }: { s: Session; bankroll?: string; on
       icon={mtt ? 'trophy-outline' : 'cash-outline'}
       iconColor={mtt ? C.warn : C.info}
       title={s.name || (mtt ? t('Torneio') : 'Cash')}
-      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
+      subtitle={[isBagged(s) ? t('Ensacado') + ' ' + chips(s.bag!.stack) : '', shortDate(s.startedAt), duration(playedMs(s)), formatOf(s) === 'online' ? 'Online' : '', s.cashList ? t('Lista de prémios') : '', bankroll, s.venue, s.finish ? t('{n}.º', { n: s.finish }) + (s.field ? '/' + s.field : '') : ''].filter(Boolean).join(' · ')}
       right={
         <T v="mono" color={p > 0 ? C.good : p < 0 ? C.bad : C.textDim}>
           {plus(p) + fmt(p, s.currency)}

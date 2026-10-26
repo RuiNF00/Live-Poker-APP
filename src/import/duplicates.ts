@@ -39,8 +39,24 @@ function index<T>(items: T[], key: (x: T) => string, at: (x: T) => number): Map<
   return m;
 }
 
+/**
+ * How two sessions are compared. The file of another app: the whole action, on the same day or
+ * 3 hours apart. A list of tournament results: the prize alone (it doesn't know re-entries or
+ * add-ons), up to `days` apart (a festival lists the event's start or its final day).
+ */
+export interface DupRule {
+  amount?: (s: Session) => number;
+  days?: number;
+}
+
+const DAY = 86400_000;
+/** Whole days between two local dates (a DST night is 23 or 25 hours, hence the rounding). */
+const daysApart = (a: number, b: number) => Math.round((new Date(a).setHours(12, 0, 0, 0) - new Date(b).setHours(12, 0, 0, 0)) / DAY);
+
 /** Incoming session id → the existing session it matches, each existing session matched at most once. */
-export function likelyDuplicates(incoming: Session[], existing: Session[]): Map<string, Session> {
+export function likelyDuplicates(incoming: Session[], existing: Session[], rule: DupRule = {}): Map<string, Session> {
+  const amount = rule.amount ?? gross;
+  const span = rule.days ?? 0;
   const have = new Set(existing.map((s) => s.id));
   // Only the same day and the days 3 hours either side can hold a match: 2,000 sessions against
   // a 10,000-row file was 20 million comparisons on the review screen.
@@ -50,13 +66,18 @@ export function likelyDuplicates(incoming: Session[], existing: Session[]): Map<
   for (const s of incoming) {
     // Same id: the import merges it anyway.
     if (have.has(s.id)) continue;
-    const g = gross(s);
+    const g = amount(s);
     const k = s.kind + '|' + s.currency + '|';
     const days = new Set([dayKey(s.startedAt - THREE_HOURS), dayKey(s.startedAt), dayKey(s.startedAt + THREE_HOURS)]);
+    for (let d = 1; d <= span; d++) {
+      days.add(dayKey(new Date(s.startedAt).setDate(new Date(s.startedAt).getDate() - d)));
+      days.add(dayKey(new Date(s.startedAt).setDate(new Date(s.startedAt).getDate() + d)));
+    }
+    const close = (t: number) => (span ? Math.abs(daysApart(t, s.startedAt)) <= span : near(t, s.startedAt));
     let pair: [number, Session] | undefined;
     for (const d of days)
       for (const c of groups.get(k + d) ?? [])
-        if ((!pair || c[0] < pair[0]) && !used.has(c[1].id) && near(c[1].startedAt, s.startedAt) && sameAmount(gross(c[1]), g)) {
+        if ((!pair || c[0] < pair[0]) && !used.has(c[1].id) && close(c[1].startedAt) && sameAmount(amount(c[1]), g)) {
           pair = c;
           break;
         }

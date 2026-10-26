@@ -89,7 +89,10 @@ export default function ExportScreen() {
   const fullHistory = period === 'all' && !scope;
   const sessionsFile = () =>
     run('sessions', !fullHistory, () => {
-      const list = report.currencies.flatMap((c) => c.sessions);
+      // A data file, not a report: the cashes from results lists go too, marked (cash_list), so
+      // importing it back keeps them apart; the PDF and the tax report follow «Contar nos resultados».
+      const all = store.allSessions === sessions ? report : buildReport({ sessions: store.allSessions, transfers, bankrolls, scope, range, trips, home: settings.currency });
+      const list = all.currencies.flatMap((c) => c.sessions);
       const tx = transfers.filter((x) => (!ids || ids.has(x.bankrollId)) && inRange(x.at, range));
       const spent = trips.flatMap((trip) => trip.expenses.filter((x) => inRange(x.at, range)).map((x) => ({ trip, x })));
       return saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(list, bankrolls, tx, spent, csvSep()), 'text/csv');
@@ -156,7 +159,7 @@ export default function ExportScreen() {
         <Section title={t('Exportar')}>
           <ListGroup>
             <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={<T v="small">{t('Resultados por bankroll, jogo, sala, mês e país, viagens e todas as sessões')}</T>} right={lock} onPress={pdf} />
-            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={<T v="small">{t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')}</T>} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
+            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={<T v="small">{store.allSessions.length > sessions.length ? t('Com depósitos, levantamentos, despesas de viagem e os prémios importados de listas de resultados (marcados), para Excel ou Google Sheets') : t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')}</T>} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
             <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={<T v="small">{t('Posição, cartas, board, resultado, tags e notas')}</T>} right={lock} onPress={handsFile} />
             <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={<T v="small">{t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')}</T>} onPress={backup} />
           </ListGroup>

@@ -29,6 +29,7 @@ import { KEYS, SPECS, loadAll as readAll } from './boot';
 import { alive, bankrollMark, joinDeleted, revive, type Deleted, type DeletedList } from './deleted-math';
 import { clearDeleted, currentDeleted, forgetDeleted, importDeleted, loadDeleted, markDeleted } from './deleted';
 import { createWriter, type KV } from './persist';
+import { countedSessions } from './session-math';
 import { keepCuts, withCuts } from './staking';
 import { mergeSwaps, withSwaps, type Swap } from './swaps';
 import { currentSwaps, getAllSwaps, importSwaps, useSwaps } from './swaps-store';
@@ -43,7 +44,10 @@ export function uid(prefix = ''): string {
 interface StoreValue {
   ready: boolean;
   hands: Hand[];
+  /** What results count: sessions from results lists (Session.cashList) only when the player turned them on. */
   sessions: Session[];
+  /** Every session, for backups, imports and the results-list card. */
+  allSessions: Session[];
   players: PlayerNote[];
   /** Oldest first. Never empty once ready. */
   bankrolls: Bankroll[];
@@ -205,10 +209,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return other.length ? Math.min(...other.map((s) => s.startedAt)) : null;
   }, [rawSessions, packages.length, settings.currency]);
   const rates = useRates(fxSince);
-  const sessions = useMemo(
+  const allSessions = useMemo(
     () => withSwaps(withCuts(rawSessions, packages, { table: rates, manual: settings.fxManual }), includeSwaps ? swaps : [], includeSwaps ? groups : []),
     [rawSessions, packages, swaps, groups, includeSwaps, rates, settings.fxManual],
   );
+  // Results lists hold only the cashes: those sessions stay out of what screens count until the
+  // player turns them on (Bankroll). Backups and imports still see them all (allSessions).
+  const countCashLists = settings.countCashLists === true;
+  const sessions = useMemo(() => countedSessions(allSessions, countCashLists), [allSessions, countCashLists]);
   // Privacy mode applies to every amount on screen, set before anything renders with it.
   setMoneyMasked(!!settings.hideAmounts);
   // The draft changes on every tap of hand entry. Keeping it in a ref (and
@@ -376,8 +384,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // A session in a new currency (or an import) gets a bankroll to count towards.
   useEffect(() => {
     if (!loaded.current) return;
-    setBankrolls((cur) => ensureBankrolls(cur, sessions, settings.currency));
-  }, [sessions, settings.currency]);
+    setBankrolls((cur) => ensureBankrolls(cur, allSessions, settings.currency));
+  }, [allSessions, settings.currency]);
 
   const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
   // A deleted hand or session takes its public page with it (queued, so it also works
@@ -436,7 +444,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const gone = bankrolls.find((b) => b.id === id);
       if (!gone || bankrolls.length < 2) return false;
       const to = sortBankrolls(bankrolls).find((b) => b.id !== id && b.currency === gone.currency);
-      const owned = sessions.some((s) => bankrollOf(s, bankrolls)?.id === id) || transfers.some((x) => x.bankrollId === id);
+      const owned = allSessions.some((s) => bankrollOf(s, bankrolls)?.id === id) || transfers.some((x) => x.bankrollId === id);
       if (!to && owned) return false;
       const now = Date.now();
       if (to) {
@@ -449,7 +457,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setSettingsState((st) => (st.bankrollId === id ? { ...st, bankrollId: to?.id } : st));
       return true;
     },
-    [bankrolls, sessions, transfers],
+    [bankrolls, allSessions, transfers],
   );
   const saveBacker = useCallback((b: Backer) => setBackers((l) => upsert(l, { ...b, updatedAt: Date.now() })), []);
   const deleteBacker = useCallback((id: string) => {
@@ -687,6 +695,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ready,
       hands,
       sessions,
+      allSessions,
       players,
       bankrolls: sortedBankrolls,
       transfers,
@@ -748,7 +757,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }),
     // draftKey: re-render consumers when a resumable draft appears or goes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ready, hands, sessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, firstBankrollIn, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
+    [ready, hands, sessions, allSessions, players, sortedBankrolls, transfers, backers, packages, payments, sortedTrips, backing, quarantine, settings, activeSession, defaultBankroll, saveHand, deleteHand, saveSession, deleteSession, savePlayer, deletePlayer, saveBankroll, firstBankrollIn, deleteBankroll, saveTransfer, deleteTransfer, saveBacker, deleteBacker, savePackage, deletePackage, savePayment, deletePayment, saveTrip, deleteTrip, saveBacked, deleteBacked, setSettings, draftKey, setDraft, eraseAll, importData],
   );
 
   // A launch that couldn't read the data goes to the root crash screen (see the launch effect).

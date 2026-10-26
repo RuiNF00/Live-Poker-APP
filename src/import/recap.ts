@@ -3,7 +3,7 @@
 // is the moment a switch from another app pays off, so it uses only what was
 // imported plus what was already here. Pure, so it can be tested.
 
-import { mainCurrency, playedMs, profit } from '@/store/session-math';
+import { countedSessions, mainCurrency, playedMs, profit } from '@/store/session-math';
 import type { Session } from '@/store/types';
 
 export interface ImportRecap {
@@ -20,8 +20,13 @@ export interface ImportRecap {
 
 const yearOf = (ms: number) => new Date(ms).getFullYear();
 
-/** `imported`: the sessions this import added. `all`: every session now in the app, for the best year. */
-export function importRecap(imported: Session[], all: Session[]): ImportRecap {
+/**
+ * `imported`: the sessions this import added. `all`: every session now in the app, for the best year.
+ * Cashes from results lists count only when the player counts them (Settings.countCashLists), like every result.
+ */
+export function importRecap(importedAll: Session[], allSessions: Session[], countCashLists = false): ImportRecap {
+  const imported = countedSessions(importedAll, countCashLists);
+  const all = countedSessions(allSessions, countCashLists);
   const done = imported.filter((s) => s.endedAt);
   const hours = done.reduce((a, s) => a + playedMs(s, s.endedAt) / 3_600_000, 0);
   const venues = new Set(done.map((s) => s.venue.trim().toLowerCase()).filter(Boolean)).size;

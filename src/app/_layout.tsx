@@ -145,6 +145,7 @@ export default function RootLayout() {
             <Stack.Screen name="shared-hands" options={{ title: t('Mãos partilhadas') }} />
             <Stack.Screen name="pack/new" options={{ title: t('Partilhar num só link'), presentation: 'modal', ...sheetClose }} />
             <Stack.Screen name="import" options={{ title: t('Importar de outra app') }} />
+            <Stack.Screen name="import-results" options={{ title: t('Resultados de torneios') }} />
             <Stack.Screen name="export" options={{ title: t('Exportar') }} />
             <Stack.Screen name="r/[code]" options={{ headerShown: false }} />
             <Stack.Screen name="live/[id]" options={{ headerShown: false }} />

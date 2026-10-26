@@ -286,7 +286,7 @@ function tableSizeOf(raw: string, fallback: number): number {
   return n >= 2 && n <= 10 ? n : fallback;
 }
 
-function hash(s: string): string {
+export function hash(s: string): string {
   // FNV-1a, twice with different seeds: short, stable, no crypto needed.
   let a = 0x811c9dc5;
   let b = 0x01000193 ^ 0x5bd1e995;
@@ -631,6 +631,8 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       ...(/^[A-Z]{2}$/.test(country) ? { country } : null),
       ...(kind === 'mtt' && day && day > 1 ? { day: Math.round(day) } : null),
       ...(withheld ? { withheld } : null),
+      // Sweatbook's own CSV: a session from a list of tournament results stays marked (only cashes).
+      ...(opt.source === 'sweatbook' && /^(1|true|yes|sim|s[ií])$/i.test(get(r, 'cashList')) ? { cashList: true as const } : null),
       // No updatedAt: importing the same file again never overwrites a session edited since.
     });
   }
@@ -664,4 +666,4 @@ function isAmbiguous(v: string): boolean {
 }
 
 /** Fields the import screen lets the player point at a column, in display order. */
-export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day' && f !== 'makeupCut' && f !== 'taxWithheld' && f !== 'taxForm' && f !== 'taxStatus');
+export const EDITABLE: Field[] = FIELDS.filter((f) => f !== 'tags' && f !== 'handsDealt' && f !== 'limit' && f !== 'breakMinutes' && f !== 'rebuyCost' && f !== 'addOn' && f !== 'tableSize' && f !== 'sb' && f !== 'bb' && f !== 'id' && f !== 'bankroll' && f !== 'country' && f !== 'day' && f !== 'makeupCut' && f !== 'taxWithheld' && f !== 'taxForm' && f !== 'taxStatus' && f !== 'cashList');
