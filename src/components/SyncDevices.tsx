@@ -10,14 +10,15 @@ import { Platform, Pressable, ScrollView, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
 import { t } from '@/i18n';
-import { formatCode, joinCloud, loadCloud, onCloudChange, parseCode, syncCloud, type CloudState } from '@/lib/cloud-backup';
-import { syncLink } from '@/lib/cloud-code';
-import { buildBackup, importSummary } from '@/store/backup';
+import { download, formatCode, joinCloud, loadCloud, onCloudChange, parseCode, syncCloud, type CloudState } from '@/lib/cloud-backup';
+import { syncLink, takeLinkedCode } from '@/lib/cloud-code';
+import { countsOf, joinWarnings, secondConfirm, SHOW_CODE_MS, type JoinWarning } from '@/lib/cloud-guard';
+import { buildBackup, importSummary, type BackupData } from '@/store/backup';
 import { useStore } from '@/store/store';
 import { C, F, R, S } from '@/theme';
 
 import { activate, ask, confirmTurnOn, errText, note, shareCode, syncedAgo, type ImportData } from './CloudBackup';
-import { Button, Card, Field, ListGroup, ListItem, Row, T, tap } from './ui';
+import { Button, Card, Field, ListGroup, ListItem, Row, Stat, StatGrid, T, tap } from './ui';
 
 /** While the code is on screen and no other device has joined yet: a read every 20 s, for 5 minutes at most. */
 const WATCH_MS = 20_000;
@@ -73,14 +74,81 @@ function Steps({ items }: { items: string[] }) {
   );
 }
 
-/** `join`: opened to type a code (or from the QR link, with `code` filled in). */
-export function SyncDevices({ join: joinFirst, code: linked }: { join?: boolean; code?: string }) {
+/** What each warning says on the join screen and in the second confirmation. */
+function warningText(w: JoinWarning): string {
+  if (w === 'link') return t('Se alguém te enviou este link, não juntes: essa pessoa passa a ver tudo o que guardas.');
+  if (w === 'empty_copy') return t('Esta cópia está vazia e este aparelho tem dados. Se juntares, tudo o que tens aqui vai para essa cópia. Só o faças se a criaste agora num aparelho teu.');
+  return t('Este aparelho deixa de usar o código que tinha. A cópia desse código fica no servidor até expirar.');
+}
+
+/** The code and its QR while on screen; after SHOW_CODE_MS both are covered, so nobody reads them off the screen later. */
+function CodeCard({ cloud }: { cloud: CloudState }) {
+  const [shownAt, setShownAt] = useState(Date.now);
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setHidden(true), SHOW_CODE_MS);
+    return () => clearTimeout(id);
+  }, [shownAt]);
+  if (hidden)
+    return (
+      <Card style={{ alignItems: 'center', gap: S.md }}>
+        <View style={{ width: 208, height: 208, borderRadius: R.md, backgroundColor: C.surface3, alignItems: 'center', justifyContent: 'center', gap: S.sm, padding: S.lg }}>
+          <Ionicons name="eye-off-outline" size={32} color={C.textDim} />
+          <T v="h3" style={{ textAlign: 'center' }}>
+            {t('Código escondido')}
+          </T>
+        </View>
+        <T v="small" style={{ textAlign: 'center' }}>
+          {t('Escondemos o código ao fim de 5 minutos, para ninguém o ler do teu ecrã.')}
+        </T>
+        <Button
+          size="sm"
+          kind="secondary"
+          icon="eye-outline"
+          title={t('Mostrar o código')}
+          style={{ alignSelf: 'stretch' }}
+          onPress={() => {
+            setHidden(false);
+            setShownAt(Date.now());
+          }}
+        />
+      </Card>
+    );
+  return (
+    <Card style={{ alignItems: 'center', gap: S.md }}>
+      <CodeQR c={cloud} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('Copiar código')}
+        onPress={async () => {
+          await Clipboard.setStringAsync(formatCode(cloud));
+          note(t('Código copiado'));
+        }}
+        style={({ pressed }) => ({ alignSelf: 'stretch', backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.borderStrong, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: pressed ? 0.7 : 1 })}>
+        <T selectable style={{ flex: 1, fontFamily: F.mono, fontSize: 14, letterSpacing: 1, color: C.text, textAlign: 'center' }}>
+          {formatCode(cloud)}
+        </T>
+        <Ionicons name="copy-outline" size={18} color={C.accent} />
+      </Pressable>
+      <Button size="sm" kind="secondary" icon="share-outline" title={t('Enviar o código')} style={{ alignSelf: 'stretch' }} onPress={() => shareCode(cloud)} />
+    </Card>
+  );
+}
+
+/**
+ * `join`: opened to type a code. `fromLink`: opened by a sweatbook://sync link; the code waits in
+ * memory (takeLinkedCode), never in the route, and joining it takes the link warning and two yeses.
+ */
+export function SyncDevices({ join: joinFirst, fromLink }: { join?: boolean; fromLink?: boolean }) {
   const store = useStore();
   const latest = useRef(store);
   latest.current = store;
+  const [linked] = useState(() => (fromLink ? takeLinkedCode() : null));
   const [cloud, setCloud] = useState<CloudState | null | undefined>(undefined);
-  const [joining, setJoining] = useState(!!joinFirst || !!linked);
-  const [code, setCode] = useState(linked ?? '');
+  const [joining, setJoining] = useState(!!joinFirst || !!fromLink);
+  const [code, setCode] = useState(linked ? formatCode(linked) : '');
+  // The copy behind the typed code, read and shown before anything joins.
+  const [preview, setPreview] = useState<{ c: CloudState; remote: BackupData } | null>(null);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now);
 
@@ -131,15 +199,49 @@ export function SyncDevices({ join: joinFirst, code: linked }: { join?: boolean;
     }
   };
 
-  const doJoin = async (c: CloudState) => {
+  const typed = parseCode(code);
+  // Still the code from the link (not one typed over it): the link warning stays.
+  const viaLink = !!linked && !!typed && typed.id === linked.id && typed.secret === linked.secret;
+
+  /** First step: read the copy behind the code and show what it holds. Nothing joins yet. */
+  const look = async () => {
+    const c = parseCode(code);
+    if (!c) return note(t('Código inválido'), t('O código tem 26 letras e números, como aparece no outro aparelho.'));
+    // The code this device already uses: nothing to join, just sync.
+    if (cloud && !cloud.gone && cloud.id === c.id && cloud.secret === c.secret) {
+      setJoining(false);
+      return syncNow();
+    }
+    tap();
+    setBusy(true);
+    try {
+      setPreview({ c, remote: await download(c) });
+    } catch (e) {
+      note(t('Não deu para ler a cópia'), errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const warnings = preview
+    ? joinWarnings({ remote: countsOf(preview.remote), local: countsOf(buildBackup(store)), fromLink: viaLink, otherCode: !!cloud && !cloud.gone })
+    : [];
+
+  const doJoin = async (c: CloudState, remote: BackupData) => {
     tap('medium');
     setBusy(true);
     try {
       let n: ReturnType<ImportData> | null = null;
-      await joinCloud(c, buildBackup(latest.current), (r) => {
-        n = latest.current.importData(r, { sync: true });
-      });
+      await joinCloud(
+        c,
+        buildBackup(latest.current),
+        (r) => {
+          n = latest.current.importData(r, { sync: true });
+        },
+        remote,
+      );
       setJoining(false);
+      setPreview(null);
       setCode('');
       tap('success');
       note(t('Aparelho ligado'), n ? `${importSummary(n)} ${t('A partir de agora, os dois aparelhos ficam iguais sempre que os abres.')}` : undefined);
@@ -150,23 +252,21 @@ export function SyncDevices({ join: joinFirst, code: linked }: { join?: boolean;
     }
   };
 
+  /** Second step: yes, and for a link or an empty copy over data here, a second, deliberate yes. */
   const join = () => {
-    const c = parseCode(code);
-    if (!c) return note(t('Código inválido'), t('O código tem 26 letras e números, como aparece no outro aparelho.'));
-    // The code this device already uses: nothing to join, just sync.
-    if (cloud && !cloud.gone && cloud.id === c.id && cloud.secret === c.secret) {
-      setJoining(false);
-      return syncNow();
-    }
+    if (!preview) return;
+    const { c, remote } = preview;
     const hasData = store.hands.length > 0 || store.sessions.length > 0 || store.players.length > 0;
     const body = [
       hasData ? t('O que tens neste aparelho junta-se ao que está na cópia. Nada se apaga e nada fica a dobrar.') : t('As mãos, sessões e notas da cópia vêm para este aparelho.'),
-      cloud && !cloud.gone ? t('Este aparelho deixa de usar o código que tinha. A cópia desse código fica no servidor até expirar.') : '',
       t('Usa só um código dos teus aparelhos: quem tem o código vê tudo o que está na cópia.'),
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-    ask(t('Juntar este aparelho?'), body, t('Juntar'), () => void doJoin(c));
+    ].join('\n\n');
+    const go = () => void doJoin(c, remote);
+    ask(t('Juntar este aparelho?'), body, t('Juntar'), () => {
+      if (!secondConfirm(warnings)) return go();
+      // A beat later: on iOS a second alert opened from the first one's button can be swallowed.
+      setTimeout(() => ask(t('Tens a certeza?'), warnings.filter((w) => w !== 'other_code').map(warningText).join('\n\n'), t('Juntar mesmo assim'), go), 350);
+    });
   };
 
   const turnOn = () =>
@@ -198,28 +298,24 @@ export function SyncDevices({ join: joinFirst, code: linked }: { join?: boolean;
     </View>
   );
 
+  const warningCards = (list: JoinWarning[]) =>
+    list.map((w) => (
+      <Card key={w} tone="warn" style={{ gap: S.sm }}>
+        <Row gap={10} style={{ alignItems: 'flex-start' }}>
+          <Ionicons name="warning-outline" size={20} color={C.warn} />
+          <T v="small" color={w === 'other_code' ? undefined : C.warn} style={{ flex: 1 }}>
+            {warningText(w)}
+          </T>
+        </Row>
+      </Card>
+    ));
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.xl, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
       {showing && cloud ? (
         <>
           {header('phone-portrait-outline', t('Os mesmos dados nos teus aparelhos'), t('No iPhone, no iPad ou num telemóvel novo. Sem conta e sem email: só este código.'))}
-          <Card style={{ alignItems: 'center', gap: S.md }}>
-            <CodeQR c={cloud} />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('Copiar código')}
-              onPress={async () => {
-                await Clipboard.setStringAsync(formatCode(cloud));
-                note(t('Código copiado'));
-              }}
-              style={({ pressed }) => ({ alignSelf: 'stretch', backgroundColor: C.bgDeep, borderRadius: R.md, borderWidth: 1, borderColor: C.borderStrong, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: pressed ? 0.7 : 1 })}>
-              <T selectable style={{ flex: 1, fontFamily: F.mono, fontSize: 14, letterSpacing: 1, color: C.text, textAlign: 'center' }}>
-                {formatCode(cloud)}
-              </T>
-              <Ionicons name="copy-outline" size={18} color={C.accent} />
-            </Pressable>
-            <Button size="sm" kind="secondary" icon="share-outline" title={t('Enviar o código')} style={{ alignSelf: 'stretch' }} onPress={() => shareCode(cloud)} />
-          </Card>
+          <CodeCard cloud={cloud} />
           <Steps
             items={[
               t('No outro aparelho, instala a Sweatbook.'),
@@ -246,9 +342,27 @@ export function SyncDevices({ join: joinFirst, code: linked }: { join?: boolean;
           </T>
           <Button size="sm" kind="plain" icon="key-outline" title={t('Este é o aparelho novo? Escrever o código')} style={{ alignSelf: 'center' }} onPress={() => setJoining(true)} />
         </>
+      ) : preview ? (
+        <>
+          {header('cloud-download-outline', t('O que está nesta cópia'), t('Confirma que é a tua antes de juntar este aparelho.'))}
+          <StatGrid cols={3}>
+            <Stat label={t('Sessões')} value={String(preview.remote.sessions.length)} />
+            <Stat label={t('Mãos')} value={String(preview.remote.hands.length)} />
+            <Stat label={t('Jogadores')} value={String(preview.remote.players.length)} />
+          </StatGrid>
+          <T v="small" style={{ textAlign: 'center' }}>
+            {t('Última alteração: {ago}', { ago: preview.remote.exportedAt ? syncedAgo(preview.remote.exportedAt, now) : '—' })}
+          </T>
+          {warningCards(warnings)}
+          <View style={{ gap: S.sm }}>
+            <Button title={busy ? t('A juntar…') : t('Juntar este aparelho')} icon="link-outline" disabled={busy} onPress={join} />
+            <Button kind="ghost" title={t('Cancelar')} disabled={busy} onPress={() => setPreview(null)} />
+          </View>
+        </>
       ) : (
         <>
           {header('key-outline', t('Juntar este aparelho'), t('Escreve o código que aparece no outro aparelho, em Definições › Cópia na nuvem › Usar noutro aparelho.'))}
+          {viaLink ? warningCards(['link']) : null}
           <View style={{ gap: S.sm }}>
             <Field
               value={code}
@@ -260,7 +374,7 @@ export function SyncDevices({ join: joinFirst, code: linked }: { join?: boolean;
               placeholder="XXXXX-XXXXX-XXXXXXXXXXXXXXXX"
               inputStyle={{ fontFamily: F.mono }}
             />
-            <Button title={busy ? t('A juntar…') : t('Juntar este aparelho')} icon="link-outline" disabled={busy || !code.trim()} onPress={join} />
+            <Button title={busy ? t('A ler a cópia…') : t('Ver o que a cópia tem')} icon="search-outline" disabled={busy || !code.trim()} onPress={look} />
             {Platform.OS === 'ios' ? (
               <T v="tiny" style={{ textAlign: 'center' }}>
                 {t('Ou aponta a câmara deste iPhone ou iPad ao QR do outro aparelho.')}

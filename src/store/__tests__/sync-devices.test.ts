@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import type { CloudState } from '../../lib/cloud-code';
 import { parseCode, syncLink } from '../../lib/cloud-code';
-import { countsOf, PULL_GAP_MS, pullDue, uploadBlock } from '../../lib/cloud-guard';
+import { countsOf, joinWarnings, PULL_GAP_MS, pullDue, secondConfirm, uploadBlock } from '../../lib/cloud-guard';
 import type { Hand } from '../../poker/types';
 import { buildBackup, type BackupData } from '../backup';
 import { aheadOf, editedSince, mergeBackups, syncPlan, writtenElsewhere } from '../backup-merge';
@@ -464,4 +464,38 @@ test('the QR link carries the whole code and reads back the same', () => {
   const c = { id: '0123456789', secret: 'ABCDEFGHJKMNPQRS' };
   assert.equal(syncLink(c), 'sweatbook://sync#0123456789ABCDEFGHJKMNPQRS');
   assert.deepEqual(parseCode(syncLink(c).split('#')[1]), c);
+});
+
+test('joining someone else\'s code: a link and an empty copy over data here each take a second, deliberate yes', () => {
+  const mine = countsOf({ sessions: [ses('a1', 0)], hands: [hand('h1')] });
+  const none = countsOf({});
+  const theirs = countsOf({ sessions: [ses('x', 0)] });
+  // A code typed from my other device, whose copy has my things: one yes.
+  assert.deepEqual(joinWarnings({ remote: theirs, local: mine, fromLink: false, otherCode: false }), []);
+  assert.equal(secondConfirm([]), false);
+  // The same code arriving in a link: someone may have sent it to read everything here.
+  const link = joinWarnings({ remote: theirs, local: mine, fromLink: true, otherCode: false });
+  assert.deepEqual(link, ['link']);
+  assert.equal(secondConfirm(link), true);
+  // A copy with nothing in it while this device has data: everything here would go to it.
+  const empty = joinWarnings({ remote: none, local: mine, fromLink: false, otherCode: true });
+  assert.deepEqual(empty, ['empty_copy', 'other_code']);
+  assert.equal(secondConfirm(empty), true);
+  // A fresh install joining an empty copy has nothing to give away; changing codes alone is said, once.
+  assert.deepEqual(joinWarnings({ remote: none, local: none, fromLink: false, otherCode: false }), []);
+  assert.equal(secondConfirm(['other_code']), false);
+});
+
+test('what the attacker gets is only what the player confirmed: a join shown an empty copy sends this device\'s data', () => {
+  // The case the second yes is for: an empty copy (made by whoever sent the link) and a device full of sessions.
+  const s = new Server();
+  const attacker = new Device('their phone', { bankrolls: [] });
+  attacker.activate(s);
+  const victim = new Device('my iPhone', { sessions: [ses('mine', 900)] });
+  const w = joinWarnings({ remote: countsOf(s.copy!), local: countsOf(victim.snap()), fromLink: true, otherCode: false });
+  assert.deepEqual(w, ['link', 'empty_copy']);
+  assert.equal(secondConfirm(w), true);
+  // Only after both yeses does anything leave the device: then the copy holds it, as warned.
+  victim.join(s, attacker.c!);
+  assert.deepEqual(s.copy!.sessions.map((x) => x.id), ['mine']);
 });

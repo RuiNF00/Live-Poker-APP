@@ -210,6 +210,12 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
       ]);
   };
 
+  // Stop syncing on this device only: the copy stays for the other one; what is here stays here.
+  const leaveHere = () =>
+    ask(t('Desligar só este aparelho?'), t('A cópia fica para o outro aparelho. Este deixa de sincronizar, e o que tens aqui fica aqui.'), t('Desligar'), () => {
+      saveCloud(null).then(() => setCloud(null));
+    });
+
   if (cloud === undefined) return null;
   // The auto-backup is holding back: say so, «Copiar agora» lets the player decide.
   const stalled = !!cloud && cloudAhead(countsOf(buildBackup(store)), cloud);
@@ -272,6 +278,21 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
         </>
       ) : cloud ? (
         <>
+          {cloud.shared ? (
+            // Always in sight while another device syncs with this code: which it is, and how to leave it without deleting its copy.
+            <View style={{ gap: S.sm, padding: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
+              <Row gap={10}>
+                <Ionicons name="phone-portrait-outline" size={18} color={C.good} />
+                <View style={{ flex: 1 }}>
+                  <T v="small" color={C.text}>
+                    {t('Ligado a outro aparelho')}
+                  </T>
+                  <T v="tiny">{t('Os dois sincronizam com este código. Quem tem o código vê tudo.')}</T>
+                </View>
+              </Row>
+              <Button size="sm" kind="ghost" icon="log-out-outline" title={t('Só neste aparelho')} style={{ alignSelf: 'flex-start' }} onPress={leaveHere} />
+            </View>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('Copiar código')}

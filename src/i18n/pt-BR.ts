@@ -1894,6 +1894,22 @@ const ptBR: Record<string, string> = {
   'Mostrar o código deste aparelho': 'Mostrar o código deste aparelho',
   'Ainda não tens código? Ativa a cópia na nuvem no aparelho onde tens os dados. Aparece lá o código para este.': 'Ainda não tem código? Ative o backup na nuvem no aparelho onde estão os seus dados. O código para este aparece lá.',
   'Ativar neste aparelho': 'Ativar neste aparelho',
+  'Desligar só este aparelho?': 'Desativar só neste aparelho?',
+  'A cópia fica para o outro aparelho. Este deixa de sincronizar, e o que tens aqui fica aqui.': 'O backup fica para o outro aparelho. Este deixa de sincronizar, e o que você tem aqui fica aqui.',
+  'Os dois sincronizam com este código. Quem tem o código vê tudo.': 'Os dois sincronizam com este código. Quem tem o código vê tudo.',
+  'Se alguém te enviou este link, não juntes: essa pessoa passa a ver tudo o que guardas.': 'Se alguém enviou este link para você, não conecte: essa pessoa passa a ver tudo o que você guarda.',
+  'Esta cópia está vazia e este aparelho tem dados. Se juntares, tudo o que tens aqui vai para essa cópia. Só o faças se a criaste agora num aparelho teu.': 'Este backup está vazio e este aparelho tem dados. Se você conectar, tudo o que tem aqui vai para esse backup. Só faça isso se você acabou de criá-lo em um aparelho seu.',
+  'Código escondido': 'Código escondido',
+  'Escondemos o código ao fim de 5 minutos, para ninguém o ler do teu ecrã.': 'Escondemos o código depois de 5 minutos, para ninguém ler na sua tela.',
+  'Mostrar o código': 'Mostrar o código',
+  'Não deu para ler a cópia': 'Não foi possível ler o backup',
+  'Tens a certeza?': 'Tem certeza?',
+  'Juntar mesmo assim': 'Conectar mesmo assim',
+  'O que está nesta cópia': 'O que está neste backup',
+  'Confirma que é a tua antes de juntar este aparelho.': 'Confirme que é o seu antes de conectar este aparelho.',
+  'Última alteração: {ago}': 'Última alteração: {ago}',
+  'A ler a cópia…': 'Lendo o backup…',
+  'Ver o que a cópia tem': 'Ver o que o backup tem',
 };
 
 export default ptBR;

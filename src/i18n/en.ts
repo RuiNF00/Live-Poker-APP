@@ -3610,6 +3610,22 @@ const en: Record<string, string> = {
   'Mostrar o código deste aparelho': 'Show this device\'s code',
   'Ainda não tens código? Ativa a cópia na nuvem no aparelho onde tens os dados. Aparece lá o código para este.': 'No code yet? Turn on cloud backup on the device that has your data. The code for this one shows up there.',
   'Ativar neste aparelho': 'Turn it on here',
+  'Desligar só este aparelho?': 'Turn off on this device only?',
+  'A cópia fica para o outro aparelho. Este deixa de sincronizar, e o que tens aqui fica aqui.': 'The backup stays for the other device. This one stops syncing, and what\'s on it stays on it.',
+  'Os dois sincronizam com este código. Quem tem o código vê tudo.': 'Both sync with this code. Whoever has the code sees everything.',
+  'Se alguém te enviou este link, não juntes: essa pessoa passa a ver tudo o que guardas.': 'If someone sent you this link, don\'t connect: that person would see everything you keep.',
+  'Esta cópia está vazia e este aparelho tem dados. Se juntares, tudo o que tens aqui vai para essa cópia. Só o faças se a criaste agora num aparelho teu.': 'This backup is empty and this device has data. If you connect, everything here goes to that backup. Only do it if you just created it on a device of yours.',
+  'Código escondido': 'Code hidden',
+  'Escondemos o código ao fim de 5 minutos, para ninguém o ler do teu ecrã.': 'We hide the code after 5 minutes, so nobody can read it off your screen.',
+  'Mostrar o código': 'Show the code',
+  'Não deu para ler a cópia': 'Couldn\'t read the backup',
+  'Tens a certeza?': 'Are you sure?',
+  'Juntar mesmo assim': 'Connect anyway',
+  'O que está nesta cópia': 'What\'s in this backup',
+  'Confirma que é a tua antes de juntar este aparelho.': 'Make sure it\'s yours before you connect this device.',
+  'Última alteração: {ago}': 'Last change: {ago}',
+  'A ler a cópia…': 'Reading the backup…',
+  'Ver o que a cópia tem': 'See what\'s in the backup',
 };
 
 export default en;

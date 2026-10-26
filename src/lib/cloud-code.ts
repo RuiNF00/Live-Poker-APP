@@ -56,3 +56,18 @@ export function parseCode(raw: string): CloudState | null {
   if (s.length !== 26 || [...s].some((ch) => !ALPHA.includes(ch))) return null;
   return { id: s.slice(0, 10), secret: s.slice(10) };
 }
+
+// A code that arrived in a link (the QR read by the camera, or a link someone sent) waits here, in
+// memory, for the join screen: never in the route (/devices?code=), where navigation history and
+// logs keep it. Taken once.
+let linked: Pick<CloudState, 'id' | 'secret'> | null = null;
+
+export function setLinkedCode(c: Pick<CloudState, 'id' | 'secret'> | null): void {
+  linked = c;
+}
+
+export function takeLinkedCode(): Pick<CloudState, 'id' | 'secret'> | null {
+  const c = linked;
+  linked = null;
+  return c;
+}

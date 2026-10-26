@@ -3604,6 +3604,22 @@ const es: Record<string, string> = {
   'Mostrar o código deste aparelho': 'Mostrar el código de este dispositivo',
   'Ainda não tens código? Ativa a cópia na nuvem no aparelho onde tens os dados. Aparece lá o código para este.': '¿Aún no tienes código? Activa la copia en la nube en el dispositivo donde tienes los datos. Allí aparece el código para este.',
   'Ativar neste aparelho': 'Activar en este dispositivo',
+  'Desligar só este aparelho?': '¿Desactivar solo en este dispositivo?',
+  'A cópia fica para o outro aparelho. Este deixa de sincronizar, e o que tens aqui fica aqui.': 'La copia se queda para el otro dispositivo. Este deja de sincronizarse, y lo que tienes aquí se queda aquí.',
+  'Os dois sincronizam com este código. Quem tem o código vê tudo.': 'Los dos se sincronizan con este código. Quien tiene el código lo ve todo.',
+  'Se alguém te enviou este link, não juntes: essa pessoa passa a ver tudo o que guardas.': 'Si alguien te envió este enlace, no lo conectes: esa persona pasaría a ver todo lo que guardas.',
+  'Esta cópia está vazia e este aparelho tem dados. Se juntares, tudo o que tens aqui vai para essa cópia. Só o faças se a criaste agora num aparelho teu.': 'Esta copia está vacía y este dispositivo tiene datos. Si lo conectas, todo lo que tienes aquí va a esa copia. Hazlo solo si la acabas de crear en un dispositivo tuyo.',
+  'Código escondido': 'Código oculto',
+  'Escondemos o código ao fim de 5 minutos, para ninguém o ler do teu ecrã.': 'Ocultamos el código a los 5 minutos, para que nadie lo lea en tu pantalla.',
+  'Mostrar o código': 'Mostrar el código',
+  'Não deu para ler a cópia': 'No se pudo leer la copia',
+  'Tens a certeza?': '¿Seguro?',
+  'Juntar mesmo assim': 'Conectar de todos modos',
+  'O que está nesta cópia': 'Lo que hay en esta copia',
+  'Confirma que é a tua antes de juntar este aparelho.': 'Comprueba que es la tuya antes de conectar este dispositivo.',
+  'Última alteração: {ago}': 'Último cambio: {ago}',
+  'A ler a cópia…': 'Leyendo la copia…',
+  'Ver o que a cópia tem': 'Ver qué hay en la copia',
 };
 
 export default es;

@@ -289,8 +289,9 @@ export function syncCloud(c: CloudState, local: BackupData, opts: Pick<UploadOpt
  * device had, so the other one gets it on its next read. From then on this device syncs with that code.
  * A different code it had before stops being used here (its copy stays on the server until it expires).
  */
-export async function joinCloud(code: Pick<CloudState, 'id' | 'secret'>, local: BackupData, onRemote: (remote: BackupData) => void): Promise<CloudState> {
-  const remote = await download({ id: code.id, secret: code.secret });
+export async function joinCloud(code: Pick<CloudState, 'id' | 'secret'>, local: BackupData, onRemote: (remote: BackupData) => void, shown?: BackupData): Promise<CloudState> {
+  // `shown`: the copy the player was shown before saying yes (the sync below reads it again anyway).
+  const remote = shown ?? (await download({ id: code.id, secret: code.secret }));
   onRemote(remote);
   const at = Date.now();
   // sent 0: no copy from here is on the server yet, so the next read joins it in again before
