@@ -18,7 +18,7 @@ import { ReviewCard } from '@/components/ReviewCard';
 import { ShareSheet, type ShareOption } from '@/components/ShareSheet';
 import { WhatFriendsSee } from '@/components/WhatFriendsSee';
 import { OfflineBadge } from '@/components/NetStatus';
-import { Banner, Button, Card, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
+import { Banner, Button, Card, Chip, ChipRow, confirmAction, Empty, Field, IconButton, Row, Section, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
 import { maybeAskForReview } from '@/lib/review';
@@ -46,7 +46,7 @@ import { useUgcTerms } from '@/components/UgcTerms';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
-import type { Hand, Street } from '@/poker/types';
+import { DEFAULT_TAGS, type Hand, type Street } from '@/poker/types';
 import { reduceMotion } from '@/lib/motion';
 
 // Loaded when the hand opens, not at launch (the comments code is only used here and in /h).
@@ -482,6 +482,22 @@ ${link}`;
         <HandNav hand={hand} hands={hands} />
         <CoachThread hand={hand} name={settings.nickname} />
         <ReviewCard key={hand.id} hand={hand} onChange={saveHand} />
+        {/* Tags here too: a hand won without a showdown saves itself, with no step for them in the entry. */}
+        {!isSample ? (
+          <View style={{ gap: 6 }}>
+            <T v="label">Tags</T>
+            <ChipRow>
+              {DEFAULT_TAGS.map((tg) => (
+                <Chip
+                  key={tg}
+                  label={t(tg)}
+                  active={hand.tags.includes(tg)}
+                  onPress={() => saveHand({ ...hand, tags: hand.tags.includes(tg) ? hand.tags.filter((x) => x !== tg) : [...hand.tags, tg], updatedAt: Date.now() })}
+                />
+              ))}
+            </ChipRow>
+          </View>
+        ) : null}
 
 
         {hand.shareId ? (

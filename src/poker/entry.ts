@@ -344,10 +344,26 @@ export function stepBack(hand: Hand): Hand | null {
  */
 export function closingCall(hand: Hand, s: TableState): HandAction | null {
   const l = legal(s);
-  if (!l || l.p === hand.hero || !l.canCall || l.canCheck || s.street === 'river') return null;
+  if (!l || !l.canCall || l.canCheck || s.street === 'river') return null;
+  // Hero too, when calling is the only way to stay in: facing an all-in, a raise means nothing.
+  if (l.p === hand.hero && l.canRaise && hand.players.some((_, i) => i !== l.p && !s.folded[i] && !s.allIn[i])) return null;
   const a: HandAction = { p: l.p, kind: 'call' };
   const next = apply(s, a, hand);
   return next && next.needsBoard ? a : null;
+}
+
+/**
+ * Hero is in and done for now, and the others still to act folding would close the street before
+ * the river (hero called an open and the blinds fold, the usual line). The next street's first card
+ * can then stand for those folds, like a closing call: tapping the flop says nobody else came in.
+ */
+export function foldsToCard(hand: Hand, s: TableState): HandAction[] {
+  if (s.street === 'river' || !heroWaits(hand, s)) return [];
+  const acts = onlyCaller(hand, s, null);
+  if (!acts.length || acts.some((a) => a.kind === 'call')) return [];
+  let st: TableState | null = s;
+  for (const a of acts) st = st && apply(st, a, hand);
+  return st && st.needsBoard && !st.foldWin ? acts : [];
 }
 
 /**

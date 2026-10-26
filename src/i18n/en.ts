@@ -3423,6 +3423,7 @@ const en: Record<string, string> = {
   'Não dá para reabrir este pacote': "Can't reopen this package",
   'O makeup deste pacote já passou para «{name}», que já tem sessões. Continua a ser recuperado lá.': "This package's makeup already moved to «{name}», which has sessions. It keeps being won back there.",
   'Call? Toca já na carta do {street}': 'Call? Tap the {street} card now',
+  'Os outros fold? Toca já na carta do {street}': 'Everyone else folds? Tap the {street} card now',
   'Call? Toca já nas cartas que mostrou': 'Call? Tap the cards they showed',
   'Corrigir:': 'Fix:',
   'Alguém pagou?': 'Anyone call?',

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, closingCall, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, foldsToCard, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -181,6 +181,29 @@ class Entry {
     this.autoFrom = undefined;
     if (this.down && this.hand.board.length >= 4) this.hand = { ...this.hand, actions: [...this.hand.actions, ...checkDownNext(this.hand)] };
     this.settle();
+  }
+  /** Hero called and the others fold: the next street's first card says so, one tap. */
+  foldsWithCard(card: string) {
+    const acts = foldsToCard(this.hand, this.s);
+    assert.ok(acts.length, 'card for the folds not offered');
+    this.taps++;
+    this.history.push({ hand: this.hand, autoFrom: this.autoFrom });
+    this.hand = { ...this.hand, actions: [...this.hand.actions, ...acts], board: [...this.hand.board, card] };
+    this.autoFrom = undefined;
+    this.settle();
+  }
+  /** «All-in» beside «Raise» over the next-card shortcut: one tap, not two. */
+  shove() {
+    assert.ok(closingCall(this.hand, this.s) || showdownCall(this.hand, this.s) || foldsToCard(this.hand, this.s).length, 'no shortcut, so no chip');
+    const p = sizePresets(this.hand, this.s, this.memory).find((x) => x.allIn);
+    assert.ok(p, 'no all-in preset');
+    this.push([{ p: this.s.toAct!, kind: 'raise', to: p.to }]);
+  }
+  /** A hand won without showdown saves itself (hand/new.tsx): no tap. */
+  autoSave() {
+    const r = replay(this.hand);
+    assert.equal(r.final.foldWin, true, 'only a fold win saves itself');
+    return r;
   }
   /** Multiway showdown: a tap on the seat, then its two cards. */
   showsPick(label: string, cards: string[]) {
@@ -1008,4 +1031,132 @@ test('QA · an all-in reads as All-in on the line', () => {
   const line = entryLine(e.hand);
   assert.equal(line[0].verb, 'All-in');
   assert.equal(line[1].verb, 'Open');
+});
+
+// Round 8 (Rui, 26 Oct: «registar uma mão com menos toques»).
+test('round 8 · a fold win saves itself: open and take the blinds — 5 taps (was 6)', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.only(null);
+  e.autoSave();
+  assert.equal(e.taps, 5);
+});
+
+test('round 8 · open, call, c-bet, fold — 10 taps (was 11): the fold win saves itself', () => {
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.only('BB');
+  e.board('Kc', '8d', '3s');
+  e.size('⅓');
+  e.act('fold');
+  e.autoSave();
+  assert.equal(e.taps, 10);
+});
+
+test('round 8 · hero calls an open and the blinds fold: the flop card says so — 16 taps (was 17)', () => {
+  const run = (card: boolean) => {
+    const e = new Entry('BTN', ['Qs', 'Qc']);
+    e.entered('UTG');
+    e.size('2.5x');
+    e.act('call');
+    if (card) e.foldsWithCard('Jh');
+    else {
+      e.only(null);
+      e.board('Jh');
+    }
+    e.board('8c', '3d');
+    e.checkDown();
+    e.board('2s');
+    e.board('7d');
+    e.shows('UTG', ['Ad', 'Kd']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(after.taps, before.taps - 1);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 8 · hero facing an all-in calls by the next card: the only way to stay in', () => {
+  const run = (card: boolean) => {
+    const e = new Entry('BTN', ['Ah', 'Kh']);
+    e.size('2.5x');
+    e.act('fold');
+    e.size('All-in');
+    assert.equal(e.s.toAct, e.hand.hero);
+    if (card) {
+      assert.deepEqual(closingCall(e.hand, e.s), { p: e.hand.hero, kind: 'call' });
+      e.callWithCard('Kc');
+    } else {
+      e.act('call');
+      e.board('Kc');
+    }
+    e.board('8d', '3s', '2c', '7h');
+    e.shows('BB', ['Qd', 'Qs']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(after.taps, before.taps - 1);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
+});
+
+test('round 8 · no fold card on a fold win, on the river, when a seat calls, or when hero still acts', () => {
+  const e = new Entry('BTN', ['Ah', 'Kd']);
+  e.entered('UTG');
+  e.size('2.5x');
+  assert.deepEqual(foldsToCard(e.hand, e.s), [], 'hero still to act');
+  e.act('call');
+  assert.ok(foldsToCard(e.hand, e.s).length, 'blinds fold by the flop card');
+  assert.ok(foldsToCard(e.hand, e.s).every((a) => a.kind === 'fold'));
+  // Hero raises instead: if the others fold it is a fold win, which is not a card.
+  const w = new Entry('BTN', ['Ah', 'Kd']);
+  w.size('2.5x');
+  assert.deepEqual(foldsToCard(w.hand, w.s), []);
+  // A bet by hero on the flop that is not called: the hand ends, no card.
+  e.foldsWithCard('Kc');
+  e.board('8d', '3s');
+  e.size('⅓');
+  assert.deepEqual(foldsToCard(e.hand, e.s), [], 'villain folding to hero is a fold win');
+});
+
+test('round 8 · facing an all-in with a third player still in, the raise still means something: no card for hero', () => {
+  const e = new Entry('BTN', ['Ah', 'Kh']);
+  e.size('2.5x');
+  e.act('call');
+  e.size('All-in');
+  assert.equal(e.s.toAct, e.hand.hero);
+  assert.equal(closingCall(e.hand, e.s), null);
+});
+
+test('round 8 · CO opens, hero 3-bets, CO shoves, hero calls, showdown — 16 taps (was 18)', () => {
+  const run = (after: boolean) => {
+    const e = new Entry('BTN', ['Ah', 'Kh']);
+    e.entered('CO');
+    e.size('2.5x');
+    e.size('3x');
+    e.skip('CO');
+    if (after) e.shove();
+    else e.size('All-in'); // «4-Bet» then «All-in»
+    assert.equal(e.s.toAct, e.hand.hero);
+    if (after) e.callWithCard('As');
+    else {
+      e.act('call');
+      e.board('As');
+    }
+    e.board('7c', '2h', '9d', '3c');
+    e.shows('CO', ['Qh', 'Qs']);
+    const r = e.save();
+    assert.equal(r.result!.resolved, true);
+    return { taps: e.taps, net: r.result!.net };
+  };
+  const before = run(false);
+  const after = run(true);
+  assert.equal(before.taps, 18);
+  assert.equal(after.taps, 16);
+  assert.deepEqual(after.net, before.net, 'same hand, same money');
 });

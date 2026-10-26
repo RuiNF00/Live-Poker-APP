@@ -38,7 +38,7 @@ import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
-import { allInFor, autoActions, callerCandidates, checkAround, closingCall, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, closingCall, foldsToCard, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -268,14 +268,16 @@ export default function NewHand() {
     update(down.length ? { ...next, actions: [...next.actions, ...down] } : next);
   };
   // The next street's first card after a call that closes the street: one tap for both.
-  const callWithCard = (a: HandAction, c: string) => {
+  // Also the folds of everyone left (foldsToCard): the card says nobody else came in.
+  const callWithCard = (acts: HandAction[], c: string) => {
     tap();
     // River: the card is the first one the caller showed; the showdown picker takes the second.
     if (s.street === 'river') {
+      const a = acts[acts.length - 1];
       const players = hand.players.map((p, i) => (i === a.p ? { ...p, cards: [c] } : p));
-      return update({ ...hand, players, actions: [...hand.actions, a] });
+      return update({ ...hand, players, actions: [...hand.actions, ...acts] });
     }
-    const next = { ...hand, actions: [...hand.actions, a], board: [...hand.board, c] };
+    const next = { ...hand, actions: [...hand.actions, ...acts], board: [...hand.board, c] };
     const done = next.board.length === (s.street === 'preflop' ? 3 : s.street === 'flop' ? 4 : 5);
     const down = draft.checkDownFrom !== undefined && done ? checkDownNext(next) : [];
     update(down.length ? { ...next, actions: [...next.actions, ...down] } : next);
@@ -398,6 +400,19 @@ export default function NewHand() {
     router.back();
   };
 
+  // A hand won without a showdown is over with its last tap («Todos fold», the last Fold): it saves
+  // itself, with no «Guardar» to find. Only a hand entered here with taps: an edit, a reopened draft
+  // or a hand told in words waits for «Guardar», so what came in can be checked first. Tags and notes
+  // are on the saved hand.
+  const autoSaved = useRef(new Set<string>());
+  useEffect(() => {
+    if (isEdit || toldRef.current || saved.current || phase !== 'done' || !s.foldWin || !history.length || capturing) return;
+    if (autoSaved.current.has(autoKey)) return;
+    autoSaved.current.add(autoKey);
+    void save();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, autoKey]);
+
   // What we know about each opponent, for the seat sheet only. Worked out the
   // first time a seat opens, not on every render: over years of hands it is
   // the slowest thing on this screen, and saving a hand would redo it just
@@ -409,11 +424,15 @@ export default function NewHand() {
   const l = legal(s);
   const line = phase === 'action' || phase === 'board' ? entryLine(hand) : [];
   const cardCall = phase === 'action' && raiseAt !== autoKey ? (closingCall(hand, s) ?? showdownCall(hand, s)) : null;
+  // Hero is done and the rest folding would deal the next street: its first card stands for those folds.
+  const cardFolds = phase === 'action' && raiseAt !== autoKey && !cardCall ? foldsToCard(hand, s) : [];
+  const cardActs = cardCall ? [cardCall] : cardFolds.length ? cardFolds : null;
   // Heads-up the grid already says it: «Só X paga» is the Call button, «Todos fold» the Fold.
   // Heads-up, «Só X paga» and «Todos fold» are just Call and Fold again: the big buttons are enough.
   const headsUp = hand.players.filter((_, i) => i !== hand.hero && !s.folded[i]).length === 1;
   const callers = phase === 'action' && !cardCall && !headsUp ? callerCandidates(hand, s) : [];
   const presets = phase === 'action' ? sizePresets(hand, s, settings.sizes?.[hand.game.kind]) : [];
+  const shove = presets.find((p) => p.allIn);
   const skips = phase === 'action' ? skipTargets(hand, s) : [];
 
   const checks = phase === 'action' ? checkAround(hand, s) : [];
@@ -709,15 +728,11 @@ export default function NewHand() {
               </T>
               {quickSave}
             </Row>
-            {seatHint ? (
-              <T v="tiny" color={C.textDim} numberOfLines={2} accessibilityLiveRegion="polite">
-                {seatHint}
-              </T>
-            ) : null}
             {/* The seats folded by the app, as big targets: whoever came in is one tap (the felt works too). */}
             {autoSeats.length > 0 && (
               <ChipRow>
-                <T v="small" color={C.textDim} style={{ alignSelf: 'center' }}>
+                {/* «Fold de todos até ti» is said, not shown: the FOLD badges on the felt and this row show it. */}
+                <T v="small" color={C.textDim} style={{ alignSelf: 'center' }} accessibilityLiveRegion="polite" accessibilityLabel={[seatHint, limped ? t('Mais limps?') : coldCall ? t('Alguém pagou?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')].filter(Boolean).join('. ')}>
                   {limped ? t('Mais limps?') : coldCall ? t('Alguém pagou?') : s.street === 'preflop' ? t('Alguém entrou?') : t('Alguém fez bet?')}
                 </T>
                 {/* Closest to hero first: those are the likeliest, and the row scrolls off the right edge. */}
@@ -736,14 +751,14 @@ export default function NewHand() {
                 {callers.map((i) => (
                   <Chip key={i} big label={t('Só {name} paga', { name: displayName(hand, i, pos) + (hand.players[i].name ? ` (${pos[i]})` : '') })} onPress={() => pushActions(onlyCaller(hand, s, i))} />
                 ))}
-                {callers.length > 0 && <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />}
+                {callers.length > 0 && !cardFolds.length && <Chip big label={t('Todos fold')} onPress={() => pushActions(onlyCaller(hand, s, null))} />}
                 {checks.length > 0 && <Chip big label={t('Todos check')} onPress={() => pushActions(checks)} />}
                 {checkDown.length > 0 && (
                   <Chip big label={t('Check até ao fim')} onPress={() => update({ ...hand, actions: [...hand.actions, ...checkDown] }, draft.posChosen, undefined, hand.actions.length)} />
                 )}
               </ChipRow>
             )}
-            {presets.length > 0 && !cardCall && (
+            {presets.length > 0 && !cardActs && (
               <View style={{ gap: 4 }}>
                 <T v="label">{l.canBet ? raiseName(s) : t('{action} para', { action: raiseName(s) })}</T>
                 <Row gap={6}>
@@ -789,17 +804,25 @@ export default function NewHand() {
                 </Row>
               </View>
             )}
-            {cardCall && (
+            {cardActs && (
               <View style={{ gap: 6 }}>
                 <Row style={{ justifyContent: 'space-between' }}>
                   <T v="label">
-                    {s.street === 'river'
+                    {!cardCall
+                      ? t('Os outros fold? Toca já na carta do {street}', { street: s.street === 'preflop' ? 'flop' : s.street === 'flop' ? 'turn' : 'river' })
+                      : s.street === 'river'
                       ? t('Call? Toca já nas cartas que mostrou')
                       : t('Call? Toca já na carta do {street}', { street: s.street === 'preflop' ? 'flop' : s.street === 'flop' ? 'turn' : 'river' })}
                   </T>
-                  <Chip label={raiseName(s)} onPress={() => setRaiseAt(autoKey)} />
+                  {cardActs[cardActs.length - 1].p !== hand.hero ? (
+                    <Row gap={6}>
+                      {/* A shove is the usual raise here: one tap, no trip to the sizes. */}
+                      {shove ? <Chip label="All-in" onPress={() => act('raise', shove.to)} /> : null}
+                      <Chip label={raiseName(s)} onPress={() => setRaiseAt(autoKey)} />
+                    </Row>
+                  ) : null}
                 </Row>
-                <CardPicker used={usedCards(hand)} onPick={(c) => callWithCard(cardCall, c)} />
+                <CardPicker used={usedCards(hand)} onPick={(c) => callWithCard(cardActs, c)} />
               </View>
             )}
             {/* Facing more than the seat has: their all-in for less, with no trip to the seat sheet. */}
