@@ -3602,7 +3602,7 @@ const en: Record<string, string> = {
   'Toca num para mudar o buy-in.': 'Tap one to change its buy-in.',
   'Corrige-as no texto e lê outra vez: o que já entrou não se repete.': 'Fix them in the text and read again: what\'s already in won\'t be repeated.',
   'Contar nos resultados': 'Count in results',
-  'Contam no saldo, no lucro e no ROI. Faltam os torneios sem prémio: os números ficam melhores do que são.': 'They count in the balance, profit and ROI. The tournaments without a cash are missing: the numbers look better than they are.',
+  'Contam no saldo, no lucro e no ROI, nunca no resultado por hora (não têm horas). Faltam os torneios sem prémio: os números ficam melhores do que são.': 'They count in the balance, profit and ROI, never in the hourly rate (they have no hours). The tournaments without a cash are missing: the numbers look better than they are.',
   'Ficam no histórico, marcados como «Lista de prémios», fora do saldo, do lucro e do ROI. Podes mudar isto em Bankroll.': 'They stay in your history, marked “Cash list”, out of the balance, profit and ROI. You can change this in Bankroll.',
   'Vão para {where}.': 'They go to {where}.',
   'Falta o buy-in': 'Buy-in missing',

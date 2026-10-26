@@ -322,7 +322,7 @@ function Review({ parsed, reader, bottom, onOrder, onBack, onDone }: { parsed: P
             <ToggleItem
               icon="stats-chart-outline"
               title={t('Contar nos resultados')}
-              subtitle={counted ? t('Contam no saldo, no lucro e no ROI. Faltam os torneios sem prémio: os números ficam melhores do que são.') : t('Ficam no histórico, marcados como «Lista de prémios», fora do saldo, do lucro e do ROI. Podes mudar isto em Bankroll.')}
+              subtitle={counted ? t('Contam no saldo, no lucro e no ROI, nunca no resultado por hora (não têm horas). Faltam os torneios sem prémio: os números ficam melhores do que são.') : t('Ficam no histórico, marcados como «Lista de prémios», fora do saldo, do lucro e do ROI. Podes mudar isto em Bankroll.')}
               value={counted}
               onChange={(v) => setSettings({ countCashLists: v })}
               lines={6}

@@ -25,7 +25,7 @@ export function CashListCard() {
           {n === 1 ? t('1 prémio de uma lista de resultados') : t('{n} prémios de listas de resultados', { n })}
         </T>
       </Row>
-      <T v="small">{counted ? t('Contam no saldo, no lucro e no ROI. Faltam os torneios sem prémio: os números ficam melhores do que são.') : t('Ficam fora do saldo, do lucro e do ROI: estas listas só mostram os torneios com prémio.')}</T>
+      <T v="small">{counted ? t('Contam no saldo, no lucro e no ROI, nunca no resultado por hora (não têm horas). Faltam os torneios sem prémio: os números ficam melhores do que são.') : t('Ficam fora do saldo, do lucro e do ROI: estas listas só mostram os torneios com prémio.')}</T>
       <ListGroup>
         <ToggleItem title={t('Contar nos resultados')} value={counted} onChange={(v) => setSettings({ countCashLists: v })} />
       </ListGroup>

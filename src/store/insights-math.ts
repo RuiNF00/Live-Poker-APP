@@ -55,7 +55,9 @@ export interface InsightOptions {
 function group(label: string, list: Session[], result: (s: Session) => number, unit: 'hour' | 'session'): Group {
   const hours = list.reduce((a, s) => a + playedMs(s), 0) / H;
   const p = list.reduce((a, s) => a + result(s), 0);
-  return { label, sessions: list.length, hours, profit: p, rate: unit === 'hour' ? (hours > 0 ? p / hours : 0) : list.length ? p / list.length : 0 };
+  // Per hour, only over sessions with time played (like timedProfit): one with no hours adds nothing to either side.
+  const timed = list.reduce((a, s) => a + (playedMs(s) > 0 ? result(s) : 0), 0);
+  return { label, sessions: list.length, hours, profit: p, rate: unit === 'hour' ? (hours > 0 ? timed / hours : 0) : list.length ? p / list.length : 0 };
 }
 
 const enough = (g: Group, unit: 'hour' | 'session') => g.sessions >= MIN_SESSIONS && (unit === 'session' || g.hours >= MIN_HOURS);

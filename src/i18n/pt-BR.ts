@@ -1875,7 +1875,7 @@ const ptBR: Record<string, string> = {
   'Confirma num torneio que conheças.': 'Confirme em um torneio que você conheça.',
   'Toca num para mudar o buy-in.': 'Toque em um para mudar o buy-in.',
   'Corrige-as no texto e lê outra vez: o que já entrou não se repete.': 'Corrija no texto e leia outra vez: o que já entrou não se repete.',
-  'Contam no saldo, no lucro e no ROI. Faltam os torneios sem prémio: os números ficam melhores do que são.': 'Contam no saldo, no lucro e no ROI. Faltam os torneios sem prêmio: os números ficam melhores do que são.',
+  'Contam no saldo, no lucro e no ROI, nunca no resultado por hora (não têm horas). Faltam os torneios sem prémio: os números ficam melhores do que são.': 'Contam no saldo, no lucro e no ROI, nunca no resultado por hora (não têm horas). Faltam os torneios sem prêmio: os números ficam melhores do que são.',
   'Ficam no histórico, marcados como «Lista de prémios», fora do saldo, do lucro e do ROI. Podes mudar isto em Bankroll.': 'Ficam no histórico, marcados como «Lista de prêmios», fora do saldo, do lucro e do ROI. Você pode mudar isso em Bankroll.',
   'Importar 1 prémio': 'Importar 1 prêmio',
   'Importar {n} prémios': 'Importar {n} prêmios',

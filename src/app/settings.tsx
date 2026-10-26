@@ -118,7 +118,7 @@ export default function SettingsScreen() {
   const exportCsv = async () => {
     tap();
     try {
-      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(store.sessions, store.bankrolls, store.transfers, store.trips.flatMap((trip) => trip.expenses.map((x) => ({ trip, x }))), csvSep()), 'text/csv');
+      await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(store.allSessions, store.bankrolls, store.transfers, store.trips.flatMap((trip) => trip.expenses.map((x) => ({ trip, x }))), csvSep()), 'text/csv');
     } catch {
       note(t('Não deu para exportar'), t('Tenta outra vez.'));
     }

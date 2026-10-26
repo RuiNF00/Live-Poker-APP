@@ -3596,7 +3596,7 @@ const es: Record<string, string> = {
   'Toca num para mudar o buy-in.': 'Toca uno para cambiar el buy-in.',
   'Corrige-as no texto e lê outra vez: o que já entrou não se repete.': 'Corrígelas en el texto y lee otra vez: lo que ya entró no se repite.',
   'Contar nos resultados': 'Contar en los resultados',
-  'Contam no saldo, no lucro e no ROI. Faltam os torneios sem prémio: os números ficam melhores do que são.': 'Cuentan en el saldo, el beneficio y el ROI. Faltan los torneos sin premio: los números quedan mejor de lo que son.',
+  'Contam no saldo, no lucro e no ROI, nunca no resultado por hora (não têm horas). Faltam os torneios sem prémio: os números ficam melhores do que são.': 'Cuentan en el saldo, el beneficio y el ROI, nunca en el resultado por hora (no tienen horas). Faltan los torneos sin premio: los números quedan mejor de lo que son.',
   'Ficam no histórico, marcados como «Lista de prémios», fora do saldo, do lucro e do ROI. Podes mudar isto em Bankroll.': 'Quedan en el historial, marcados como «Lista de premios», fuera del saldo, el beneficio y el ROI. Puedes cambiarlo en Bankroll.',
   'Vão para {where}.': 'Van a {where}.',
   'Falta o buy-in': 'Falta el buy-in',
