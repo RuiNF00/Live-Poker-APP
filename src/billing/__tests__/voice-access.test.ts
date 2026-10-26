@@ -3,14 +3,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { PRO_ONLY } from '../plans';
+import { tierFor } from '../plans';
 import { playerPlan, VOICE_PLAN, voiceLocked, voicePlanName } from '../voice-access';
 
-test('today the voice is Pro, as PRO_ONLY says: nothing changes for anyone', () => {
-  assert.equal(VOICE_PLAN, PRO_ONLY.voiceHand ? 'pro' : 'free');
+test('the voice needs the plan plans.ts gives it (Plus), and the lock says so', () => {
+  assert.equal(VOICE_PLAN, tierFor('voiceHand'));
+  assert.equal(VOICE_PLAN, 'plus');
   assert.equal(voiceLocked({ isPro: true }), false);
-  assert.equal(voiceLocked({ isPro: false }), PRO_ONLY.voiceHand);
-  assert.equal(voicePlanName(), 'Pro');
+  assert.equal(voiceLocked({ isPro: false, isPlus: true }), false);
+  assert.equal(voiceLocked({ isPro: false }), true);
+  assert.equal(voicePlanName(), 'Plus');
 });
 
 test('with Plus: Plus and Pro both have the voice, free does not', () => {

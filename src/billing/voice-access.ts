@@ -1,11 +1,11 @@
-// Which plan the voice needs, in one place. Rui's list (26 Oct): the voice goes in Plus, made for
-// telling the hand after it's played. Today it is Pro, as PRO_ONLY.voiceHand says. When Plus exists,
-// VOICE_PLAN becomes 'plus' and the player's plan comes with `isPlus`. Pro has everything Plus has.
-import { PRO_ONLY } from './plans';
+// Which plan the voice needs. Rui's list (26 Oct): the voice goes in Plus, made for telling the hand
+// after it's played. The plan comes from plans.ts (PLUS_UNLOCKS), so it changes in one place. Pro has
+// everything Plus has.
+import { tierFor } from './plans';
 
 export type PlanTier = 'free' | 'plus' | 'pro';
 
-export const VOICE_PLAN: PlanTier = PRO_ONLY.voiceHand ? 'pro' : 'free';
+export const VOICE_PLAN: PlanTier = tierFor('voiceHand');
 
 const RANK: Record<PlanTier, number> = { free: 0, plus: 1, pro: 2 };
 
