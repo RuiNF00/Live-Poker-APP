@@ -138,6 +138,7 @@ export default function RootLayout() {
             <Stack.Screen name="tournament-card" options={{ title: t('Currículo de torneios'), presentation: 'modal', ...sheetClose }} />
             <Stack.Screen name="odds" options={{ title: t('Calculadora de equity') }} />
             <Stack.Screen name="invite" options={{ title: t('Convidar amigos') }} />
+            <Stack.Screen name="devices" options={{ title: t('Usar noutro aparelho') }} />
             <Stack.Screen name="profile" options={{ title: t('Perfil público') }} />
             <Stack.Screen name="coach/index" options={{ title: t('Links para o coach') }} />
             <Stack.Screen name="coach/new" options={{ title: t('Enviar ao coach'), presentation: 'modal', ...sheetClose }} />

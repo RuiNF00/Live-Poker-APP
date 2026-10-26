@@ -63,6 +63,19 @@ export function autoBackup(c: CloudState | null, data: Counts, now: number): 'sk
   return uploadBlock(data, c) ? 'skip' : 'upload';
 }
 
+/** A device whose code another one uses reads the server copy at most this often (on opening, back from the background). */
+export const PULL_GAP_MS = 5 * 60_000;
+
+/**
+ * Time to read the server copy and join in what another device sent? Only once a copy exists, for a
+ * code another device uses (one device alone has nothing to fetch: its 6-hourly copy stays as it was),
+ * and not again within PULL_GAP_MS of the last read or upload (each one downloads the whole copy).
+ */
+export function pullDue(c: CloudState | null, now: number): boolean {
+  if (!c || c.gone || !c.lastAt || !c.shared) return false;
+  return now - Math.max(c.lastAt, c.checkedAt ?? 0) >= PULL_GAP_MS;
+}
+
 /** After a saved hand or a closed session, the copy waits this long for the next change... */
 export const CHANGE_DEBOUNCE_MS = 30_000;
 /** ...and goes out at most this often (a live session saves hand after hand). */
@@ -109,3 +122,28 @@ export const EXPIRY_WARN_MS = 17 * 30 * 86400000;
 export function expiryWarnAt(c: Pick<CloudState, 'lastAt'> | null): number | null {
   return c?.lastAt ? c.lastAt + EXPIRY_WARN_MS : null;
 }
+
+export type JoinWarning = 'link' | 'empty_copy' | 'other_code';
+
+/**
+ * What the join screen must say before a device joins a code (SyncDevices.tsx), after it showed what
+ * the copy holds. 'link': the code came in a link, and someone may have sent it to read everything
+ * this device keeps. 'empty_copy': the copy holds nothing while this device has data: everything here
+ * would go to that copy, the usual sign of someone else's code. 'other_code': this device stops using
+ * the code it had. Pure, so it can be tested.
+ */
+export function joinWarnings(o: { remote: Counts; local: Counts; fromLink: boolean; otherCode: boolean }): JoinWarning[] {
+  const out: JoinWarning[] = [];
+  if (o.fromLink) out.push('link');
+  if (!total(o.remote) && total(o.local)) out.push('empty_copy');
+  if (o.otherCode) out.push('other_code');
+  return out;
+}
+
+/** A link or an empty copy over data here: joining takes a second, deliberate confirmation. */
+export function secondConfirm(w: JoinWarning[]): boolean {
+  return w.includes('link') || w.includes('empty_copy');
+}
+
+/** The join screen hides the code (and its QR) after this long on screen, so it can't be read off it later. */
+export const SHOW_CODE_MS = 5 * 60_000;

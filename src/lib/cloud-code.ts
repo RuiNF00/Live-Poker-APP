@@ -19,6 +19,21 @@ export interface CloudState {
   failure?: string;
   /** The player said they keep the code somewhere (or typed it to restore). Until then Settings reminds them. */
   saved?: boolean;
+  /** Another phone or tablet uses this code (its copy was seen on the server, or this one joined it): from then on this one also reads the copy when it opens. */
+  shared?: boolean;
+  /** exportedAt of the last server copy from another device already joined in here: the same one is not joined again. */
+  seen?: number;
+  /** Last time this phone read the server copy (to sync or before an upload). */
+  checkedAt?: number;
+  /** Last time this phone and the server copy were known to hold the same: after an upload, or a read with nothing to send. */
+  syncedAt?: number;
+  /** The last upload came from a read, not from a change made here: the next read doesn't answer with another (two phones' merges could bounce a copy back and forth). */
+  echo?: boolean;
+}
+
+/** formatCode as a link: the iPhone camera opens the app with it (sweatbook://sync#…). The code sits in the fragment. */
+export function syncLink(c: Pick<CloudState, 'id' | 'secret'>): string {
+  return `sweatbook://sync#${c.id}${c.secret}`;
 }
 
 /** rl.cloud.v1 as saved: every field kept as it is, whichever build wrote it. */
@@ -40,4 +55,19 @@ export function parseCode(raw: string): CloudState | null {
     .replace(/O/g, '0');
   if (s.length !== 26 || [...s].some((ch) => !ALPHA.includes(ch))) return null;
   return { id: s.slice(0, 10), secret: s.slice(10) };
+}
+
+// A code that arrived in a link (the QR read by the camera, or a link someone sent) waits here, in
+// memory, for the join screen: never in the route (/devices?code=), where navigation history and
+// logs keep it. Taken once.
+let linked: Pick<CloudState, 'id' | 'secret'> | null = null;
+
+export function setLinkedCode(c: Pick<CloudState, 'id' | 'secret'> | null): void {
+  linked = c;
+}
+
+export function takeLinkedCode(): Pick<CloudState, 'id' | 'secret'> | null {
+  const c = linked;
+  linked = null;
+  return c;
 }
