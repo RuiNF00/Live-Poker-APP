@@ -6,12 +6,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { router, usePathname } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, Share, View } from 'react-native';
+import { Alert, AppState, Platform, Pressable, Share, View } from 'react-native';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
 import { t } from '@/i18n';
-import { copyWaiting, download, formatCode, loadCloud, newCloud, onCloudChange, parseCode, rememberedCode, onCopyWaiting, removeRemote, saveCloud, upload, type CloudState } from '@/lib/cloud-backup';
-import { autoBackup, backupHealth, changeBackupIn, cloudAhead, countsOf, uploadBlock, type Health } from '@/lib/cloud-guard';
+import { copyWaiting, download, formatCode, loadCloud, newCloud, onCloudChange, rememberedCode, onCopyWaiting, removeRemote, saveCloud, syncCloud, upload, type CloudState } from '@/lib/cloud-backup';
+import { autoBackup, backupHealth, changeBackupIn, cloudAhead, countsOf, pullDue, uploadBlock, type Health } from '@/lib/cloud-guard';
 import { cancelCloudExpiry, syncCloudExpiry } from '@/lib/cloud-expiry';
 import { offerStep, restoreOffer } from '@/lib/restore-offer';
 import { useOnline } from '@/lib/sync';
@@ -21,9 +21,9 @@ import { useStore } from '@/store/store';
 import { C, F, R, S } from '@/theme';
 
 import { useLockScreenUp } from './AppLock';
-import { Banner, Button, Card, Field, Row, T, tap } from './ui';
+import { Banner, Button, Card, Row, T, tap } from './ui';
 
-function note(title: string, body?: string) {
+export function note(title: string, body?: string) {
   if (Platform.OS === 'web') window.alert(body ? `${title}\n\n${body}` : title);
   else Alert.alert(title, body);
 }
@@ -51,10 +51,10 @@ function useCopyWaiting(): boolean {
   return w;
 }
 
-const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);
+export const errText = (e: unknown) => t(ERR[(e as Error)?.message] ?? ERR.network);
 
 /** Yes/no before something the player should read first. */
-function ask(title: string, body: string, yes: string, onYes: () => void, no = t('Cancelar'), onNo?: () => void) {
+export function ask(title: string, body: string, yes: string, onYes: () => void, no = t('Cancelar'), onNo?: () => void) {
   if (Platform.OS === 'web') {
     if (window.confirm(`${title}\n\n${body}`)) onYes();
     else onNo?.();
@@ -78,13 +78,14 @@ async function restoreFrom(c: CloudState, importData: ImportData): Promise<Cloud
   // and no upload may send less than it holds (counts), even if the app is
   // closed before the restored hands reach the phone's storage. Whoever has
   // the code to restore has it saved somewhere.
-  const next: CloudState = { ...c, lastAt: Date.now(), counts: countsOf(remote), sent: remote.exportedAt, saved: true };
+  const at = Date.now();
+  const next: CloudState = { ...c, lastAt: at, checkedAt: at, syncedAt: at, counts: countsOf(remote), sent: remote.exportedAt, seen: remote.exportedAt, saved: true };
   await saveCloud(next);
   note(t('Cópia recuperada'), importSummary(n));
   return next;
 }
 
-type ImportData = (b: BackupData, opts?: { sync?: boolean }) => Parameters<typeof importSummary>[0];
+export type ImportData = (b: BackupData, opts?: { sync?: boolean }) => Parameters<typeof importSummary>[0];
 
 /**
  * For upload(): another phone with this code copied things this one doesn't
@@ -95,7 +96,25 @@ const joinRemote = (importData: ImportData, say: (title: string, body: string) =
   if (Object.values(n).some((v) => v > 0)) say(t('Juntámos o que o outro telemóvel copiou'), importSummary(n));
 };
 
-function confirmTurnOn(onYes: () => void) {
+/**
+ * For a sync on opening or back from the background: what another device sent comes in without a
+ * word (the card says when it last synced). Only what it deleted is said, as money may have moved.
+ */
+const pullRemote = (importData: ImportData, say: (title: string, body: string) => void) => (remote: BackupData) => {
+  const n = importData(remote, { sync: true });
+  if (n.removed) say(t('Sincronizado com o outro aparelho'), importSummary(n));
+};
+
+/** «agora mesmo», «há 4 min», «há 3 h», then the date: when this device last matched the cloud copy. */
+export function syncedAgo(at: number, now = Date.now()): string {
+  const min = Math.max(0, Math.floor((now - at) / 60000));
+  if (min < 1) return t('agora mesmo');
+  if (min < 60) return t('há {n} min', { n: min });
+  if (min < 24 * 60) return t('há {n} h', { n: Math.floor(min / 60) });
+  return shortDate(at);
+}
+
+export function confirmTurnOn(onYes: () => void) {
   ask(
     t('Antes de ativar'),
     t('Vais receber um código. É a única chave da tua cópia: sem ele, ninguém (nem nós) a consegue abrir. Guarda-o fora deste telemóvel.'),
@@ -105,7 +124,7 @@ function confirmTurnOn(onYes: () => void) {
 }
 
 /** A new random code: there is no server copy to protect yet. Says so when it fails. */
-async function activate(data: BackupData): Promise<CloudState> {
+export async function activate(data: BackupData): Promise<CloudState> {
   tap('medium');
   try {
     return await upload(newCloud(), data, { force: true });
@@ -116,7 +135,7 @@ async function activate(data: BackupData): Promise<CloudState> {
 }
 
 /** The share sheet with the code: Notes, Passwords, a password manager, a message to yourself. */
-function shareCode(c: CloudState) {
+export function shareCode(c: CloudState) {
   Share.share({ message: t('Código da cópia Sweatbook: {code}', { code: formatCode(c) }) }).catch(() => {});
 }
 
@@ -125,8 +144,6 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
   const store = useStore();
   const [cloud, setCloud] = useState<CloudState | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-  const [code, setCode] = useState('');
   const [now] = useState(Date.now);
   const waiting = useCopyWaiting();
 
@@ -167,21 +184,6 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
       setBusy(false);
     }
   };
-  const restore = async () => {
-    const c = parseCode(code);
-    if (!c) return note(t('Código inválido'), t('O código tem 26 letras e números, como aparece no outro telemóvel.'));
-    tap('medium');
-    setBusy(true);
-    try {
-      setCloud(await restoreFrom(c, store.importData));
-      setRestoring(false);
-      setCode('');
-    } catch (e) {
-      note(t('Não deu para recuperar'), errText(e));
-    } finally {
-      setBusy(false);
-    }
-  };
   const turnOff = () => {
     const doIt = async () => {
       try {
@@ -192,7 +194,15 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
       await saveCloud(null);
       setCloud(null);
     };
+    // Another device syncs with this code: it can leave this one alone, and the copy stays for the other.
+    const leave = () => saveCloud(null).then(() => setCloud(null));
     if (Platform.OS === 'web') doIt();
+    else if (cloud?.shared)
+      Alert.alert(t('Desligar a cópia na nuvem?'), t('Outro aparelho sincroniza com este código. Podes desligar só este aparelho e a cópia fica para o outro, ou apagá-la para todos.'), [
+        { text: t('Cancelar'), style: 'cancel' },
+        { text: t('Só neste aparelho'), onPress: leave },
+        { text: t('Apagar para todos'), style: 'destructive', onPress: doIt },
+      ]);
     else
       Alert.alert(t('Desligar a cópia na nuvem?'), t('A cópia é apagada do servidor. As mãos ficam neste telemóvel.'), [
         { text: t('Cancelar'), style: 'cancel' },
@@ -232,7 +242,15 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
               {healthTitle(health)}
             </T>
           ) : (
-            <T v="tiny">{cloud ? (cloud.lastAt ? t('Ligada · última {date}', { date: shortDate(cloud.lastAt) }) : t('Ligada')) : t('Sem conta e sem email')}</T>
+            <T v="tiny">
+              {cloud
+                ? cloud.shared && (cloud.syncedAt ?? cloud.lastAt)
+                  ? t('Sincronizada · {ago}', { ago: syncedAgo(cloud.syncedAt ?? cloud.lastAt!, now) })
+                  : cloud.lastAt
+                    ? t('Ligada · última {date}', { date: shortDate(cloud.lastAt) })
+                    : t('Ligada')
+                : t('Sem conta e sem email')}
+            </T>
           )}
         </View>
       </Row>
@@ -267,7 +285,7 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
             </T>
             <Ionicons name="copy-outline" size={18} color={C.accent} />
           </Pressable>
-          <T v="small">{t('Guarda este código: é a única chave da tua cópia. Num telemóvel novo, usa «Recuperar com código».')}</T>
+          <T v="small">{t('Guarda este código: é a única chave da tua cópia. Num aparelho novo, usa «Já tenho um código».')}</T>
           <T v="tiny">{t('Se não abrires a app durante 18 meses, a cópia é apagada do servidor. Com as notificações ligadas, avisamos um mês antes.')}</T>
           {cloud.saved ? null : (
             // Until the player says the code is kept somewhere else, the card keeps asking.
@@ -282,9 +300,11 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
             </View>
           )}
           <Row gap={S.sm}>
-            <Button size="sm" kind="secondary" icon="refresh" title={busy ? t('A copiar…') : t('Copiar agora')} style={{ flex: 1 }} disabled={busy} onPress={() => backupNow()} />
+            <Button size="sm" kind="secondary" icon="refresh" title={busy ? (cloud.shared ? t('A sincronizar…') : t('A copiar…')) : cloud.shared ? t('Sincronizar agora') : t('Copiar agora')} style={{ flex: 1 }} disabled={busy} onPress={() => backupNow()} />
             <Button size="sm" kind="ghost" title={t('Desligar')} onPress={turnOff} />
           </Row>
+          {/* The same data on a second phone or an iPad: the code (or its QR) goes to the other device. */}
+          <Button size="sm" kind="secondary" icon="phone-portrait-outline" title={t('Usar noutro aparelho')} onPress={() => router.push('/devices')} />
         </>
       ) : (
         <>
@@ -292,17 +312,8 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
           <Button size="md" icon="cloud-upload-outline" title={busy ? t('A ativar…') : t('Ativar cópia na nuvem')} disabled={busy} onPress={turnOn} />
         </>
       )}
-      {restoring ? (
-        <View style={{ gap: S.sm }}>
-          <Field value={code} onChangeText={setCode} autoCapitalize="characters" autoCorrect={false} placeholder="XXXXX-XXXXX-XXXXXXXXXXXXXXXX" inputStyle={{ fontFamily: F.mono }} />
-          <Row gap={S.sm}>
-            <Button size="sm" title={busy ? t('A recuperar…') : t('Recuperar')} style={{ flex: 1 }} disabled={busy} onPress={restore} />
-            <Button size="sm" kind="ghost" title={t('Cancelar')} onPress={() => setRestoring(false)} />
-          </Row>
-        </View>
-      ) : (
-        <Button size="sm" kind="plain" icon="key-outline" title={t('Recuperar com código')} style={{ alignSelf: 'flex-start', paddingHorizontal: 0 }} onPress={() => setRestoring(true)} />
-      )}
+      {/* A new phone, a reinstall, a second device: the code joins it to the copy (nothing here is lost or doubled). */}
+      <Button size="sm" kind="plain" icon="key-outline" title={t('Já tenho um código')} style={{ alignSelf: 'flex-start', paddingHorizontal: 0 }} onPress={() => router.push({ pathname: '/devices', params: { join: '1' } })} />
     </Card>
   );
 }
@@ -413,9 +424,22 @@ export function AutoCloudBackup() {
       // Never replaces a cloud copy with an empty or smaller phone (see cloud-guard).
       // Due, or asked for while there was no signal.
       if (c && (copyWaiting() || autoBackup(c, countsOf(data), Date.now()) === 'upload')) upload(c, data, { onRemote: joinRemote(latest.current.importData, sayJoined) }).catch(() => {});
+      // Another device uses the code: what it sent since comes here (the upload above does that too).
+      else if (pullDue(c, Date.now())) syncCloud(c!, data, { onRemote: pullRemote(latest.current.importData, sayJoined) }).catch(() => {});
     }, 4000);
     return () => clearTimeout(id);
     // On launch and on reconnect only (the store is read through the ref).
+  }, [ready, online, sayJoined]);
+  // Back from the background (the iPad picked up after a session on the phone): the same read, at most every 5 minutes.
+  useEffect(() => {
+    if (!ready || !online) return;
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      loadCloud().then((c) => {
+        if (c && pullDue(c, Date.now())) syncCloud(c, buildBackup(latest.current), { onRemote: pullRemote(latest.current.importData, sayJoined) }).catch(() => {});
+      });
+    });
+    return () => sub.remove();
   }, [ready, online, sayJoined]);
   // And after a hand is saved or a session closed: once things settle, at most every 10 minutes.
   const closed = useMemo(() => store.sessions.reduce((n, s) => n + (s.endedAt ? 1 : 0), 0), [store.sessions]);
