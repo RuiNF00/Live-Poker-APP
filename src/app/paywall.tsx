@@ -82,6 +82,10 @@ export default function Paywall() {
   // The offering can replace the headline for an A/B test; the offer itself never changes.
   const table = paywallConfig.layout === 'table';
   const result = paywallConfig.layout === 'result';
+  // The Plus/Pro tabs and their summary take ~110 pt: the result layout gives it back in the notebook
+  // (counts in one line, its feature rows left to the tab's summary) and, on 760-900 pt, drops the subtitle
+  // (on the SE too) and the notebook's box, so both plans stay above the footer on every iPhone.
+  const tight = result && tabs;
   // The result layout speaks to the player's profile (onboarding answers) when the trigger is Pro as a whole.
   const [answers, setAnswers] = useState<Answers | null>(null);
   useEffect(() => {
@@ -308,7 +312,7 @@ export default function Paywall() {
             </View>
           )}
           <T v={compact ? 'h1' : 'title'}>{copy.title}</T>
-          <T v="callout">{copy.body}</T>
+          {tight && (medium || compact) ? null : <T v="callout">{copy.body}</T>}
           {hands.length >= 3 && reason !== 'welcome' && !medium && !result ? <Pill icon="albums" label={t('{n} mãos no teu caderno', { n: hands.length })} /> : null}
         </View>
 
@@ -338,8 +342,9 @@ export default function Paywall() {
             pro={featuresFor(reason)
               .map((f) => f.feature)
               .filter((f) => view === 'pro' || unlocks('plus', f.key))
-              .slice(0, medium ? 0 : 3)}
-            compact={medium}
+              .slice(0, medium || tight ? 0 : 3)}
+            compact={medium || tight}
+            plain={tight && medium}
             teaser={teaser && view === 'pro' ? t(teaser.text) : undefined}
           />
         ) : null}
@@ -378,7 +383,8 @@ export default function Paywall() {
           <View onLayout={(e) => measure('plans', e.nativeEvent.layout.y + e.nativeEvent.layout.height)} style={{ gap: short ? S.sm : S.sm + 2 }}>
             {/* The subscription's name on the purchase screen (App Store 3.1.2 / Schedule 2). */}
             <T v="label">{viewName}</T>
-            {result && trial ? <TrialStrip days={trial} compact={compact} /> : null}
+            {/* SE with the Plus/Pro tabs: the strip goes; the footer right under the button already gives the charge date. */}
+            {result && trial && !(compact && tight) ? <TrialStrip days={trial} compact={compact} /> : null}
             {inviteOffer && view === 'pro' ? (
               <Pressable
                 accessibilityRole="button"
@@ -627,7 +633,7 @@ function TrialSteps({ days, after }: { days: number; after: string }) {
  * (never money: this screen can be open at the table), and the Pro feature this paywall is about.
  * Nothing logged yet: the three Pro rows instead, so the card never shows zeros.
  */
-function Notebook({ hands, sessions, tier, pro, compact, teaser }: { hands: number; sessions: { endedAt?: number; startedAt: number }[]; tier: PaidTier; pro: { key: string; icon: string; title: string; body: string }[]; compact: boolean; teaser?: string }) {
+function Notebook({ hands, sessions, tier, pro, compact, plain, teaser }: { hands: number; sessions: { endedAt?: number; startedAt: number }[]; tier: PaidTier; pro: { key: string; icon: string; title: string; body: string }[]; compact: boolean; plain?: boolean; teaser?: string }) {
   const done = sessions.filter((s) => s.endedAt);
   const hours = Math.round(done.reduce((a, s) => a + playedMs(s as Parameters<typeof playedMs>[0]), 0) / 3_600_000);
   const stats = [
@@ -654,18 +660,27 @@ function Notebook({ hands, sessions, tier, pro, compact, teaser }: { hands: numb
     <View
       accessible
       accessibilityLabel={`${t('O teu caderno')}: ${stats.map((x) => `${x.n} ${x.label}`).join(', ')}`}
-      style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: compact ? S.md : S.lg, gap: S.md }}>
-      {compact ? null : <T v="label">{t('O teu caderno')}</T>}
-      <Row gap={S.md}>
-        {stats.map((x) => (
-          <View key={x.label} style={{ flex: 1, gap: 2 }}>
-            <T v={compact ? 'mono' : 'monoL'} numberOfLines={1} adjustsFontSizeToFit>
-              {String(x.n)}
-            </T>
-            <T v="small">{x.label}</T>
-          </View>
-        ))}
-      </Row>
+      style={plain ? { gap: S.xs } : { borderRadius: R.lg, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: compact ? S.md : S.lg, gap: compact ? S.sm : S.md }}>
+      {compact ? (
+        // 760-900 pt, where the Plus/Pro tabs also take room: the counts in one line, so both plans stay above the footer.
+        <T v="body" color={C.text}>
+          {stats.map((x) => `${x.n} ${x.label}`).join(' · ')}
+        </T>
+      ) : (
+        <>
+          <T v="label">{t('O teu caderno')}</T>
+          <Row gap={S.md}>
+            {stats.map((x) => (
+              <View key={x.label} style={{ flex: 1, gap: 2 }}>
+                <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
+                  {String(x.n)}
+                </T>
+                <T v="small">{x.label}</T>
+              </View>
+            ))}
+          </Row>
+        </>
+      )}
       {teaser ? (
         // A finding from their own sessions, without the answer: the most concrete reason to look.
         <Row gap={S.sm}>
