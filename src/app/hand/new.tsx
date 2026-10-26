@@ -433,7 +433,7 @@ export default function NewHand() {
   const autoSaved = useRef(new Set<string>());
   useEffect(() => {
     // A showdown ends the same way once every cards shown are in and the pot has its winner (one board).
-    const shownDown = phase === 'showdown' && r.boards.length < 2 && !!r.result?.resolved && liveVillains.length > 0 && liveVillains.every((i) => hand.players[i].cards?.length === 2);
+    const shownDown = phase === 'showdown' && r.boards.length < 2 && !!r.result?.resolved && liveVillains.length > 0 && liveVillains.every((i) => hand.players[i].cards?.length === holeCount(hand.game));
     const over = (phase === 'done' && s.foldWin) || shownDown;
     if (isEdit || toldRef.current || saved.current || !over || !history.length || capturing) return;
     if (autoSaved.current.has(autoKey)) return;

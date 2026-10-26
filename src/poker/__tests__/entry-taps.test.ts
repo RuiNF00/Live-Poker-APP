@@ -9,6 +9,7 @@ import { test } from 'node:test';
 
 import { buttonForHeroPosition, legal, positions, replay } from '../engine';
 import { allInFor, autoActions, closingCall, foldsToCard, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { holeCount } from '../variant';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
 
@@ -203,7 +204,7 @@ class Entry {
   autoSave() {
     const r = replay(this.hand);
     const live = this.hand.players.map((_, i) => i).filter((i) => i !== this.hand.hero && !r.final.folded[i]);
-    const shownDown = !r.final.foldWin && r.boards.length < 2 && !!r.result?.resolved && live.length > 0 && live.every((i) => this.hand.players[i].cards?.length === 2);
+    const shownDown = !r.final.foldWin && r.boards.length < 2 && !!r.result?.resolved && live.length > 0 && live.every((i) => this.hand.players[i].cards?.length === holeCount(this.hand.game));
     assert.ok(r.final.foldWin || shownDown, 'the hand is not over, so it waits for «Guardar»');
     return r;
   }
@@ -1251,4 +1252,20 @@ test('sizes · the felt shows the size of the last bet or raise', async () => {
   assert.equal(actionSize(e.s.last!, e.s), ' (100%)');
   e.act('call');
   assert.equal(actionSize(e.s.last!, e.s), '', 'a call has no size');
+});
+
+test('QA · PLO: the showdown waits for all four of the villain cards before it saves itself', () => {
+  const e = new Entry('CO', ['Ah', 'Kd', 'Qh', 'Js']);
+  e.hand = { ...e.hand, game: { ...e.hand.game, variant: 'plo' } };
+  e.keypad(3);
+  e.only('BB');
+  e.board('As', '7c', '2h');
+  e.checkDown();
+  e.board('9d');
+  e.board('3c');
+  e.winner('Hero');
+  e.hand = { ...e.hand, players: e.hand.players.map((p, i) => (i === e.seat('BB') ? { ...p, cards: ['Qc', 'Qd'] } : p)) };
+  assert.throws(() => e.autoSave(), 'two of four cards: not over');
+  e.hand = { ...e.hand, players: e.hand.players.map((p, i) => (i === e.seat('BB') ? { ...p, cards: ['Qc', 'Qd', '8s', '8h'] } : p)) };
+  assert.doesNotThrow(() => e.autoSave(), 'all four in: it saves itself');
 });
