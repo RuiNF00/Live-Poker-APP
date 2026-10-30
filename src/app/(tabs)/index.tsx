@@ -198,11 +198,11 @@ export default function HomeScreen() {
         }
       />
 
+      {/* Tournament day, from 2 h before the start: what the player opened the app for, so it goes first. */}
+      {activeSession ? null : <PlannedNow festivals={festivals} group />}
       {fresh ? <FirstRun /> : <MonthHero sessions={sessions} hands={hands} now={now} streak={hands.length > 0} compact={compact} />}
 
       {activeSession ? <LiveCard s={activeSession} /> : null}
-      {/* Tournament day: the planned event right here, not only in the Sessão tab. */}
-      {activeSession ? null : <PlannedNow festivals={festivals} group />}
       {card}
       {!activeSession && !fresh ? (
         <FadeUp i={1} style={{ flexDirection: compact ? 'column' : 'row', gap: S.sm }}>

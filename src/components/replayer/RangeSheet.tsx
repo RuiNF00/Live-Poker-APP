@@ -149,7 +149,7 @@ export function RangeSheet({
           </Pressable>
         </Row>
         <T v="tiny" color={C.muted}>
-          {t('Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que ele tem.')}
+          {t('Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que o adversário tem.')}
         </T>
         <View ref={grid} {...pan.panHandlers} style={{ gap: GAP, alignSelf: 'center' }}>
           {[...GRID_RANKS].map((_, i) => (

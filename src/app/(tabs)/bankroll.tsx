@@ -288,7 +288,7 @@ function BankrollTab() {
                 setSheet({
                   type: 'transfer',
                   // Dated before the first session, so the history reads in order.
-                  x: { ...blankTransfer(pastBankroll.id, 'deposit'), at: Math.min(Date.now(), ...sessions.map((x) => x.startedAt - 60000)), note: t('Saldo inicial') },
+                  x: { ...blankTransfer(pastBankroll.id, 'deposit'), at: Math.min(Date.now(), ...scoped.map((x) => x.startedAt - 60000)), note: t('Saldo inicial') },
                   isNew: true,
                 })
               }>

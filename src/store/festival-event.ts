@@ -55,6 +55,22 @@ export function startOnPhone(f: Festival, e: FestivalEvent, loc: string, phoneOf
   return d.toLocaleString(loc, p.otherDay ? { ...o, weekday: 'short' } : o);
 }
 
+/**
+ * The start for a «play now» line: «Hoje às 15:00», «Amanhã às 00:00» or «sábado às 04:00», on the phone's
+ * clock when it isn't the venue's (as startOnPhone), and on the venue's when it is.
+ */
+export function startWhen(f: Festival, e: FestivalEvent, loc: string, now: number, phoneOffsetMin: (ms: number) => number = (ms) => -new Date(ms).getTimezoneOffset()): string {
+  const ms = venueTime(f, e.start);
+  const off = phoneStart(f, e, phoneOffsetMin) ? phoneOffsetMin(ms) : Math.round((venueClock(f, ms).getTime() - ms) / 60_000);
+  const d = new Date(ms + off * 60_000);
+  const time = d.toLocaleString(loc, { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const day = (x: number) => Math.floor(x / 86_400_000);
+  const diff = day(ms + off * 60_000) - day(now + phoneOffsetMin(now) * 60_000);
+  if (diff === 0) return t('Hoje às {time}', { time });
+  if (diff === 1) return t('Amanhã às {time}', { time });
+  return t('{day} às {time}', { day: d.toLocaleString(loc, { timeZone: 'UTC', weekday: 'long' }), time });
+}
+
 /** "Flight 1A", "Dia 2", "Dia 2 · Flight 2BC"; null for a single-row tournament. */
 export function flightLabel(e: FestivalEvent): string | null {
   if (!e.flight) return null;

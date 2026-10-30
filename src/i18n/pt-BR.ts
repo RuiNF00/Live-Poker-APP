@@ -2168,17 +2168,18 @@ const ptBR: Record<string, string> = {
   'Nada foi apagado. Este telemóvel já não tem acesso a este swap; fica cá como registo.': 'Nada foi apagado. Este celular não tem mais acesso a este swap; ele fica aqui como registro.',
   'Este telemóvel já usou um convite. Só conta o primeiro.': 'Este celular já usou um convite. Só vale o primeiro.',
   'Já tens um convite ativo neste telemóvel (só conta o primeiro). Guarda uma mão para o usares.': 'Este celular já tem um convite ativo (só vale o primeiro). Salve uma mão para usá-lo.',
-  'O teu amigo recebe o desconto. Tu já tens o Pro, por isso o teu fica por usar.': 'Seu amigo recebe o desconto. Você já tem o Pro, então o seu fica sem uso.',
-  'O desconto do teu convite acabou a {date}. Cada amigo que convidares e guardar a primeira mão dá-te outro.': 'O desconto do seu convite acabou em {date}. Cada amigo que você convidar e salvar a primeira mão te dá outro.',
+  'O teu amigo recebe o desconto. Como já tens o Pro, este desconto não se aplica a ti.': 'Seu amigo recebe o desconto. Como você já tem o Pro, este desconto não se aplica a você.',
+  'O desconto do teu convite acabou a {date}. Cada amigo que convidares e guardar a primeira mão dá-te outro, até 10 por ano.': 'O desconto do seu convite acabou em {date}. Cada amigo que você convidar e salvar a primeira mão te dá outro, até 10 por ano.',
   'Desligado neste telemóvel': 'Desativado neste celular',
   'Sem rede agora: o link só deixa de abrir para o coach quando houver sinal.': 'Sem internet agora: o link só para de abrir para o coach quando houver sinal.',
   'Vão tal como as escreveste. Revê se têm algo que não queres mostrar.': 'Elas vão do jeito que você escreveu. Confira se não têm algo que você não quer mostrar.',
-  'Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que ele tem.': 'Top %: as mãos mais fortes contra uma mão aleatória. Toque ou arraste para pintar o range que você acha que ele tem.',
+  'Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que o adversário tem.': 'Top %: as mãos mais fortes contra uma mão aleatória. Toque ou arraste para pintar o range que você acha que o adversário tem.',
   'Com quanto começaste? Junta o saldo inicial e o saldo passa a bater certo.': 'Com quanto você começou? Adicione o saldo inicial para o saldo bater.',
   'Nome, aspeto ou tag': 'Nome, aparência ou tag',
-  'Quem é, como joga. Na próxima vez, já sabes.': 'Quem é, como joga. Na próxima vez, você já sabe.',
+  'Quem é, como joga. Da próxima vez, já sabes.': 'Quem é, como joga. Da próxima vez, você já vai saber.',
   'Já tens uma nota sobre {name}': 'Você já tem uma nota sobre {name}',
   'Toca para a abrir': 'Toque para abrir',
+  'O teu amigo recebe {pct}% no primeiro mês do Pro': 'Seu amigo recebe {pct}% no primeiro mês do Pro',
 };
 
 export default ptBR;

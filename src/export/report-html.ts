@@ -143,7 +143,7 @@ function tripsBlock(r: Report): string {
       const conv = s.converted ? `<br/><span class="muted">≈ ${esc(signed(s.converted.net, s.converted.currency))}</span>` : '';
       // Totals that leave something out say what, as the trip screen does.
       const out = s.skipped.length ? `<br/><span class="muted">${esc(t('Fora das contas (sem câmbio): {list}.', { list: skippedLabel(s.skipped) }))}</span>` : '';
-      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span>${out}</td><td class="n">${s.sessions}</td><td class="n ${cls(s.poker, s.currency)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(rawMoney(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net, s.currency)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
+      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span>${out}</td><td class="n">${s.played}</td><td class="n ${cls(s.poker, s.currency)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(rawMoney(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net, s.currency)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
     })
     .join('');
   return `

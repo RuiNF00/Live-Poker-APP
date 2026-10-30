@@ -82,7 +82,8 @@ export default function InviteScreen() {
   const steps: [React.ComponentProps<typeof Ionicons>['name'], string][] = [
     ['paper-plane-outline', t('Envias o teu link a um amigo')],
     ['download-outline', t('O teu amigo instala e guarda a primeira mão')],
-    ['flash-outline', t('Recebem os dois {pct}% no primeiro mês do Pro', { pct: INVITE.pct })],
+    // Already Pro: only the friend's discount is of use (see the line above the steps).
+    ['flash-outline', pro.isPro ? t('O teu amigo recebe {pct}% no primeiro mês do Pro', { pct: INVITE.pct }) : t('Recebem os dois {pct}% no primeiro mês do Pro', { pct: INVITE.pct })],
   ];
 
   return (
@@ -98,7 +99,7 @@ export default function InviteScreen() {
           </T>
           <T v="callout" style={{ textAlign: 'center' }}>
             {/* Already Pro: the first-month discount is no use to them, so it isn't promised. */}
-            {pro.isPro ? t('O teu amigo recebe o desconto. Tu já tens o Pro, por isso o teu fica por usar.') : t('Para ti e para o teu amigo. Até 10 amigos por ano.')}
+            {pro.isPro ? t('O teu amigo recebe o desconto. Como já tens o Pro, este desconto não se aplica a ti.') : t('Para ti e para o teu amigo. Até 10 amigos por ano.')}
           </T>
         </View>
 
@@ -137,7 +138,7 @@ export default function InviteScreen() {
 
         {lapsed && !s?.offer && !pro.isPro ? (
           <T v="small" style={{ textAlign: 'center' }}>
-            {t('O desconto do teu convite acabou a {date}. Cada amigo que convidares e guardar a primeira mão dá-te outro.', { date: shortDate(Date.parse(lapsed.until)) })}
+            {t('O desconto do teu convite acabou a {date}. Cada amigo que convidares e guardar a primeira mão dá-te outro, até 10 por ano.', { date: shortDate(Date.parse(lapsed.until)) })}
           </T>
         ) : null}
 

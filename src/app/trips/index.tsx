@@ -76,8 +76,8 @@ export default function TripsScreen() {
                       icon={x.festivalId ? 'trophy-outline' : 'airplane-outline'}
                       iconColor={C.accent}
                       title={x.name}
-                      subtitle={[tripDates(x), s.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: s.sessions })].join(' · ')}
-                      value={s.sessions || s.expenses ? signed(s.net, x.currency) : undefined}
+                      subtitle={[tripDates(x), s.played === 1 ? t('1 sessão') : t('{n} sessões', { n: s.played })].join(' · ')}
+                      value={s.played || s.expenses ? signed(s.net, x.currency) : undefined}
                       valueColor={s.net >= 0 ? C.good : C.bad}
                       chevron
                       onPress={() => router.push(`/trips/${x.id}`)}

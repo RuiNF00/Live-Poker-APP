@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { locale, t } from '@/i18n';
 import { eventTitle, festivalSpan, type Festival } from '@/poker/festivals';
 import { money } from '@/poker/format';
-import { startOnPhone } from '@/store/festival-event';
+import { startWhen } from '@/store/festival-event';
 import { festivalName, plannedNow, useFestivalPlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
 import { useStore } from '@/store/store';
@@ -64,14 +64,14 @@ export function PlannedNow({ festivals, group }: { festivals: Festival[]; group?
   const { f, p } = hit;
   const name = eventTitle(p.e) + (p.e.flight ? ` · Flight ${p.e.flight}` : '');
   // The phone's clock when it isn't the festival's (still at home): «Às 16:00» would be an hour off.
-  const at = startOnPhone(f, p.e, locale);
+  const at = startWhen(f, p.e, locale, now);
   const row = (
     <ListItem
       icon="play"
       iconColor={C.accent}
       title={p.action.kind === 'resume' ? t('Começar Dia {n}', { n: dayOf(p.action.session) + 1 }) + ' · ' + name : t('Começar: {name}', { name })}
       numberOfLines={0}
-      subtitle={[t('Às {time}', { time: at }), p.e.day2 ? null : money(p.e.buyIn, f.currency)].filter(Boolean).join(' · ')}
+      subtitle={[at, p.e.day2 ? null : money(p.e.buyIn, f.currency)].filter(Boolean).join(' · ')}
       chevron
       onPress={() => start(f, p.e)}
     />

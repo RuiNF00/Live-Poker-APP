@@ -953,7 +953,7 @@ function TableReads({ roster }: { roster: string[] }) {
         {players.length ? (
           <ListItem icon="search" title={known.length ? t('Procurar outro jogador') : t('Procurar um jogador')} subtitle={t('Nome, aspeto ou tag')} onPress={() => router.push({ pathname: '/notes', params: { find: '1' } })} />
         ) : (
-          <ListItem icon="create-outline" title={t('Nota sobre um jogador')} subtitle={t('Quem é, como joga. Na próxima vez, já sabes.')} onPress={() => router.push({ pathname: '/notes', params: { id: 'new' } })} />
+          <ListItem icon="create-outline" title={t('Nota sobre um jogador')} subtitle={t('Quem é, como joga. Da próxima vez, já sabes.')} onPress={() => router.push({ pathname: '/notes', params: { id: 'new' } })} />
         )}
       </ListGroup>
     </Section>

@@ -6,7 +6,7 @@ import { LISBOA_NOV_2026, SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals
 import { BAHAMAS_DEC_2026 as F } from '../../poker/festival-data';
 import { venueTime } from '../../poker/festivals';
 import { STRUCTURES } from '../../poker/festival-structures';
-import { bigBlinds, closeLevel, entryFlights, flightLabel, hoursLabel, lateRegClose, levelStarts, phoneStart, startOnPhone, tournamentRows } from '../festival-event';
+import { bigBlinds, closeLevel, entryFlights, flightLabel, hoursLabel, lateRegClose, levelStarts, phoneStart, startOnPhone, startWhen, tournamentRows } from '../festival-event';
 import { ownEvent } from '../festival-plan';
 
 const byId = (f: typeof SP, id: string) => f.events.find((e) => e.id === id)!;
@@ -95,4 +95,13 @@ test('startOnPhone: the venue hour in the venue zone, the phone hour (and day) a
   // In Madrid (UTC+1): midnight, so the day goes with it.
   assert.match(startOnPhone(SP, e, 'pt-PT', () => 60), /00:00/);
   assert.notEqual(startOnPhone(SP, e, 'pt-PT', () => 60), '00:00');
+});
+
+test('startWhen: today, tomorrow or the weekday, on the phone clock', () => {
+  const e = byId(SP, '26-1B'); // Mon 16 Nov, 20:00 in São Paulo (UTC−3) = 23:00 UTC
+  const noon = Date.parse('2026-11-16T12:00:00Z');
+  assert.equal(startWhen(SP, e, 'pt-PT', noon, () => -180), 'Hoje às 20:00');
+  assert.equal(startWhen(SP, e, 'pt-PT', noon, () => 0), 'Hoje às 23:00');
+  assert.equal(startWhen(SP, e, 'pt-PT', noon, () => 60), 'Amanhã às 00:00');
+  assert.match(startWhen(SP, e, 'pt-PT', Date.parse('2026-11-13T12:00:00Z'), () => 0), /^segunda-feira às 23:00$/);
 });
