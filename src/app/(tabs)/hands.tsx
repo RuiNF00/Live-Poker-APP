@@ -99,12 +99,13 @@ export default function HandsScreen() {
       return data.length ? [{ title: filter.sort === 'won' ? t('Mais bb ganhas') : t('Mais bb perdidas'), data }] : [];
     }
     const out: { title: string; data: Hand[] }[] = [];
-    let cur = -1;
+    // Newest first: a hand still on or after the current day's midnight is that day, so the date
+    // maths runs once per day instead of once per hand (20 000 of them on every letter typed).
+    let cur = Infinity;
     for (const h of rows) {
-      const k = dayKey(h.createdAt);
-      if (k !== cur) {
-        out.push({ title: dayTitle(k), data: [] });
-        cur = k;
+      if (h.createdAt < cur) {
+        cur = dayKey(h.createdAt);
+        out.push({ title: dayTitle(cur), data: [] });
       }
       out[out.length - 1].data.push(h);
     }
@@ -168,7 +169,13 @@ export default function HandsScreen() {
     [settings.inBB, picking, picked, togglePick, unread, tag, searchWords],
   );
 
-  const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
+  const usedTags = useMemo(() => {
+    const used = new Set(hands.flatMap((h) => h.tags));
+    return DEFAULT_TAGS.filter((tg) => used.has(tg));
+  }, [hands]);
+  // The picked hands, found once per change: the screen renders on every letter typed, and this
+  // was a pass over every hand for the folders sheet plus one per tag chip, even with none picked.
+  const pickedHands = useMemo(() => (picked.size ? hands.filter((h) => picked.has(h.id)) : []), [hands, picked]);
   const folders = useMemo(() => [...new Set(hands.flatMap((h) => h.folders ?? []))].sort((a, b) => a.localeCompare(b)), [hands]);
   const toReview = useMemo(() => hands.filter((h) => needsReview(h, sentToCoach)).length, [hands, sentToCoach]);
   const [filing, setFiling] = useState(false);
@@ -326,7 +333,7 @@ export default function HandsScreen() {
               setPicked(new Set());
             }}
           />
-          <IconButton name="analytics-outline" label={t('Abrir no GTO Wizard')} onPress={() => (isPro || picked.size === 1 ? toSolver(hands.filter((h) => picked.has(h.id))) : paywall('solver'))} />
+          <IconButton name="analytics-outline" label={t('Abrir no GTO Wizard')} onPress={() => (isPro || picked.size === 1 ? toSolver(pickedHands) : paywall('solver'))} />
           <IconButton name="folder-outline" label={t('Guardar em pasta')} onPress={() => setFiling(true)} />
           <IconButton name="pricetag-outline" label={t('Pôr tag')} onPress={() => setTagging(true)} />
           <IconButton
@@ -344,14 +351,14 @@ export default function HandsScreen() {
         </View>
       ) : null}
       <HandFilterSheet visible={filtering} onClose={() => setFiltering(false)} value={filter} onChange={setFilter} hands={hands} />
-      <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={hands.filter((h) => picked.has(h.id))} save={saveHand} />
+      <FolderSheet visible={filing} onClose={() => setFiling(false)} folders={folders} list={pickedHands} save={saveHand} />
       <Modal visible={tagging} transparent animationType="fade" onRequestClose={() => setTagging(false)}>
         <Pressable accessible={false} onPress={() => setTagging(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
           <Pressable accessible={false} accessibilityViewIsModal onAccessibilityEscape={() => setTagging(false)} style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
             <SheetHeader title={picked.size === 1 ? t('Tag para 1 mão') : t('Tag para {n} mãos', { n: picked.size })} onClose={() => setTagging(false)} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
               {DEFAULT_TAGS.map((tg) => {
-                const list = hands.filter((h) => picked.has(h.id));
+                const list = pickedHands;
                 const all = list.length > 0 && list.every((h) => h.tags.includes(tg));
                 return (
                   <Chip

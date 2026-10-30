@@ -4,6 +4,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { minOf } from '@/lib/extent';
 import { totals } from '@/store/session-math';
 
 export type CancelReason = 'notPlaying' | 'bankroll' | 'noSubscription' | 'feature' | 'slow' | 'otherApp';
@@ -41,7 +42,7 @@ export function logged(
 ): Logged | null {
   if (!hands.length && !sessions.length) return null;
   const tot = totals(sessions);
-  const since = Math.min(...hands.map((h) => h.createdAt), ...sessions.map((s) => s.startedAt));
+  const since = minOf(hands.map((h) => h.createdAt), sessions.map((s) => s.startedAt));
   // The count goes next to the amount: only the finished sessions in that currency, like the amount.
   if (!tot.sessions && !hands.length) return null;
   return { sessions: tot.sessions, hands: hands.length, profit: tot.profit, currency: tot.currency, since };

@@ -7,6 +7,7 @@ import { Pressable, View } from 'react-native';
 import { festivalPicks, isMtt, ONBOARDING_KEY, startProgress, startSteps, type StartStep } from '@/billing/onboarding';
 import { Card, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
+import { minOf } from '@/lib/extent';
 import { useFestivalPlans } from '@/store/festival-plan';
 import { useStore } from '@/store/store';
 import { C, S } from '@/theme';
@@ -42,7 +43,7 @@ export function useStartChecklist() {
   const count = START_STEPS.filter((s) => done[s.key]).length;
   // First week means it: two weeks from the first hand or session. Someone who began with a session
   // sees it too (it used to wait for a first hand); before anything at all, Resumo shows its own start.
-  const first = Math.min(...hands.map((h) => h.createdAt), ...sessions.map((s) => s.startedAt));
+  const first = minOf(hands.map((h) => h.createdAt), sessions.map((s) => s.startedAt));
   if (hidden || !Number.isFinite(first) || count === START_STEPS.length || now - first > FORTNIGHT) return null;
   const next = START_STEPS.find((s) => !done[s.key])!;
 

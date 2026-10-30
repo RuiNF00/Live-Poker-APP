@@ -4,6 +4,8 @@
  * week without poker can be paused and a missed week can use a freeze.
  */
 
+import { minOf } from '@/lib/extent';
+
 export const FREEZE_EVERY = 4;
 export const MAX_FREEZES = 2;
 export const MILESTONES = [2, 4, 8, 12, 26, 52, 104];
@@ -34,6 +36,22 @@ export function weekStart(ts: number) {
   return d.getTime();
 }
 
+/**
+ * weekStart for a long list of times. Times next to each other mostly fall in the same week, so
+ * one check against the last week found skips the date maths (a Date per hand was most of the
+ * home screen's work with years of hands). Same answers as weekStart.
+ */
+export function weekStarter(): (ts: number) => number {
+  let from = 0;
+  let to = -Infinity;
+  return (ts) => {
+    if (ts >= from && ts < to) return from;
+    from = weekStart(ts);
+    to = nextWeek(from);
+    return from;
+  };
+}
+
 function nextWeek(w: number) {
   // Through setDate, so a daylight-saving change never shifts the boundary.
   const d = new Date(w);
@@ -49,7 +67,8 @@ export function streakActivity(hands: { createdAt: number; reviewedAt?: number }
 
 export function computeStreak(activity: number[], pauses: Pause[], now: number, recentWeeks = 12): Streak {
   const current = weekStart(now);
-  const logged = new Set(activity.map(weekStart));
+  const weeksLogged = activity.map(weekStarter());
+  const logged = new Set(weeksLogged);
   const isPaused = (w: number) => {
     const end = nextWeek(w);
     return pauses.some((p) => p.from < end && (p.to ?? Infinity) > w);
@@ -57,7 +76,7 @@ export function computeStreak(activity: number[], pauses: Pause[], now: number, 
   const states: WeekState[] = [];
   let weeks = 0;
   let freezes = 0;
-  const first = activity.length ? Math.min(...activity.map(weekStart)) : current;
+  const first = activity.length ? minOf(weeksLogged) : current;
   for (let w = Math.min(first, current); w <= current; w = nextWeek(w)) {
     let st: WeekState;
     if (logged.has(w)) {

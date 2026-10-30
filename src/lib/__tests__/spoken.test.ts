@@ -16,11 +16,12 @@ test('a saved hand or session says so, then the result', () => {
   assert.equal(translate('es', 'Sessão guardada'), 'Sesión guardada');
 });
 
+// Said aloud, not a clock: «1 h 5 min», without the leading zero.
 test('time played in hours and minutes, never seconds', () => {
   assert.equal(spokenPlayed(0), '0 min');
   assert.equal(spokenPlayed(59_999), '0 min');
   assert.equal(spokenPlayed(45 * 60_000 + 30_000), '45 min');
-  assert.equal(spokenPlayed(65 * 60_000 + 32_000), '1 h 05 min');
-  assert.equal(spokenPlayed(10 * 3_600_000), '10 h 00 min');
+  assert.equal(spokenPlayed(65 * 60_000 + 32_000), '1 h 5 min');
+  assert.equal(spokenPlayed(10 * 3_600_000), '10 h 0 min');
   assert.equal(spokenPlayed(-5), '0 min');
 });

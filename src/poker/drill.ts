@@ -29,6 +29,19 @@ export function isDue(h: Hand, state: DrillState, now: number): boolean {
 }
 
 /**
+ * How many reviewed hands are due again (the home's «para treinar»): drillQueue's first part,
+ * counted without building and sorting the waiting list beside it.
+ */
+export function dueAgainCount(hands: readonly Hand[], state: DrillState, now: number): number {
+  let n = 0;
+  for (const h of hands) {
+    const s = state[h.id];
+    if (s && s.due <= now && !needsReview(h)) n++;
+  }
+  return n;
+}
+
+/**
  * «Treino da semana»: hands due again first (longest waiting first), then the ones marked for
  * review, oldest first; at most DRILL_MAX. Deleted hands simply aren't there.
  */

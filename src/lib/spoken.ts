@@ -11,8 +11,8 @@ export function savedMessage(what: 'hand' | 'session', result?: string): string 
   return result ? `${saved}. ${t('Resultado')}: ${result}` : saved;
 }
 
-/** Time played as a screen reader says it: «1 h 05 min», not «1:05:32» read digit by digit. */
+/** Time played as a screen reader says it: «1 h 5 min», not «1:05:32» read digit by digit. */
 export function spokenPlayed(ms: number): string {
   const m = Math.max(0, Math.floor(ms / 60000));
-  return m >= 60 ? t('{h} h {m} min', { h: Math.floor(m / 60), m: String(m % 60).padStart(2, '0') }) : t('{m} min', { m });
+  return m >= 60 ? t('{h} h {m} min', { h: Math.floor(m / 60), m: m % 60 }) : t('{m} min', { m });
 }

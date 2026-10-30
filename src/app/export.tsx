@@ -41,6 +41,9 @@ function note(title: string, body?: string) {
 
 const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+/** Lets the screen draw «A preparar…» before a long step starts. */
+const paint = () => new Promise<void>((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
 export default function ExportScreen() {
   const store = useStore();
   const { sessions, transfers, bankrolls, trips, hands, settings } = store;
@@ -69,9 +72,13 @@ export default function ExportScreen() {
   const stamp = period === 'year' ? String(y) : period === 'lastYear' ? String(y - 1) : new Date(now).toISOString().slice(0, 10);
 
   const run = async (key: string, pro_: boolean, fn: () => Promise<void>) => {
+    // One at a time: a second tap while a file is being made would make it twice.
+    if (busy) return;
     const go = async () => {
       setBusy(key);
       try {
+        // Years of hands take a couple of seconds to write out on a phone: «A preparar…» shows first.
+        await paint();
         await fn();
       } catch {
         note(t('Não deu para exportar'), t('Os teus dados continuam neste telemóvel. Tenta outra vez.'));
@@ -161,9 +168,9 @@ export default function ExportScreen() {
         <Section title={t('Exportar')}>
           <ListGroup>
             <ListItem icon="document-text" iconColor={C.accent} title={busy === 'pdf' ? t('A preparar…') : t('Relatório PDF')} subtitle={<T v="small">{t('Resultados por bankroll, jogo, sala, mês e país, viagens e todas as sessões')}</T>} right={lock} onPress={pdf} />
-            <ListItem icon="grid-outline" iconColor={C.info} title={t('Sessões em CSV')} subtitle={<T v="small">{store.allSessions.length > sessions.length ? t('Com depósitos, levantamentos, despesas de viagem e os prémios importados de listas de resultados (marcados), para Excel ou Google Sheets') : t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')}</T>} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
-            <ListItem icon="albums-outline" iconColor={C.good} title={t('Mãos em CSV')} subtitle={<T v="small">{t('Posição, cartas, board, resultado, tags e notas')}</T>} right={lock} onPress={handsFile} />
-            <ListItem icon="download-outline" title={t('Cópia completa (.json)')} subtitle={<T v="small">{t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')}</T>} onPress={backup} />
+            <ListItem icon="grid-outline" iconColor={C.info} title={busy === 'sessions' ? t('A preparar…') : t('Sessões em CSV')} subtitle={<T v="small">{store.allSessions.length > sessions.length ? t('Com depósitos, levantamentos, despesas de viagem e os prémios importados de listas de resultados (marcados), para Excel ou Google Sheets') : t('Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets')}</T>} right={fullHistory ? undefined : lock} onPress={sessionsFile} />
+            <ListItem icon="albums-outline" iconColor={C.good} title={busy === 'hands' ? t('A preparar…') : t('Mãos em CSV')} subtitle={<T v="small">{t('Posição, cartas, board, resultado, tags e notas')}</T>} right={lock} onPress={handsFile} />
+            <ListItem icon="download-outline" title={busy === 'json' ? t('A preparar…') : t('Cópia completa (.json)')} subtitle={<T v="small">{t('Tudo, sempre grátis. Para mudar de telemóvel ou de app.')}</T>} onPress={backup} />
           </ListGroup>
         </Section>
       </ScrollView>

@@ -6,13 +6,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 
+import { maxOf } from '@/lib/extent';
+
 const DAY = 86_400_000;
 export const WELCOME_BACK_AFTER = 30 * DAY;
 const KEY = 'rl.welcome-back.v1';
 
 /** The last thing logged: a session started or a hand saved. 0 when nothing was. */
 export function lastActivity(sessions: readonly { startedAt: number }[], hands: readonly { createdAt: number }[]): number {
-  return Math.max(0, ...sessions.map((s) => s.startedAt), ...hands.map((h) => h.createdAt));
+  return Math.max(0, maxOf(sessions.map((s) => s.startedAt), hands.map((h) => h.createdAt)));
 }
 
 /** Shown once per pause: `dismissed` is the last activity of the pause already greeted. */

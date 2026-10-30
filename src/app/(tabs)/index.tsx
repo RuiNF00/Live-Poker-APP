@@ -29,7 +29,7 @@ import { Amount, Banner, Button, Card, IconButton, Row, ScreenHeader, Section, T
 import { locale, t } from '@/i18n';
 import { useCoach } from '@/lib/coach-api';
 import { useSharedHands } from '@/lib/friend-hands';
-import { drillQueue } from '@/poker/drill';
+import { dueAgainCount } from '@/poker/drill';
 import { duration, money, plus } from '@/poker/format';
 import { useReduceMotion } from '@/lib/motion';
 import { needsReview } from '@/poker/review';
@@ -94,8 +94,11 @@ export default function HomeScreen() {
   const toReview = review.length;
   // Reviewed hands whose «O que fazes aqui?» is due again (poker/drill).
   const drill = useDrill();
-  const dueAgain = useMemo(() => drillQueue(hands, drill, now, Infinity).filter((h) => !needsReview(h)).length, [hands, drill, now]);
-  const weekHands = useMemo(() => hands.filter((h) => h.createdAt >= weekStart(now)).length, [hands, now]);
+  const dueAgain = useMemo(() => dueAgainCount(hands, drill, now), [hands, drill, now]);
+  const weekHands = useMemo(() => {
+    const since = weekStart(now);
+    return hands.filter((h) => h.createdAt >= since).length;
+  }, [hands, now]);
   const lastNote = useMemo(() => players.reduce<PlayerNote | null>((a, p) => (!a || p.updatedAt > a.updatedAt ? p : a), null), [players]);
   const fresh = hands.length === 0 && sessions.length === 0;
   const played = sessions.some((x) => x.endedAt);
