@@ -236,7 +236,7 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
   },
   stats: {
-    title: t('Vê onde o teu bankroll cresce'),
+    title: t('Vê de onde vêm os teus resultados'),
     body: t('Vários bankrolls, e filtros por sala, jogo e stake.'),
   },
   trips: {
@@ -400,10 +400,10 @@ export function freeVsPro(full = false): { label: string; free: Cell; plus: Cell
     // The full comparison (CompareSheet) adds the rest, so nothing Pro has is left unsaid.
     ...(full
       ? [
-          row('Relatório do ano com impostos, em PDF', 'taxReport', !PRO_ONLY.taxReport),
+          row('Relatório anual para a declaração, em PDF', 'taxReport', !PRO_ONLY.taxReport),
           row('A variância com os teus números', 'varianceMine', false),
           row('Range do vilão na grelha', 'villainRange', !PRO_ONLY.villainRange),
-          row('Mais do que uma viagem com despesas', 'trips', false),
+          row('A partir da 2.ª viagem com despesas', 'trips', false),
           { label: 'Calculadora de equity, ICM e backup', free: true as Cell, plus: true as Cell, pro: true as Cell },
           { label: 'Importar e exportar o histórico em CSV', free: true as Cell, plus: true as Cell, pro: true as Cell },
         ]

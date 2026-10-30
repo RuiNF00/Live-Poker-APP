@@ -2126,9 +2126,10 @@ const ptBR: Record<string, string> = {
   'Faltam {n} sessões para o gráfico e as estatísticas': 'Faltam {n} sessões para o gráfico e as estatísticas',
   'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.': 'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.',
   // Conversão: comparison, locks and trial line
-  'Vê onde o teu bankroll cresce': 'Veja onde seu bankroll cresce',
+  'Vê de onde vêm os teus resultados': 'Veja de onde vêm seus resultados',
+  '{days} dias grátis no plano anual. Cancelas quando quiseres nas Definições.': '{days} dias grátis no plano anual. Você cancela quando quiser nos Ajustes.',
+  'Começar os {days} dias grátis': 'Começar {days} dias grátis',
   'O que tens hoje fica teu. O Pro junta o resto.': 'O que você tem hoje continua seu. O Pro junta o resto.',
-  '{days} dias grátis no plano anual. Cancelas quando quiseres.': '{days} dias grátis no plano anual. Você cancela quando quiser.',
 };
 
 export default ptBR;

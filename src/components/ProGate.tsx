@@ -29,7 +29,7 @@ export function useTrialLine(): string | null {
   const { hands, sessions, activeSession } = useStore();
   if (isPro || trialDays < 1 || activeSession) return null;
   if (!hands.length && !sessions.some((s) => s.endedAt)) return null;
-  return t('{days} dias grátis no plano anual. Cancelas quando quiseres.', { days: trialDays });
+  return t('{days} dias grátis no plano anual. Cancelas quando quiseres nas Definições.', { days: trialDays });
 }
 
 /** What a locked screen shows: what the feature does, what else Pro has, and the one Pro paywall. */
