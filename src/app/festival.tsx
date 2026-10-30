@@ -74,7 +74,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
   const balance = balanceOf({ bankrollId: bankroll.id }, sessions, transfers, bankrolls).balance;
   const tot = planTotals(f, plan);
   // What is still to pay: a buy-in already played is out of the balance.
-  const share = sameCurrency ? bankrollShare(buyInsLeft(f, plan, sessions), balance) : null;
+  const left = buyInsLeft(f, plan, sessions);
+  const share = sameCurrency ? bankrollShare(left, balance) : null;
 
   // Sessions started from this schedule that have ended: what the festival has given so far.
   const result = useMemo(() => festivalResult(f, plan, sessions, profit), [f, plan, sessions]);
@@ -169,7 +170,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
 
         {/* Nothing marked yet: no card of zeros between the name and the schedule; it comes with the first event. */}
         {result ? <FestivalResult f={f} r={result} hidden={!!settings.hideAmounts} /> : null}
-        {tot.events ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
+        {/* Nothing marked yet: no «0 € · 0% da banca»; the line above says what to do. */}
+        {f.events.length && tot.events ? <Summary f={f} tot={tot} balance={balance} share={share} partial={left < tot.buyIns} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
         {f.events.length || f.dates ? <TripLink f={f} plan={plan} /> : null}
         {tot.events ? <SharePlan f={f} plan={plan} /> : null}
 
@@ -315,6 +317,7 @@ function Summary({
   tot,
   balance,
   share,
+  partial,
   bankrollName,
   bankrollCurrency,
   sameCurrency,
@@ -323,6 +326,8 @@ function Summary({
   tot: ReturnType<typeof planTotals>;
   balance: number;
   share: number | null;
+  /** Some planned buy-ins are already played: the share is of what is still to pay. */
+  partial: boolean;
   bankrollName: string;
   bankrollCurrency: string;
   sameCurrency: boolean;
@@ -342,7 +347,7 @@ function Summary({
           <T v="mono">{money(balance, bankrollCurrency)}</T>
           {share != null ? (
             <T v="monoS" color={tone}>
-              {t('{pct}% da banca', { pct: Math.round(share * 100) })}
+              {partial ? t('{pct}% da banca no que falta', { pct: Math.round(share * 100) }) : t('{pct}% da banca', { pct: Math.round(share * 100) })}
             </T>
           ) : null}
         </View>
@@ -444,12 +449,12 @@ function EventRow({
               </T>
             </Row>
           ) : null}
-          {/* Wraps at 320 so «Hora do late reg» is never cut next to the button. */}
+          {/* Wraps at 320 so «Quando fecha o late reg?» (longer in es) is never cut next to the button. */}
           <Row gap={S.sm} style={{ flexWrap: 'wrap', rowGap: S.sm }}>
             {e.day2 ? <View style={{ flex: 1 }} /> : <Pressable
               onPress={onLate}
               accessibilityRole="button"
-              style={{ flex: 1, minWidth: 150, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
+              style={{ flex: 1, minWidth: 200, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
               <Ionicons name="alarm-outline" size={15} color={late ? C.text : C.accent} />
               <T v="small" color={late ? C.text : C.accent} numberOfLines={1} style={{ flexShrink: 1 }}>
                 {lateLabel}

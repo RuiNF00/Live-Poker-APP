@@ -888,6 +888,7 @@ const en: Record<string, string> = {
   '1 dia depois do fundo': '1 day after the bottom',
   'em 1 torneio': 'in 1 tournament',
   'em {n} torneios': 'in {n} tournaments',
+  '{pct}% da banca no que falta': '{pct}% of bankroll for what is left',
   '{h} h a jogar': '{h} h played',
   'Procurar': 'Search',
   'Sessão em curso · {time}': 'Session running · {time}',

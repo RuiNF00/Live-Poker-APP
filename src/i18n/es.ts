@@ -820,6 +820,7 @@ const es: Record<string, string> = {
   '1 dia depois do fundo': '1 día después del fondo',
   'em 1 torneio': 'en 1 torneo',
   'em {n} torneios': 'en {n} torneos',
+  '{pct}% da banca no que falta': '{pct}% del bankroll en lo que falta',
   '{h} h a jogar': '{h} h jugando',
   'Procurar': 'Buscar',
   'Sessão em curso · {time}': 'Sesión en curso · {time}',

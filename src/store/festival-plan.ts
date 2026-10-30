@@ -176,9 +176,20 @@ export function buyInsLeft(f: Festival, plan: FestivalPlan, sessions: Session[])
  */
 export function festivalResult(f: Festival, plan: FestivalPlan, sessions: Session[], net: (s: Session) => number): { played: number; cashed: number; net: number } | null {
   const ids = new Set(Object.values(plan.sessions));
-  const done = sessions.filter((s) => ids.has(s.id) && s.endedAt && s.currency === f.currency);
+  // A bagged session has an end but is still being played: it counts once it is over.
+  const done = sessions.filter((s) => ids.has(s.id) && s.endedAt && !isBagged(s) && s.currency === f.currency);
   if (!done.length) return null;
-  return { played: done.length, cashed: done.filter((s) => s.cashOut > 0).length, net: done.reduce((a, s) => a + net(s), 0) };
+  // One tournament per event number: flights 1A and 1B played as two sessions are one tournament, cashed if either cashed.
+  const number = new Map(withPlanEvents(f, plan).events.map((e) => [e.id, String(e.number)]));
+  const byId = new Map(done.map((s) => [s.id, s]));
+  const events = new Map<string, boolean>();
+  for (const [eventId, sid] of Object.entries(plan.sessions)) {
+    const s = byId.get(sid ?? '');
+    if (!s) continue;
+    const key = number.get(eventId) ?? eventId;
+    events.set(key, !!events.get(key) || s.cashOut > 0);
+  }
+  return { played: events.size, cashed: [...events.values()].filter(Boolean).length, net: done.reduce((a, s) => a + net(s), 0) };
 }
 
 /** Planned buy-ins as a share of the bankroll: null with no (or a negative) bankroll. */

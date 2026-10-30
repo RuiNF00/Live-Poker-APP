@@ -552,4 +552,19 @@ test('the festival result counts the ended sessions started from its schedule, i
   assert.equal(festivalResult(F, EMPTY_PLAN, [ses('s1', 0, -100)], net), null, 'nothing played from the schedule yet');
   const list = [ses('s1', 0, -100), ses('s2', 900, 750), ses('s3', 0, 0, { endedAt: undefined, currency: F.currency } as never), ses('s4', 500, 300, { endedAt: 2, currency: 'XYZ' }), ses('other', 0, -50)];
   assert.deepEqual(festivalResult(F, plan, list, net), { played: 2, cashed: 1, net: 650 });
+  // Flights of one event played as two sessions are one tournament; a cash in either cashes it.
+  const [a, b] = F.events.filter((e) => e.number === 1 && !e.day2);
+  const flights = { ...EMPTY_PLAN, sessions: { [a.id]: 'f1', [b.id]: 'f2' } };
+  assert.deepEqual(festivalResult(F, flights, [ses('f1', 0, -2750), ses('f2', 6000, 3250)], net), { played: 1, cashed: 1, net: 500 });
+});
+
+test('festival result: a bagged tournament is not lost yet, and counts again once it ends', () => {
+  const s0 = { id: 'b1', startedAt: 1, currency: F.currency, cashOut: 0, net: -2750, stackLog: [], breaks: [] } as unknown as Session;
+  const net = (s: Session) => (s as unknown as { net: number }).net;
+  const plan = { ...EMPTY_PLAN, sessions: { [F.events[0].id]: 'b1' } };
+  const bagged = bagDay(s0, 120000, 10);
+  assert.equal(festivalResult(F, plan, [bagged], net), null, 'Day 1 bagged: nothing over yet');
+  const playing = resumeDay(bagged, 20);
+  assert.equal(festivalResult(F, plan, [playing], net), null, 'Day 2 in progress');
+  assert.deepEqual(festivalResult(F, plan, [{ ...playing, endedAt: 30, cashOut: 9000 }], net), { played: 1, cashed: 1, net: -2750 });
 });
