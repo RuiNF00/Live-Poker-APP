@@ -7,7 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { Path, Rect, Svg } from '@/components/svg';
 
 import { t } from '@/i18n';
 import { download, formatCode, joinCloud, loadCloud, onCloudChange, parseCode, syncCloud, type CloudState } from '@/lib/cloud-backup';

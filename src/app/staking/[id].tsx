@@ -12,7 +12,7 @@ import { ensureBackerPage, pushBackerPage, statementFor } from '@/components/sta
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { Sheet } from '@/components/BankrollSheets';
-import { ManualRatesForm } from '@/components/HomeCurrencyCard';
+import { ManualRatesForm } from '@/components/ManualRatesForm';
 import { apartLines, balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { headerRightWithBadge } from '@/components/NetStatus';
 import { Amount, Button, Card, Chip, ChipRow, Empty, IconButton, ListGroup, ListItem, Pill, Row, Screen, Section, Stat, StatGrid, T, tap } from '@/components/ui';

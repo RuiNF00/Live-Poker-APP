@@ -17,8 +17,7 @@ import { countryName, flag } from '@/tax/countries';
 import { DARK as C, F, R, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
-import { Logo, Watermark } from './SessionCard';
-import { STORY_H, STORY_W } from './story-brand';
+import { Logo, STORY_H, STORY_W, Watermark } from './story-brand';
 
 const INK = C.accentInk;
 const LOOK: Record<YearCardKind, 'noite' | 'brasa'> = { year: 'brasa', best: 'noite', stakes: 'noite', bankroll: 'noite', pot: 'noite', streak: 'brasa' };

@@ -13,8 +13,7 @@ import { monthName, type MonthRecap } from '@/store/month-recap';
 import { playedMs } from '@/store/session-math';
 import { DARK as C, F, ff } from '@/theme';
 
-import { Logo, Watermark } from './SessionCard';
-import { POST_H, STORY_H, STORY_W } from './story-brand';
+import { Logo, POST_H, STORY_H, STORY_W, Watermark } from './story-brand';
 
 const INK = C.accentInk;
 const DIM = 'rgba(26,10,4,0.62)';

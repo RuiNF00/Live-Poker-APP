@@ -15,7 +15,7 @@ import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, 
 import { locale, t } from '@/i18n';
 import { currenciesOf, defaultPlacement, NEW, place, type Placement } from '@/import/bankrolls';
 import { likelyDuplicateMoves, likelyDuplicates } from '@/import/duplicates';
-import { prepareAsync, toSessionsAsync, type DateOrder, type FailedRow, type FailReason, type ImportResult, type Prepared } from '@/import/convert';
+import type { DateOrder, FailedRow, FailReason, ImportResult, Prepared } from '@/import/convert';
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
 import { track } from '@/lib/events';
@@ -28,6 +28,9 @@ import { profit } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, R, S } from '@/theme';
+
+// The CSV readers (~22 KB) load when a file is picked, in the same chunk as the results reader.
+const convert = () => import('@/import/convert');
 
 // Poker Ledger has no tile: its file is recognised from the header when picked as CSV.
 // 'results': past tournament results pasted from a results page (import-results.tsx).
@@ -167,6 +170,7 @@ export default function ImportScreen() {
       // Years of sessions take a moment to read: the bar shows before the first row is.
       progress.set({ done: 0, total: text.length, opening: true });
       await paint();
+      const { prepareAsync, toSessionsAsync } = await convert();
       const file = await prepareAsync(text, { onProgress: (done, total) => progress.set({ done, total, opening: true }), cancelled: () => !alive.current });
       if (!file) return;
       if (!file.table.rows.length) throw new Error('empty');
@@ -405,7 +409,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
     if (!stale) return;
     let gone = false;
     const o = { currency: settings.currency, tableSize: settings.defaultTableSize, source: file.source, order, defaultKind };
-    toSessionsAsync(file.table, mapping, o, { cancelled: () => gone }).then((r) => {
+    convert().then(({ toSessionsAsync }) => toSessionsAsync(file.table, mapping, o, { cancelled: () => gone })).then((r) => {
       if (r && !gone) setConv({ r, mapping, ...o });
     });
     return () => {

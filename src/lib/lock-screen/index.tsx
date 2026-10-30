@@ -12,7 +12,7 @@ import { usePro } from '@/billing/pro';
 import { cancelFestivalReminders, syncFestivalReminders } from '@/lib/festival-reminders';
 import { loadLock } from '@/lib/app-lock';
 import { endLiveEverywhere, registerLiveToken } from '@/lib/live-end';
-import { endedSince } from '@/lib/live-end-slot';
+import { endedSince } from '@/lib/live-end-ended';
 import { kindOn } from '@/lib/notify-policy';
 import { useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, useFestivals } from '@/store/my-festivals';

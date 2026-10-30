@@ -7,13 +7,12 @@ import { FitText } from "./FitText";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Text, View } from "react-native";
-import { Defs, Path, RadialGradient, Rect, Stop, Svg } from "@/components/svg";
+import { Defs, RadialGradient, Rect, Stop, Svg } from "@/components/svg";
 
-import { locale, t } from "@/i18n";
+import { t } from "@/i18n";
 import { positions } from "@/poker/engine";
 import { chips } from "@/poker/format";
 import {
-  dayKey,
   moneyLabel,
   resultParts,
   type FestivalRecap,
@@ -23,65 +22,17 @@ import type { CardStyle } from "@/share/session-card";
 import { DARK as C, F, R, ff, posColorDark as posColor } from "@/theme";
 
 import { PlayingCard } from "./PlayingCard";
-import { linkHost, Mark, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, STORY_H, STORY_W } from "./story-brand";
+import { dateRange, dayTicks, Logo } from "./festival-brand";
+import { linkHost, STORY_H, STORY_W } from "./story-brand";
+
+export { dateRange, dayTicks, Logo };
 
 export type FestivalLook = Exclude<CardStyle, "sticker">;
 export const FESTIVAL_LOOKS: FestivalLook[] = ["noite", "brasa"];
 
 const INK = C.accentInk;
 const SIDE = 26;
-const DAY = 86_400_000;
 
-/** "2–17 DEZ 2026", or "28 NOV – 3 DEZ 2026" across months. */
-export function dateRange(from: number, to: number): string {
-  const a = new Date(from);
-  const b = new Date(to);
-  const month = (d: Date) =>
-    d.toLocaleDateString(locale, { month: "short" }).replace(".", "");
-  const range =
-    a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
-      ? `${a.getDate()}–${b.getDate()} ${month(b)}`
-      : `${a.getDate()} ${month(a)} – ${b.getDate()} ${month(b)}`;
-  return `${range} ${b.getFullYear()}`.toUpperCase();
-}
-
-/** One tick per day of the trip, lit where the player sat down. */
-export function dayTicks(r: FestivalRecap): boolean[] {
-  const out: boolean[] = [];
-  const start = new Date(r.from);
-  start.setHours(12, 0, 0, 0);
-  for (let ms = start.getTime(); ms <= r.to && out.length < 31; ms += DAY) {
-    out.push(r.played.has(dayKey(ms)));
-  }
-  return out;
-}
-
-export function Logo({ ink }: { ink: boolean }) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-      {ink ? (
-        <Svg width={18} height={18} viewBox={MARK_VIEWBOX}>
-          <Path d={MARK_ARROW} fill={INK} />
-          <Path d={MARK_CLUB} fill={INK} />
-          <Path d={MARK_PLAY} fill={C.accent} />
-        </Svg>
-      ) : (
-        <Mark size={18} />
-      )}
-      <Text allowFontScaling={false}
-        style={{
-          fontFamily: ff(800),
-          fontWeight: "800",
-          fontSize: 14,
-          color: ink ? INK : C.text,
-          letterSpacing: -0.3,
-        }}
-      >
-        Sweat<Text allowFontScaling={false} style={{ color: ink ? INK : C.accent }}>book</Text>
-      </Text>
-    </View>
-  );
-}
 
 export interface FestivalCardProps {
   recap: FestivalRecap;

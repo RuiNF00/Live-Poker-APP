@@ -14,13 +14,12 @@ import { Avatar } from '@/components/Avatar';
 import { useLockScreenUp } from '@/components/AppLock';
 import { useAfterFirstFrame } from '@/components/Deferred';
 import { useNow } from '@/components/useNow';
-import { StopLossBanner } from '@/components/BankrollRules';
+import { StopLossBanner } from '@/components/StopLossBanner';
 import { tagColor } from '@/components/OpponentStats';
 import { RegularsHere } from '@/components/RegularsHere';
 import { LineChart } from '@/components/LineChart';
 import { firstSession, nextSession, SessionForm } from '@/components/SessionForm';
 import { canReadReceipts } from '@/lib/receipt-ocr';
-import { BackerLiveCard } from '@/components/staking/BackerLive';
 import { SwapLiveRow } from '@/components/swaps/SwapLiveRow';
 import { useSwapEnd } from '@/components/swaps/SwapEndRow';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
@@ -663,7 +662,11 @@ function Live({ s }: { s: Session }) {
 
           <Section title="Staking" action={t('Backers')} onAction={() => router.push('/staking')}>
             {/* The live link is for backers: shown once there are some, or this session has a link or a stake already. */}
-            {s.live || s.stakes?.length || backers.length ? <BackerLiveCard s={s} /> : null}
+            {s.live || s.stakes?.length || backers.length ? (
+              <React.Suspense fallback={null}>
+                <BackerLiveCard s={s} />
+              </React.Suspense>
+            ) : null}
             <StakeFields s={s} onChange={save} expenses={false} />
           </Section>
 
@@ -995,6 +998,9 @@ function TableReads({ roster }: { roster: string[] }) {
     </Section>
   );
 }
+
+// Lazy: the backers' live link (only with staking) shares a chunk with its sync in AfterStart, off the launch bundle.
+const BackerLiveCard = React.lazy(() => import('@/components/staking/BackerLive').then((m) => ({ default: m.BackerLiveCard })));
 
 // Lazy: the speech parser loads on the first tap, in the same chunk as the hand told by voice.
 const LiveVoiceSheet = React.lazy(() => import('@/components/voice-chunk').then((m) => ({ default: m.LiveVoiceSheet })));

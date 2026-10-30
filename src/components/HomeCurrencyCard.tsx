@@ -9,13 +9,14 @@ import { useLocked } from '@/components/ProGate';
 import { locale, t } from '@/i18n';
 import { useRates } from '@/lib/fx';
 import { money, plus } from '@/poker/format';
-import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
+import { CURRENCY_INFO } from '@/store/currencies';
 import { homeTotals, latestDay, type HomeTotals } from '@/store/fx-math';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
 import { CURRENCIES, Sheet } from './BankrollSheets';
-import { Button, Card, Chip, ChipRow, Field, IconButton, Row, T } from './ui';
+import { ManualRatesForm } from './ManualRatesForm';
+import { Button, Card, Chip, ChipRow, IconButton, Row, T } from './ui';
 
 /** One colour per currency in the share bar, biggest first. */
 const PART_COLORS = [C.accent, C.info, C.good, C.warn, '#B07CFF', C.muted];
@@ -141,41 +142,6 @@ function Parts({ parts, home, hidden }: { parts: HomeTotals['parts']; home: stri
           </T>
         </View>
       ))}
-    </View>
-  );
-}
-
-/** One field per currency: how many of it make 1 €, as the player saw at the cage or the exchange. */
-export function ManualRatesForm({ codes, initial, onSave }: { codes: string[]; initial: Record<string, number>; onSave: (r: Record<string, number>) => void }) {
-  const [text, setText] = useState<Record<string, string>>(() => Object.fromEntries(codes.map((c) => [c, initial[isoOf(c) ?? c] ? String(initial[isoOf(c) ?? c]).replace('.', ',') : ''])));
-  const parse = (v: string) => Number(v.replace(/\s/g, '').replace(',', '.'));
-  return (
-    <View style={{ gap: S.md }}>
-      <T v="small">{t('Estas moedas não têm câmbio diário do BCE. Usamos o teu para todas as datas; muda-o quando quiseres.')}</T>
-      {codes.map((c) => (
-        <Field
-          key={c}
-          label={t('1 € = quantos {code}?', { code: symbolOf(c) === c ? c : `${c} (${symbolOf(c)})` })}
-          value={text[c] ?? ''}
-          onChangeText={(v) => setText((x) => ({ ...x, [c]: v.slice(0, 12) }))}
-          keyboardType="decimal-pad"
-          placeholder="0"
-        />
-      ))}
-      <Button
-        title={t('Guardar câmbio')}
-        icon="checkmark"
-        onPress={() => {
-          const out = { ...initial };
-          for (const c of codes) {
-            const iso = isoOf(c) ?? c;
-            const n = parse(text[c] ?? '');
-            if (n > 0 && Number.isFinite(n)) out[iso] = n;
-            else delete out[iso];
-          }
-          onSave(out);
-        }}
-      />
     </View>
   );
 }

@@ -562,3 +562,6 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
     />
   );
 }
+
+// «Usar noutro aparelho» (devices.tsx) loads it from here, so it shares this lazy chunk.
+export { SyncDevices } from './SyncDevices';

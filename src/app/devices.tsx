@@ -7,8 +7,9 @@ import React from 'react';
 
 import { t } from '@/i18n';
 
-// The cloud copy's screens load lazily, off the first frame (as in settings.tsx).
-const SyncDevices = React.lazy(() => import('@/components/SyncDevices').then((m) => ({ default: m.SyncDevices })));
+// The cloud copy's screens load lazily, off the first frame (as in settings.tsx). Through CloudBackup, whose
+// helpers SyncDevices uses: one chunk for both, never a copy of CloudBackup in the launch bundle.
+const SyncDevices = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.SyncDevices })));
 
 export default function DevicesScreen() {
   const { join, from } = useLocalSearchParams<{ join?: string; from?: string }>();

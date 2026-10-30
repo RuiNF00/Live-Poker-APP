@@ -12,7 +12,7 @@ import { t } from '@/i18n';
 import { fitPlan, type PlanDay } from '@/share/festival-plan';
 import { DARK as C, R, ff } from '@/theme';
 
-import { Logo } from './FestivalCard';
+import { Logo } from './festival-brand';
 import { linkHost, STORY_H, STORY_W } from './story-brand';
 
 const SIDE = 26;

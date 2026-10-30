@@ -15,40 +15,15 @@ import type { CardStat, CardStyle, Milestone } from '@/share/session-card';
 import type { Session } from '@/store/types';
 import { DARK as C, F, R, ff } from '@/theme';
 
-import { linkHost, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, POST_H, STORY_H, STORY_W } from './story-brand';
+import { linkHost, Logo, POST_H, STORY_H, STORY_W, Watermark } from './story-brand';
+
+export { Logo, Watermark };
 
 /** The sticker is captured on its own, at this size in points. */
 export const STICKER_W = 320;
 export const STICKER_H = 180;
 
 const INK = C.accentInk;
-
-export function Logo({ size, color, cut }: { size: number; color: string; cut: string }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-      <Svg width={size + 4} height={size + 4} viewBox={MARK_VIEWBOX}>
-        <Path d={MARK_ARROW} fill={color} />
-        <Path d={MARK_CLUB} fill={color} />
-        <Path d={MARK_PLAY} fill={cut} />
-      </Svg>
-      <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontWeight: '800', fontSize: size, color: color === C.accent ? C.text : color, letterSpacing: -0.3 }}>
-        Sweat<Text allowFontScaling={false} style={{ color }}>book</Text>
-      </Text>
-    </View>
-  );
-}
-
-/** "Feito com Sweatbook": always on free cards. */
-export function Watermark({ color, dim }: { color: string; dim: string }) {
-  return (
-    <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 11, color: dim, letterSpacing: 0.4 }}>
-        {t('Feito com')} <Text allowFontScaling={false} style={{ fontFamily: ff(800), color }}>Sweatbook</Text>
-      </Text>
-      <Text allowFontScaling={false} style={{ fontFamily: ff(700), fontSize: 10, color: dim, letterSpacing: 0.6 }}>{linkHost}</Text>
-    </View>
-  );
-}
 
 /** Places and room names read better in the brand font than in mono. */
 const numFont = (x: CardStat) => (x.key === 'place' || x.key === 'venue' ? ff(800) : F.mono);

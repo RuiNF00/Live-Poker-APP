@@ -6,17 +6,17 @@
 import { BRAND } from '@/theme';
 
 import { loadCloud } from './cloud-backup';
-import { liveSlot } from './live-end-slot';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const crypto = () => require('./backup-crypto') as typeof import('./backup-crypto');
+// The ciphers, gzip and the slot's HMAC load only when a token is sent (as in cloud-backup.ts): never at launch.
+const crypto = () => import('./backup-crypto');
 
 async function call(method: 'PUT' | 'POST', body: Record<string, string>, sessionId: string): Promise<void> {
   const c = await loadCloud();
   if (!c) return;
-  const { auth, enc } = crypto().deriveKeys(c.secret);
+  const { deriveKeys, liveSlot } = await crypto();
+  const { auth, enc } = deriveKeys(c.secret);
   await fetch(`${API}/api/live-end/${c.id}`, {
     method,
     headers: { 'content-type': 'application/json', 'x-backup-key': auth },

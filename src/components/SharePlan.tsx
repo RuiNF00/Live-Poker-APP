@@ -19,7 +19,7 @@ import { planDays, planText } from '@/share/festival-plan';
 import { festivalName, type FestivalPlan } from '@/store/festival-plan';
 import { BRAND, C, R } from '@/theme';
 
-import { dateRange } from './FestivalCard';
+import { dateRange } from './festival-brand';
 import { FestivalPlanCard } from './FestivalPlanCard';
 import { ShareSheet, type ShareOption } from './ShareSheet';
 import { STORY_H, STORY_W } from './story-brand';

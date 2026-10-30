@@ -9,7 +9,6 @@ import { useLocales } from 'expo-localization';
 import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { BackerLiveSync } from '@/components/staking/BackerLive';
 import { BackerPageSync } from '@/components/staking/BackerPage';
 import { preloadSvg } from '@/components/svg';
 import { SwapSettleReminder } from '@/components/swaps/SwapSettleReminder';
@@ -26,6 +25,7 @@ const AutoCloudBackup = React.lazy(() => import('@/components/CloudBackup').then
 // The reminders bring the swap and staking sheets with them: they load after the first frame too.
 const SwapReminder = React.lazy(() => import('@/components/swaps/SwapReminder').then((m) => ({ default: m.SwapReminder })));
 const SettleReminder = React.lazy(() => import('@/components/staking/SettleReminder').then((m) => ({ default: m.SettleReminder })));
+const BackerLiveSync = React.lazy(() => import('@/components/staking/BackerLive').then((m) => ({ default: m.BackerLiveSync })));
 
 /**
  * Android changes the app's language (Settings › Apps › Sweatbook › Language) without restarting
@@ -52,8 +52,8 @@ export default function AfterStart() {
         <AutoCloudBackup />
         <SwapReminder />
         <SettleReminder />
+        <BackerLiveSync />
       </React.Suspense>
-      <BackerLiveSync />
       <BackerPageSync />
       <SessionLockScreen />
       <HomeWidgetSync />

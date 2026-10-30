@@ -15,7 +15,7 @@ import { chips, rawMoney } from '@/poker/format';
 import { biLabel, dayKey, placeLabel, tripWeeks, type SlideKind, moneyLabel, resultParts, type EventRow, type FestivalRecap, type RecapStat } from '@/share/festival-card';
 import { DARK as C, F, R, ff, posColorDark as posColor } from '@/theme';
 
-import { dateRange, dayTicks, Logo } from './FestivalCard';
+import { dateRange, dayTicks, Logo } from './festival-brand';
 import { STAGE_RATIO } from './replayer/layout';
 import { viewAt } from './replayer/model';
 import { ReplayerTable } from './replayer/ReplayerTable';

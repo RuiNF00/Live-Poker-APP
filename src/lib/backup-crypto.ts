@@ -10,6 +10,9 @@ import { Gunzip, Gzip, gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
 import { gcmDecrypt, gcmEncrypt } from './aes-gcm';
 import { ALPHA } from './cloud-code';
 
+// live-end.ts loads the slot's HMAC with the ciphers: noble stays in this one lazy chunk.
+export { liveSlot } from './live-end-slot';
+
 const SALT = strToU8('sweatbook-backup-v1');
 
 function b32(bytes: Uint8Array, len: number): string {
