@@ -15,3 +15,9 @@ test('hand share text: game, colon, question; never a contest', () => {
   assert.equal(handShareText('NLH 2/5', 'comment'), 'NLH 2/5: diz-me o que fazias, rua a rua. Comenta na própria mão 👀');
   assert.ok(handShareText('', 'comment').startsWith('Diz-me'));
 });
+
+test('hand share text: a buy-in in the game name never goes out', () => {
+  assert.equal(handShareText('Main Event €550', 'comment'), 'Main Event: diz-me o que fazias, rua a rua. Comenta na própria mão 👀');
+  assert.ok(!/550|€/.test(handShareText('Domingo 550€', 'link')));
+  assert.equal(handShareText('NLH 2/5', 'link'), 'NLH 2/5: o que fazias aqui? 👀', 'blinds are not a buy-in');
+});

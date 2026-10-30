@@ -4,14 +4,14 @@ import { t } from '@/i18n';
 import { centGame, positions, totalPot, type HandResult, type Replay, type Step } from '@/poker/engine';
 import { cardName } from '@/poker/cards';
 import { equity } from '@/poker/equity';
-import { evaluate } from '@/poker/evaluator';
+import { evaluate, evaluateOmaha } from '@/poker/evaluator';
 import { amount, decimal, pct } from '@/poker/format';
 import { runWinnings } from '@/poker/pokerstars';
 import { equityVsRange, rangeOf, rangePct, rangePctForRaises, topClasses } from '@/poker/ranges';
 import type { ActionKind, CardCode, Hand, Street } from '@/poker/types';
 
 import { motionTimeline, type MotionAnim } from './timeline';
-import { holeCount } from '@/poker/variant';
+import { holeCount, isPLO } from '@/poker/variant';
 
 export type BadgeKind = ActionKind | 'allin';
 
@@ -330,7 +330,7 @@ export function viewAt(hand: Hand, r: Replay, k: number, opts: { inBB: boolean; 
     const runs = runWinnings(result, centGame(hand));
     for (const s of seats) {
       if (s.won) s.run = runs[0][s.i] && !runs[1][s.i] ? 1 : runs[1][s.i] && !runs[0][s.i] ? 2 : null;
-      if (s.cards && s.handName) s.handName2 = evaluate([...s.cards, ...board2]).name;
+      if (s.cards && s.handName) s.handName2 = (isPLO(hand.game) ? evaluateOmaha(s.cards, board2) : evaluate([...s.cards, ...board2])).name;
     }
     narration = runs
       .map((paid, j) => {

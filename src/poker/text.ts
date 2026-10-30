@@ -1,6 +1,8 @@
 import { centGame, positions, replay, straddleSeats, totalPot, type LastAction } from './engine';
 import { runWinnings } from './pokerstars';
 import type { AnteType, Hand, Street } from './types';
+import { holeCount, isPLO } from './variant';
+import { withoutMoney } from '../../packages/hand-format/src/no-money';
 
 // Forum hand history (TwoPlusTwo, Reddit r/poker, WhatsApp groups): the
 // standard plain-text layout players already read, in English poker notation
@@ -67,9 +69,10 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
   const bomb = g.bombPot ? `Bomb pot: ${inBB(g.bombPot, bb)} each, starts on the flop` : '';
   out.push(
     [
-      "NL Hold'em",
+      isPLO(g) ? 'PL Omaha' : "NL Hold'em",
       g.kind === 'mtt' ? 'Tournament' : 'Cash',
-      g.name,
+      // No buy-in in a shared text, as on the poster: «Main Event €550» reads «Main Event».
+      withoutMoney(g.name),
       `${plain(g.sb)}/${plain(bb)}${ante}`,
       straddles,
       bomb,
@@ -118,7 +121,7 @@ export function forumText(hand: Hand, opts: ForumTextOptions = {}): string {
     if (!r.final.foldWin) {
       for (let i = 0; i < hand.players.length; i++) {
         const c = hand.players[i].cards;
-        if (i !== hand.hero && !r.final.folded[i] && c?.length === 2) out.push(`${who(i)} shows ${c.join(' ')}`);
+        if (i !== hand.hero && !r.final.folded[i] && c?.length === holeCount(g)) out.push(`${who(i)} shows ${c.join(' ')}`);
       }
     }
     const wins = (won: number[]) => won.map((w, i) => (w > 0 ? `${who(i)} wins ${inBB(w, bb)}` : '')).filter(Boolean).join(', ');

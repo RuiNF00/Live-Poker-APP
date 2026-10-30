@@ -100,7 +100,11 @@ export default function SharedHand() {
         <T v="tiny">{BRAND.tagline}</T>
       </Row>
       {err === 'gone' ? (
-        <Empty title={t('Esta mão já não existe')} body={t('O link pode estar errado ou a mão foi apagada.')} />
+        <View style={{ gap: 12 }}>
+          <Empty title={t('Esta mão já não existe')} body={t('O link pode estar errado ou a mão foi apagada.')} />
+          {/* Still on «Mãos partilhadas»: the way to take it off is here, as on a hand that loads. */}
+          {listed ? <Button title={t('Tirar das mãos partilhadas')} kind="ghost" onPress={() => void forgetFriendHand(id!)} /> : null}
+        </View>
       ) : err === 'offline' || err === 'rate_limited' ? (
         <Empty
           title={err === 'rate_limited' ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('Sem ligação')}

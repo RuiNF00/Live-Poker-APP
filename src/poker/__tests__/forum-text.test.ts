@@ -131,3 +131,26 @@ test('a cash hand never shows a tournament level left over from the defaults', (
   const head = forumText(h).split('\n')[0];
   assert.doesNotMatch(head, /Level|left|Early/);
 });
+
+test('copied text: no buy-in in the name, and PLO says so and shows four cards', () => {
+  const mtt = forumText(mk({ game: { kind: 'mtt', name: 'Main Event €550', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€' } }));
+  assert.ok(!/550|€/.test(mtt.split('\n')[0]), mtt.split('\n')[0]);
+  const plo = mk({
+    game: { kind: 'cash', name: 'PLO 1/2', variant: 'plo', sb: 1, bb: 2, ante: 0, anteType: 'none', currency: '€' },
+    players: [
+      { name: 'Rui', stack: 200, cards: ['As', 'Kd', 'Qh', 'Jc'] },
+      { name: 'Zé', stack: 135 },
+      { name: 'Ana', stack: 400, cards: ['9s', '9h', '8d', '7c'] },
+      { name: 'V3', stack: 200 }, { name: 'V4', stack: 200 }, { name: 'V5', stack: 200 },
+    ],
+    actions: [
+      { p: 3, kind: 'fold' }, { p: 4, kind: 'fold' }, { p: 5, kind: 'fold' },
+      { p: 0, kind: 'raise', to: 5 }, { p: 1, kind: 'fold' }, { p: 2, kind: 'call' },
+      { p: 2, kind: 'check' }, { p: 0, kind: 'check' }, { p: 2, kind: 'check' }, { p: 0, kind: 'check' }, { p: 2, kind: 'check' }, { p: 0, kind: 'check' },
+    ],
+    board: ['2c', '3d', '4s', '6h', 'Ts'],
+  });
+  const txt = forumText(plo);
+  assert.match(txt.split('\n')[0], /^PL Omaha/);
+  assert.match(txt, /shows 9s 9h 8d 7c/);
+});

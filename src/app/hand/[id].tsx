@@ -39,6 +39,7 @@ import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { streetOfNew } from '@/lib/friend-hands-core';
 import { deleteShare, fetchComments, removeComment, fetchVotes, shareLink, uploadHand, type Comment } from '@/lib/share-api';
 import { shareOptions } from '@/lib/share-options';
+import { publicHand } from '@/poker/privacy';
 import { canSendMessages, sendMessages, sendWhatsapp } from '@/lib/direct-share';
 import { pokerStarsText } from '@/poker/pokerstars';
 import { forumText } from '@/poker/text';
@@ -324,7 +325,7 @@ ${link}`;
       link = shareLink(shareId, 'text', { ref });
       track('link_shared', { channel: 'text', share_id: shareId, ref });
     }
-    await Clipboard.setStringAsync(forumText(hand, { link, brand: !pro.can('story'), notes: settings.shareNotes }));
+    await Clipboard.setStringAsync(forumText(publicHand(hand, shareOptions(settings)), { link, brand: !pro.can('story'), notes: settings.shareNotes }));
     notice(t('Texto copiado'), t('Cola no fórum, no Reddit ou no grupo de WhatsApp.'));
   };
 

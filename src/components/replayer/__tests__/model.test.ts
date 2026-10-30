@@ -196,3 +196,23 @@ test('raises carry their size against the bet they raise: open 3x, 3-bet 3x', ()
   assert.equal(v.seats[3].badge?.label, 'RAISE 6 (3x)');
   assert.equal(v.seats[0].badge?.label, 'RAISE 18 (3x)');
 });
+
+test('PLO run it twice: board 2 names the Omaha hand (two hole cards and three on the board), never a hold\'em flush', () => {
+  const hand = {
+    ...sampleHand('sample'),
+    players: Array.from({ length: 6 }, (_, i) => ({ name: i ? '' : 'Hero', stack: 17, cards: i === 0 ? ['As', 'Ks', 'Qs', 'Js'] : i === 2 ? ['Kh', 'Kc', '3d', '4d'] : undefined })),
+    button: 0,
+    hero: 0,
+    actions: [{ p: 3, kind: 'fold' as const }, { p: 4, kind: 'fold' as const }, { p: 5, kind: 'fold' as const }, { p: 0, kind: 'raise' as const, to: 17 }, { p: 1, kind: 'fold' as const }, { p: 2, kind: 'call' as const }],
+    board: ['2c', '7d', '8s', 'Jh', '3c'],
+    board2: ['2c', '7d', '8s', '9c', 'Tc'],
+    winners: undefined,
+  };
+  hand.game = { ...hand.game, variant: 'plo', sb: 2, bb: 5, ante: 0, anteType: 'none', straddles: 0, bombPot: 0 };
+  const r = replay(hand);
+  const end = viewAt(hand, r, r.steps.length - 1, { ...opts, atEnd: true });
+  assert.equal(end.board2?.length, 5, 'both boards at the end');
+  assert.ok(end.seats[0].handName2, 'board 2 has a hand name');
+  assert.doesNotMatch(end.seats[0].handName2!, /Cor/);
+  assert.match(end.seats[0].handName2!, /Sequência/);
+});

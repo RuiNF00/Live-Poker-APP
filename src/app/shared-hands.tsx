@@ -115,7 +115,7 @@ export default function SharedHands() {
 function HandRow(p: { cards?: string[]; title: string; when: number; count?: number; fresh?: number; onPress: () => void }) {
   return (
     <ListItem
-      left={p.cards?.length === 2 ? <CardRow cards={p.cards} size="xs" gap={1} /> : <View style={{ width: 44 }} />}
+      left={p.cards?.length ? <CardRow cards={p.cards} size="xs" gap={p.cards.length > 2 ? -6 : 1} /> : <View style={{ width: 44 }} />}
       title={p.title}
       subtitle={`${day(p.when)} · ${comments(p.count)}`}
       right={
