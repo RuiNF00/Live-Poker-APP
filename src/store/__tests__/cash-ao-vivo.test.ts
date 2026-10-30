@@ -47,6 +47,17 @@ test('moving stakes in cash: no level number, and blinds off the ladder step to 
   // A tournament at 150/300 without a structure: up is the next bigger big blind.
   const up = levelAfter(cash({ kind: 'mtt', sb: 150, bb: 300, ante: 300, anteType: 'bb', level: 3 }), 1);
   assert.ok(up.bb > 300 && up.level === 4, JSON.stringify(up));
+  // Above the ladder (its top is 25/50): 50/100 «+» fell to 25/50; now 100/200, and «−» 25/50.
+  assert.deepEqual(levelAfter(cash({ sb: 50, bb: 100 }), 1), { sb: 100, bb: 200, ante: 0, level: undefined });
+  assert.deepEqual(levelAfter(cash({ sb: 50, bb: 100 }), -1), { sb: 25, bb: 50, ante: 0, level: undefined });
+  // At the top rung «+» did nothing; below the bottom «−» went up to 1/2 (now it stays).
+  assert.deepEqual(levelAfter(cash({ sb: 25, bb: 50 }), 1), { sb: 50, bb: 100, ante: 0, level: undefined });
+  assert.deepEqual(levelAfter(cash({ sb: 0.5, bb: 1 }), -1), { sb: 0.5, bb: 1, ante: 0, level: undefined });
+  // The same for a tournament without a structure past 20 000/40 000, or below 100/200.
+  const deep = levelAfter(cash({ kind: 'mtt', sb: 25000, bb: 50000, ante: 50000, anteType: 'bb', level: 24 }), 1);
+  assert.deepEqual([deep.sb, deep.bb, deep.ante, deep.level], [50000, 100000, 100000, 25]);
+  const small = levelAfter(cash({ kind: 'mtt', sb: 50, bb: 100, anteType: 'bb', level: 2 }), -1);
+  assert.deepEqual([small.sb, small.bb, small.level], [50, 100, 1]);
   // The cash reminder names the blinds, never «Nível undefined».
   assert.doesNotMatch(levelUpMessage(cash({ sb: 2, bb: 5 })).body, /undefined|Nível/);
 });

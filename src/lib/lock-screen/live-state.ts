@@ -76,8 +76,10 @@ export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 
   const i = levels.findIndex(([sb, bb]) => sb === s.sb && bb === s.bb);
   // Blinds off the ladder (2/4, 150/300): up is the next bigger big blind, down the next smaller one.
   const off = dir > 0 ? levels.findIndex(([, bb]) => bb > s.bb) : levels.findLastIndex(([, bb]) => bb < s.bb);
-  const j = i >= 0 ? Math.max(0, Math.min(levels.length - 1, i + dir)) : off >= 0 ? off : dir > 0 ? levels.length - 1 : 0;
-  const [sb, bb] = levels[j];
+  const j = i >= 0 ? i + dir : off;
+  // Above the top rung (50/100, a deep tournament) «+» doubles; below the bottom one «−» stays put.
+  // Never a step the wrong way: 50/100 «+» fell to the top rung (25/50) and 0.5/1 «−» rose to 1/2.
+  const [sb, bb] = j >= 0 && j < levels.length ? levels[j] : !(s.bb > 0) ? levels[0] : dir > 0 ? [s.sb * 2, s.bb * 2] : [s.sb, s.bb];
   const ante = s.anteType === 'bb' ? bb : s.anteType === 'all' ? Math.round(bb / 8) : 0;
   // Cash has stakes, not levels: moving up from 1/2 to 2/5 is no «Nível 2».
   return { sb, bb, ante, level: s.kind === 'mtt' ? level : undefined };
