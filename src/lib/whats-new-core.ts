@@ -35,11 +35,6 @@ export function versionAtMost(a: string, b: string): boolean {
 }
 
 /**
- * The release this app version announces: the newest entry at or below it. The store version of an
- * update isn't known when its entry is written (1.0.1 or 1.1.0), so an entry covers the versions
- * after it until the next entry; a phone that skipped a version sees the newest.
- */
-/**
  * The version an entry is titled with on Novidades. The entry this install announces says the version
  * the player has (1.0.1's entry on 1.1.0 says 1.1.0); a later bugfix with no entry of its own (1.0.2,
  * 1.1.1) doesn't claim it, so the title drops back to the x.y.0 it came with, or the entry's own.
@@ -50,6 +45,11 @@ export function releaseTitle(entry: string, isCurrent: boolean, installed: strin
   return versionAtMost(base, entry) ? entry : base;
 }
 
+/**
+ * The release this app version announces: the newest entry at or below it. The store version of an
+ * update isn't known when its entry is written (1.0.1 or 1.1.0), so an entry covers the versions
+ * after it until the next entry; a phone that skipped a version sees the newest.
+ */
 export function releaseFor<R extends { version: string }>(releases: readonly R[], version: string): R | undefined {
   return releases.filter((r) => versionAtMost(r.version, version)).sort((a, b) => (versionAtMost(a.version, b.version) ? 1 : -1))[0];
 }

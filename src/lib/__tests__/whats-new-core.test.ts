@@ -101,3 +101,12 @@ test('the home card keeps the news to two lines, and the notes item has the Note
   const notes = WHATS_NEW[0].items.find((x) => x.title === 'Notas sobre jogadores');
   assert.equal(notes?.icon, 'create-outline');
 });
+
+test('the card names the same version as Novidades, and releaseFor keeps its own doc comment', () => {
+  const card = readFileSync(new URL('../../components/WhatsNewCard.tsx', import.meta.url), 'utf8');
+  assert.match(card, /releaseTitle\(announced\.version, true, VERSION\)/);
+  assert.match(card, /t\('Novo na versão \{v\}', \{ v: shownVersion \}\)/);
+  const core = readFileSync(new URL('../whats-new-core.ts', import.meta.url), 'utf8');
+  assert.match(core, /\*\/\nexport function releaseFor/);
+  assert.match(core, /\*\/\nexport function releaseTitle/);
+});

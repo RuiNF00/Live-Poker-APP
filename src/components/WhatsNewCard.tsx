@@ -12,7 +12,7 @@ import { Pressable, View } from 'react-native';
 import { Card, IconButton, Row, T } from '@/components/ui';
 import { WHATS_NEW } from '@/data/whats-new';
 import { t } from '@/i18n';
-import { releaseFor, whatsNewStep, type WhatsNewSeen } from '@/lib/whats-new-core';
+import { releaseFor, releaseTitle, whatsNewStep, type WhatsNewSeen } from '@/lib/whats-new-core';
 import { useStore } from '@/store/store';
 import { C, ff, R } from '@/theme';
 
@@ -68,6 +68,8 @@ export function WhatsNewCard({ item, onDismiss, onShown }: { item: { icon: strin
     const id = setTimeout(onShown, SEEN_AFTER_MS);
     return () => clearTimeout(id);
   }, [onShown]);
+  const announced = releaseFor(WHATS_NEW, VERSION);
+  const shownVersion = announced ? releaseTitle(announced.version, true, VERSION) : VERSION;
   const open = () => {
     onDismiss();
     router.push('/novidades');
@@ -81,7 +83,8 @@ export function WhatsNewCard({ item, onDismiss, onShown }: { item: { icon: strin
         {/* The text opens Novidades; the × is its own button beside it (no button inside a button). */}
         <Pressable accessibilityRole="button" onPress={open} style={{ flex: 1, gap: 2 }}>
           <T v="label" color={C.accent}>
-            {t('Novo na versão {v}', { v: VERSION })}
+            {/* The same version Novidades titles it with: a 1.0.2 bugfix says 1.0.1, not a version with no entry. */}
+            {t('Novo na versão {v}', { v: shownVersion })}
           </T>
           <T v="h3">{t(item.title)}</T>
           {/* Two lines on the card, so the update doesn't push the Resumo down; «Ver tudo» has the whole text. */}
