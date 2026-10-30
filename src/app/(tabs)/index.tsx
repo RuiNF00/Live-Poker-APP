@@ -145,10 +145,8 @@ export default function HomeScreen() {
       title={t('Olá outra vez')}
       body={t('Se jogaste entretanto, regista essas sessões: leva 20 segundos cada.')}
       action={t('Registar')}
-      onPress={() => {
-        back.dismiss();
-        router.navigate({ pathname: '/bankroll', params: { add: 'session' } });
-      }}
+      // Stays while they log the sessions of the pause: it goes on its own with one less than 30 days old, or with ✕.
+      onPress={() => router.navigate({ pathname: '/bankroll', params: { add: 'session' } })}
       onDismiss={back.dismiss}
     />
   ) : toReview ? (

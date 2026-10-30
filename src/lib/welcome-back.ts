@@ -1,6 +1,7 @@
 // «Olá outra vez» on the Resumo after a long pause: no notification brings anyone back after 30
-// days (the 4-day reminder stops after two tries), so the app says it when they open it. About the
-// sessions played meanwhile, never about going to play.
+// days (the 4-day reminder stops after two tries), so the app says it when they open it. It stays
+// until a session of the last 30 days is logged or the card is closed. About the sessions played
+// meanwhile, never about going to play.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
