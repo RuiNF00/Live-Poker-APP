@@ -3914,8 +3914,8 @@ const en: Record<string, string> = {
   'Semana nova': 'New week',
   'Ficou alguma sessão por registar? Leva 20 segundos.': 'Any session left to log? It takes 20 seconds.',
   // Bankroll in the first sessions.
-  'Falta 1 sessão para o resto': '1 more session for the rest',
-  'Faltam {n} sessões para o resto': '{n} more sessions for the rest',
+  'Falta 1 sessão para o gráfico e as estatísticas': '1 more session for the chart and the stats',
+  'Faltam {n} sessões para o gráfico e as estatísticas': '{n} more sessions for the chart and the stats',
   'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.': 'At {n} sessions the chart, the session numbers, the calendar and the analysis tools show up.',
 };
 

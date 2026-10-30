@@ -947,7 +947,7 @@ function EarlyCard({ played }: { played: number }) {
   const left = EARLY_UNTIL - played;
   return (
     <Card style={{ gap: S.sm }}>
-      <T v="h3">{left === 1 ? t('Falta 1 sessão para o resto') : t('Faltam {n} sessões para o resto', { n: left })}</T>
+      <T v="h3">{left === 1 ? t('Falta 1 sessão para o gráfico e as estatísticas') : t('Faltam {n} sessões para o gráfico e as estatísticas', { n: left })}</T>
       <View
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: EARLY_UNTIL, now: played }}

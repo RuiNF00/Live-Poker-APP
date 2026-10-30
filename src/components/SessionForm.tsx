@@ -201,11 +201,14 @@ export function SessionForm({
           </ChipRow>
         </Section>
       )}
-      {/* Past: the result first, so it sits above the keyboard that opens on it. */}
+      {/* Past: the money first (what it cost and what came back), above the keyboard that opens on the result. */}
       {past && (
         <Card style={{ gap: S.lg }}>
           <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+            <NumField money label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} selectOnFocus />
             <NumField label={mtt ? t('Entradas') : 'Buy-ins'} value={s.entries} onChange={(entries) => set({ entries: Math.max(1, entries) })} selectOnFocus />
+          </Row>
+          <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
             {/* MTT: the prize without the bounties, which have their own field; the session keeps the sum. */}
             <NumField
               money
@@ -276,10 +279,13 @@ export function SessionForm({
             </ChipRow>
           )}
         </View>
-        <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
-          <NumField money label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} selectOnFocus={past} />
-          {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
-        </Row>
+        {/* Past: the buy-in sits with the result above; a tournament's starting stack stays here. */}
+        {past && !mtt ? null : (
+          <Row gap={S.sm} style={{ alignItems: 'flex-start' }}>
+            {past ? null : <NumField money label={`Buy-in (${s.currency})`} value={s.buyIn} onChange={(buyIn) => set({ buyIn, stack: mtt ? s.stack : buyIn })} />}
+            {mtt ? <NumField label={t('Stack inicial')} value={s.stack} onChange={(stack) => set({ stack })} /> : null}
+          </Row>
+        )}
       </Card>
       {mtt && !past && weekly ? <Repeat weekly={weekly} s={s} on={repeat} setOn={setRepeat} time={repeatTime} setTime={setRepeatTime} /> : null}
       {(!past || (!mtt && more)) && (

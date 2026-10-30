@@ -2124,8 +2124,8 @@ const ptBR: Record<string, string> = {
   'Semana nova': 'Semana nova',
   'Ficou alguma sessão por registar? Leva 20 segundos.': 'Ficou alguma sessão sem registrar? Leva 20 segundos.',
   // Bankroll in the first sessions.
-  'Falta 1 sessão para o resto': 'Falta 1 sessão para o resto',
-  'Faltam {n} sessões para o resto': 'Faltam {n} sessões para o resto',
+  'Falta 1 sessão para o gráfico e as estatísticas': 'Falta 1 sessão para o gráfico e as estatísticas',
+  'Faltam {n} sessões para o gráfico e as estatísticas': 'Faltam {n} sessões para o gráfico e as estatísticas',
   'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.': 'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.',
 };
 

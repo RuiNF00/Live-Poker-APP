@@ -481,7 +481,9 @@ ${link}`;
         <View style={{ paddingHorizontal: 4 }}>
           <HandHeader hand={hand} inBB={settings.inBB} quiz={quiz && !quizDone} />
         </View>
-        {/* The next hand from the one just saved: one tap, not back and then "Nova mão". */}
+        {/* The next hand from the one just saved: one tap, not back and then "Nova mão". While the hand asks
+            «O que fazes aqui?», sharing waits for the answer so the question is the first thing on screen. */}
+        {quiz && !quizDone ? null : (
         <Row gap={S.sm}>
           {quick && !busy && !shareWaiting ? (
             <>
@@ -499,6 +501,7 @@ ${link}`;
           )}
           {nextHere ? <Button kind="secondary" title={t('Próxima mão')} icon="add" onPress={() => router.replace('/hand/new')} style={{ flex: 1 }} lines={2} /> : null}
         </Row>
+        )}
         {!isComplete(hand) && <Banner tone="warn" icon="create-outline" title={t('Mão por completar')} body={t('Toca para continuar onde ficaste.')} onPress={edit} />}
         {/* After the hand: tell it instead of tapping it in (the voice note, if any, plays in the sheet). */}
         {!isComplete(hand) && <TellByVoice handId={hand.id} />}
