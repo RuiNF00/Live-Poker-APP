@@ -119,11 +119,12 @@ export default function ExportScreen() {
         </View>
 
         <Section title={t('Período')}>
-          <ChipRow>
+          {/* Wrapped, not scrolled: five chips don't fit a 390 pt line and «Datas» (what an accountant asks for) hid off screen. */}
+          <Row gap={S.sm} style={{ flexWrap: 'wrap' }}>
             {periods.map(([k, l]) => (
               <Chip key={k} label={l} active={period === k} onPress={() => setPeriod(k)} />
             ))}
-          </ChipRow>
+          </Row>
           {period === 'custom' ? (
             <Row gap={S.sm}>
               <Field label={t('De')} value={fromText} onChangeText={setFromText} placeholder={`01/01/${y}`} keyboardType="numbers-and-punctuation" style={{ flex: 1 }} />

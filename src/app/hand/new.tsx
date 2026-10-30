@@ -656,9 +656,10 @@ export default function NewHand() {
         )}
         {!capturing && phase === 'hero' && (
           <>
-            <Row style={{ justifyContent: 'space-between' }}>
+            {/* Wraps: at 320 pt (Display Zoom) Voz, Straddle, PLO and the stack don't fit beside the label, and PLO and the stack went off screen. */}
+            <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap', rowGap: S.sm }}>
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < holes ? t('As tuas cartas') : ''}</T>
-              <Row gap={10}>
+              <Row gap={10} style={{ flexWrap: 'wrap', rowGap: S.sm, flexShrink: 1, justifyContent: 'flex-end', marginLeft: 'auto' }}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
                 {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
                 {shortScreen && !hand.actions.length ? (
