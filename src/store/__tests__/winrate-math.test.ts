@@ -51,7 +51,8 @@ test('hours to know: (1.96 × σ_BB / 5)²', () => {
   assert.equal(k.needed, 164);
   assert.equal(k.left, 144);
   assert.equal(k.sessions, 29);
-  assert.equal(r2(k.margin), 14.31);
+  // Today's margin is the bar's: ±3.182 × 32.66/√20 (Student's t for 4 sessions).
+  assert.equal(r2(k.margin), 23.24);
   assert.equal(hoursToKnow({ ...winRate(four)!, bbHours: 500 }).left, 0);
 });
 

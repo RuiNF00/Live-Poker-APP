@@ -1493,6 +1493,7 @@ const en: Record<string, string> = {
   '{n} sessões de cash, {h} h: {rate}/h com desvio padrão de {sd}/h.': '{n} cash sessions, {h} h: {rate}/h with a standard deviation of {sd}/h.',
   '{n} torneios': '{n} tournaments',
   '{n} torneios: ROI {roi}, buy-in médio {bi}, desvio padrão de {sd} buy-ins.': '{n} tournaments: ROI {roi}, average buy-in {bi}, standard deviation of {sd} buy-ins.',
+  '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios deste tamanho (o teu ainda não apanhou uma mesa final).': '{n} tournaments: ROI {roi}, average buy-in {bi}. Standard deviation: {sd} buy-ins, the minimum for tournaments this size (yours hasn\'t met a final table yet).',
   'Cada quadrado é um dia: verde ganhaste, vermelho perdeste. Mais forte, mais dinheiro.': 'Each square is a day: green you won, red you lost. Stronger means more money.',
   'Calendário': 'Calendar',
   'Com Pro vês todas as salas, jogos e stakes, filtras por datas e a calculadora de variância usa os teus números.': 'With Pro you see every venue, game and stake, filter by dates, and the variance calculator uses your own numbers.',

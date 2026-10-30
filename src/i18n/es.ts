@@ -1397,6 +1397,7 @@ const es: Record<string, string> = {
   '{n} sessões de cash, {h} h: {rate}/h com desvio padrão de {sd}/h.': '{n} sesiones de cash, {h} h: {rate}/h con desviación estándar de {sd}/h.',
   '{n} torneios': '{n} torneos',
   '{n} torneios: ROI {roi}, buy-in médio {bi}, desvio padrão de {sd} buy-ins.': '{n} torneos: ROI {roi}, buy-in medio {bi}, desviación estándar de {sd} buy-ins.',
+  '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios deste tamanho (o teu ainda não apanhou uma mesa final).': '{n} torneos: ROI {roi}, buy-in medio {bi}. Desviación estándar: {sd} buy-ins, el mínimo para torneos de este tamaño (la tuya aún no ha pillado una mesa final).',
   'Cada quadrado é um dia: verde ganhaste, vermelho perdeste. Mais forte, mais dinheiro.': 'Cada cuadrado es un día: verde ganaste, rojo perdiste. Más intenso, más dinero.',
   'Calendário': 'Calendario',
   'Com Pro vês todas as salas, jogos e stakes, filtras por datas e a calculadora de variância usa os teus números.': 'Con Pro ves todas las salas, juegos y stakes, filtras por fechas y la calculadora de varianza usa tus números.',

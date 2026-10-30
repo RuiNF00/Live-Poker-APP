@@ -2179,6 +2179,7 @@ const ptBR: Record<string, string> = {
   'Já tens uma nota sobre {name}': 'Você já tem uma nota sobre {name}',
   'Toca para a abrir': 'Toque para abrir',
   'O teu amigo recebe {pct}% no primeiro mês do Pro': 'Seu amigo recebe {pct}% no primeiro mês do Pro',
+  '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios deste tamanho (o teu ainda não apanhou uma mesa final).': '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios desse tamanho (o seu ainda não pegou uma mesa final).',
 };
 
 export default ptBR;

@@ -66,6 +66,8 @@ export interface MttStats {
   roi: number | null;
   /** Standard deviation of one tournament's result, in buy-ins; never below a break-even player's in those fields (tourneySpread). */
   sdBuyIns: number;
+  /** True when sdBuyIns is that floor, not the player's own spread (still too small: no deep run yet). */
+  sdFloored: boolean;
   /**
    * Standard error of `roi`, in points. ROI is the total won over the total of your buy-ins, so a
    * 1 000 € event weighs ten times a 100 € one: its error is the ratio estimator's, from each
@@ -112,7 +114,7 @@ export function mttStats(list: Session[], currency = mainCurrency(list)): MttSta
   // The same floor for the variance calculator: a projection from a spread that hasn't met the deep run yet
   // would promise far narrower swings than tournaments give.
   const floorBi = Math.sqrt(done.reduce((a, s) => a + tourneySpread(s.field && s.field > 0 ? s.field : usual) ** 2, 0) / n);
-  return { tournaments: n, avgBuyIn, roi: own > 0 ? r * 100 : null, sdBuyIns: Math.max(sd, floorBi), roiSe };
+  return { tournaments: n, avgBuyIn, roi: own > 0 ? r * 100 : null, sdBuyIns: Math.max(sd, floorBi), sdFloored: floorBi > sd, roiSe };
 }
 
 export interface Projection {

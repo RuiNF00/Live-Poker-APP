@@ -35,8 +35,9 @@ export interface WinRate {
   sdBb: number;
   bbLo: number;
   bbHi: number;
-  /** Hours of the sessions with blinds, the ones behind the BB figures. */
+  /** Hours and count of the sessions with blinds, the ones behind the BB figures. */
   bbHours: number;
+  bbSessions: number;
   /** Too few hours or sessions to lean on. */
   small: boolean;
 }
@@ -62,7 +63,8 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
   const bbHourly = bbHours ? bbs.reduce((a, b) => a + b, 0) / bbHours : 0;
   const sdBb = sdPerHour(bbs, bbHrs, bbHourly);
   const m = t95(cash.length) / Math.sqrt(hours);
-  const mBb = bbHours ? t95(bbHrs.filter((h) => h > 0).length) / Math.sqrt(bbHours) : 0;
+  const bbSessions = bbHrs.filter((h) => h > 0).length;
+  const mBb = bbHours ? t95(bbSessions) / Math.sqrt(bbHours) : 0;
   return {
     sessions: cash.length,
     hours,
@@ -75,6 +77,7 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
     bbLo: bbHourly - mBb * sdBb,
     bbHi: bbHourly + mBb * sdBb,
     bbHours,
+    bbSessions,
     small: hours < SMALL.hours || cash.length < SMALL.sessions,
   };
 }
@@ -99,7 +102,9 @@ export function hoursToKnow(w: WinRate, useful = USEFUL_BB): HoursToKnow {
   const needed = Math.ceil(((Z95 * w.sdBb) / useful) ** 2);
   const left = Math.max(0, needed - have);
   const per = w.hours / w.sessions;
-  return { needed, left: Math.ceil(left), margin: have > 0 ? (Z95 * w.sdBb) / Math.sqrt(have) : 0, have, sessions: per > 0 ? Math.ceil(left / per) : 0 };
+  // Today's margin is the BB bar's own half-width (Student's t for the sessions behind it); the hours
+  // needed look ahead to a sample big enough for 1.96.
+  return { needed, left: Math.ceil(left), margin: have > 0 ? (t95(w.bbSessions) * w.sdBb) / Math.sqrt(have) : 0, have, sessions: per > 0 ? Math.ceil(left / per) : 0 };
 }
 
 export type WinRateBy = 'game' | 'stake' | 'venue' | 'weekday';

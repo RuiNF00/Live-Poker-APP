@@ -58,7 +58,9 @@ test('hours still to play count only the hours with blinds', () => {
   const k = hoursToKnow(w);
   assert.equal(k.have, 20);
   // The margin is the BB spread over √20, not √40 (it read 1.4× narrower than it is).
-  assert.equal(r2(k.margin), r2((1.96 * w.sdBb) / Math.sqrt(20)));
+  assert.equal(r2(k.margin), r2((3.182 * w.sdBb) / Math.sqrt(20)));
+  // The same margin the BB bar on that screen draws (it said ±1.96·σ while the bar used Student's t).
+  assert.equal(r2(k.margin), r2(w.bbHi - w.bbHourly));
   assert.equal(k.left, k.needed - 20);
 });
 
@@ -84,6 +86,7 @@ test('50 tournaments with min-cashes and no deep run: not yet «já não é azar
   const s = mttStats(list)!;
   assert.equal(Math.round(s.roi!), -52);
   assert.ok(s.sdBuyIns >= tourneySpread(200), 'the calculator projects with the spread of the field');
+  assert.equal(s.sdFloored, true, 'and the calculator says it is the floor, not the player\'s own');
   const v = verdict(list, '€', String);
   assert.equal(v.ready, true);
   assert.equal(v.tone, 'neutral', v.text);
