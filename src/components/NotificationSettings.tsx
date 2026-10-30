@@ -29,6 +29,31 @@ const rows = (): { kind: NotifyKind; title: string; subtitle: string; icon: Icon
   { kind: 'tips', title: t('Lembretes para registar'), subtitle: t('Se passares uns dias sem registar'), icon: 'create-outline' },
 ];
 
+/** The kinds with a switch on this phone: «Comentários» only where the build can push them. */
+function shownRows(push: boolean, ready: boolean) {
+  return rows().filter((r) => r.kind !== 'comments' || (push && ready));
+}
+
+/**
+ * The Settings row that opens this screen says what is on, so nobody has to open it to check:
+ * «Todas ligadas», «5 de 8 ligadas», or that the phone has them off.
+ */
+export function NotificationSummary({ onPress }: { onPress: () => void }) {
+  const { settings } = useStore();
+  const allowed = useSystemAllowed();
+  const list = shownRows(commentPushAvailable(), useCommentPushReady());
+  const on = list.filter((r) => kindOn(settings, r.kind)).length;
+  return (
+    <ListItem
+      icon={allowed === false ? 'notifications-off-outline' : 'notifications-outline'}
+      iconColor={allowed === false ? C.warn : undefined}
+      title={t('Notificações')}
+      subtitle={allowed === false ? t('Desligadas no telemóvel') : on === list.length ? t('Todas ligadas') : on === 0 ? t('Todas desligadas') : t('{n} de {total} ligadas', { n: on, total: list.length })}
+      onPress={onPress}
+    />
+  );
+}
+
 /** null on web or while checking; false when the system said no. */
 function useSystemAllowed(): boolean | null {
   const [ok, setOk] = useState<boolean | null>(null);
@@ -48,7 +73,8 @@ function useSystemAllowed(): boolean | null {
   return ok;
 }
 
-export function NotificationSettings() {
+/** `titled`: with the section header (inside a longer screen); without it on its own screen. */
+export function NotificationSettings({ titled = true }: { titled?: boolean }) {
   const { settings, setSettings, hands } = useStore();
   const allowed = useSystemAllowed();
   const set = (kind: NotifyKind, v: boolean) => {
@@ -63,7 +89,7 @@ export function NotificationSettings() {
   const ready = useCommentPushReady();
 
   return (
-    <Section title={t('Notificações')}>
+    <Section title={titled ? t('Notificações') : undefined}>
       {allowed === false ? (
         <ListGroup>
           <ListItem

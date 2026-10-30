@@ -32,7 +32,7 @@ import { useStore } from '@/store/store';
 import { unsettledSwaps } from '@/store/swaps';
 import { BRAND, C, F, S } from '@/theme';
 import { DataRecovery } from '@/components/DataRecovery';
-import { NotificationSettings } from '@/components/NotificationSettings';
+import { NotificationSummary } from '@/components/NotificationSettings';
 import { CrashReportsToggle } from '@/components/CrashReportsToggle';
 
 /** Shown before «Mais moedas»: the five the first currency chips always were. */
@@ -154,7 +154,15 @@ export default function SettingsScreen() {
     );
   };
 
-  const counts = [hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length }), sessions.length === 1 ? t('1 sessão') : t('{n} sessões', { n: sessions.length }), players.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: players.length })].join(' · ');
+  // What the copy holds, leaving out what there is none of («0 jogadores» reads like something is missing).
+  const counts =
+    [
+      hands.length ? (hands.length === 1 ? t('1 mão') : t('{n} mãos', { n: hands.length })) : '',
+      sessions.length ? (sessions.length === 1 ? t('1 sessão') : t('{n} sessões', { n: sessions.length })) : '',
+      players.length ? (players.length === 1 ? t('1 jogador') : t('{n} jogadores', { n: players.length })) : '',
+    ]
+      .filter(Boolean)
+      .join(' · ') || t('Ainda sem mãos nem sessões');
   return (
     <>
       <Stack.Screen options={{ title: t('Definições') }} />
@@ -197,65 +205,11 @@ export default function SettingsScreen() {
             <ToggleItem icon="trophy-outline" title={t('ICM nos torneios')} subtitle={t('Uma estimativa no replayer, a partir de quantos jogadores restam')} value={!!settings.icm} onChange={(icm) => setSettings({ icm })} />
             <ToggleItem icon="phone-portrait-outline" title={t('Vibração')} subtitle={t('Só quando conta: guardar uma mão, fechar uma sessão')} value={settings.haptics !== false} onChange={(haptics) => setSettings({ haptics })} />
             <ListItem icon="language-outline" title={t('Idioma')} subtitle={VARIANT_NAME[variant]} value={Platform.OS === 'web' ? undefined : t('No telemóvel')} onPress={switchLanguage} />
+            <NotificationSummary onPress={() => router.push('/notificacoes')} />
           </ListGroup>
         </Section>
 
-        <Section title={t('Mãos que partilhas')} hint={t('Vale para links novos. Uma mão já partilhada fica como estava.')}>
-          <ListGroup>
-            <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={settings.shareNames ? t('Os nomes que lhes deste aparecem no link') : t('Aparecem como BTN, SB, BB…')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
-            <ToggleItem icon="document-text-outline" title={t('As minhas notas da mão')} value={settings.shareNotes} onChange={(shareNotes) => setSettings({ shareNotes })} />
-            <ToggleItem icon="person-circle-outline" title={t('O teu nome')} subtitle={settings.shareHideMe ? t('Apareces como Hero') : t('O nome que deste ao teu lugar')} value={!settings.shareHideMe} onChange={(v) => setSettings({ shareHideMe: !v })} />
-            <ToggleItem icon="location-outline" title={t('Nome do jogo no cash')} subtitle={settings.shareCashName ? t('O nome que deste ao jogo, muitas vezes a sala') : t('Só «Cash»')} value={!!settings.shareCashName} onChange={(shareCashName) => setSettings({ shareCashName })} />
-          </ListGroup>
-        </Section>
-
-        <Section title={t('Privacidade')}>
-          <ListGroup>
-            <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
-            {/* Only where the build has a home widget (no App Group on iOS: none). */}
-            {lockScreenAvailable ? (
-              <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, mostra •••: o ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
-            ) : null}
-            {lockSupported ? <AppLockSetting /> : null}
-          </ListGroup>
-        </Section>
-
-        <NotificationSettings />
-
-        <Section title={t('Cópia de segurança')} hint={t('Tudo fica guardado neste telemóvel. Faz uma cópia para não perderes nada se o trocares.')}>
-          <React.Suspense fallback={null}>
-            <CloudBackup onExport={exportAll} />
-          </React.Suspense>
-          <DataRecovery />
-          <ListGroup>
-            <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
-            {/* One way in: the import screen reads Sweatbook copies and other apps' files alike. */}
-            <ListItem icon="push-outline" title={t('Importar')} subtitle={t('Do Sweatbook, Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
-            <ListItem icon="grid-outline" title={t('Exportar sessões em CSV')} subtitle={t('Todas, para o Excel ou para importar outra vez')} onPress={exportCsv} />
-            <ListItem icon="document-text-outline" title={t('Relatório PDF e CSV')} subtitle={t('Por ano ou datas: sessões, mãos, resultados')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={() => router.push('/export')} />
-          </ListGroup>
-        </Section>
-
-        <Section title={t('Ferramentas')}>
-          <ListGroup>
-            <ListItem icon="school-outline" iconColor={C.accent} title={t('Links para o coach')} subtitle={t('Mãos que enviaste a rever e os comentários')} onPress={() => router.push('/coach')} />
-            <ListItem
-              icon="chatbubbles-outline"
-              iconColor={C.accent}
-              title={t('Mãos partilhadas')}
-              subtitle={t('As mãos dos teus amigos e os comentários nas tuas')}
-              right={shared.newTotal ? <Badge solid color={C.accent} label={shared.newTotal === 1 ? t('1 novo') : t('{n} novos', { n: shared.newTotal })} /> : undefined}
-              onPress={() => router.push('/shared-hands')}
-            />
-            <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
-            <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
-            <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Recebem os dois {pct}% no primeiro mês do Pro', { pct: INVITE.pct })} onPress={() => router.push('/invite')} />
-            <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de equity')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
-            <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
-          </ListGroup>
-          <InviteCodeField />
-        </Section>
-
+        {/* Near the top: «Restaurar compras» is what people look for after changing phones. */}
         <Section title={t('Subscrição')}>
           <ListGroup>
             <ListItem
@@ -295,6 +249,60 @@ export default function SettingsScreen() {
             />
             <ListItem icon="ticket-outline" title={t('Resgatar código')} subtitle={t('Um código de oferta da {store}', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' })} onPress={() => void redeemCode()} />
           </ListGroup>
+        </Section>
+
+        <Section title={t('Mãos que partilhas')} hint={t('Vale para links novos. Uma mão já partilhada fica como estava.')}>
+          <ListGroup>
+            <ToggleItem icon="person-outline" title={t('Nomes dos adversários')} subtitle={settings.shareNames ? t('Os nomes que lhes deste aparecem no link') : t('Aparecem como BTN, SB, BB…')} value={settings.shareNames} onChange={(shareNames) => setSettings({ shareNames })} />
+            <ToggleItem icon="document-text-outline" title={t('As minhas notas da mão')} value={settings.shareNotes} onChange={(shareNotes) => setSettings({ shareNotes })} />
+            <ToggleItem icon="person-circle-outline" title={t('O teu nome')} subtitle={settings.shareHideMe ? t('Apareces como Hero') : t('O nome que deste ao teu lugar')} value={!settings.shareHideMe} onChange={(v) => setSettings({ shareHideMe: !v })} />
+            <ToggleItem icon="location-outline" title={t('Nome do jogo no cash')} subtitle={settings.shareCashName ? t('O nome que deste ao jogo, muitas vezes a sala') : t('Só «Cash»')} value={!!settings.shareCashName} onChange={(shareCashName) => setSettings({ shareCashName })} />
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Privacidade')}>
+          <ListGroup>
+            <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Em toda a app, ••• em vez de dinheiro. Para veres a app à mesa.')} value={!!settings.hideAmounts} onChange={(hideAmounts) => setSettings({ hideAmounts })} />
+            {/* Only where the build has a home widget (no App Group on iOS: none). */}
+            {lockScreenAvailable ? (
+              <ToggleItem icon="apps-outline" title={t('Mostrar o resultado no widget')} subtitle={t('Desligado, mostra •••: o ecrã principal vê-se à mesa.')} value={!!settings.widgetResult} onChange={(widgetResult) => setSettings({ widgetResult })} />
+            ) : null}
+            {lockSupported ? <AppLockSetting /> : null}
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Cópia de segurança')} hint={t('Tudo fica guardado neste telemóvel. Faz uma cópia para não perderes nada se o trocares.')}>
+          <React.Suspense fallback={null}>
+            <CloudBackup onExport={exportAll} />
+          </React.Suspense>
+          <DataRecovery />
+          <ListGroup>
+            <ListItem icon="download-outline" title={t('Exportar tudo')} subtitle={counts} onPress={exportAll} />
+            {/* One way in: the import screen reads Sweatbook copies and other apps' files alike. */}
+            <ListItem icon="push-outline" title={t('Importar')} subtitle={t('Do Sweatbook, Poker Bankroll Tracker, Pokerbase, Poker Analytics ou CSV')} onPress={() => router.push('/import')} />
+            <ListItem icon="grid-outline" title={t('Exportar sessões em CSV')} subtitle={t('Todas, para o Excel ou para importar outra vez')} onPress={exportCsv} />
+            <ListItem icon="document-text-outline" title={t('Relatório PDF e CSV')} subtitle={t('Por ano ou datas: sessões, mãos, resultados')} right={pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />} onPress={() => router.push('/export')} />
+          </ListGroup>
+        </Section>
+
+        <Section title={t('Ferramentas')}>
+          <ListGroup>
+            <ListItem icon="school-outline" iconColor={C.accent} title={t('Links para o coach')} subtitle={t('Mãos que enviaste a rever e os comentários')} onPress={() => router.push('/coach')} />
+            <ListItem
+              icon="chatbubbles-outline"
+              iconColor={C.accent}
+              title={t('Mãos partilhadas')}
+              subtitle={t('As mãos dos teus amigos e os comentários nas tuas')}
+              right={shared.newTotal ? <Badge solid color={C.accent} label={shared.newTotal === 1 ? t('1 novo') : t('{n} novos', { n: shared.newTotal })} /> : undefined}
+              onPress={() => router.push('/shared-hands')}
+            />
+            <ListItem icon="albums-outline" iconColor={C.accent} title={t('Links de várias mãos')} subtitle={t('Torneios e pastas que partilhaste num só link')} onPress={() => router.push('/pack')} />
+            <ListItem icon="globe-outline" iconColor={C.accent} title={t('Perfil público')} subtitle={t('As mãos e sessões que escolheres, num link')} onPress={() => router.push('/profile')} />
+            <ListItem icon="gift-outline" iconColor={C.accent} title={t('Convidar amigos')} subtitle={t('Recebem os dois {pct}% no primeiro mês do Pro', { pct: INVITE.pct })} onPress={() => router.push('/invite')} />
+            <ListItem icon="calculator-outline" iconColor={C.info} title={t('Calculadora de equity')} subtitle={t('A tua mão contra cartas ou um range')} onPress={() => router.push('/odds')} />
+            <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} subtitle={t('Para dividir o prémio na mesa final')} onPress={() => router.push('/chop')} />
+          </ListGroup>
+          <InviteCodeField />
         </Section>
 
         <Section title={t('Sugestões e suporte')} hint={t('Lemos todas as mensagens.')}>
