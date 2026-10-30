@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { rememberAnnualSwitch } from '@/billing/annual-switched';
 import { cancelReasons, logged, markOfferSeen, offerOnScreen, offersSeen, offerTaken, scrubNote, type CancelOffer, type CancelReason } from '@/billing/cancel';
 import { pctOff } from '@/billing/disclosure';
 import { annualSavingPct, priceLike, perMonth, PLANS, RETENTION, TIER_PLANS, type PlanId } from '@/billing/plans';
@@ -32,6 +33,8 @@ export default function Cancel() {
   const onPlus = (plan ? PLANS[plan].tier : tier) === 'plus';
   const [willRenew, setWillRenew] = useState<boolean | null>(null);
   const [product, setProduct] = useState<string | null>(null);
+  // The end of the current monthly period, for remembering a switch to the yearly plan (as Settings does).
+  const [ends, setEnds] = useState<string | null>(null);
   const [storeOffer, setOffer] = useState<Offer>(null);
   const [lifetime, setLifetime] = useState<StoreOffer | null>(null);
   const lifetimeShown = onPlus ? null : lifetime;
@@ -71,6 +74,7 @@ export default function Cancel() {
       setPlan(s?.plan ?? null);
       setWillRenew(s?.willRenew ?? null);
       setProduct(s?.product ?? null);
+      setEnds(s?.ends ? new Date(s.ends).toISOString() : null);
     });
     hasLifetime().then(setForGood);
     // Each offer shows once ever: on a later visit only the plain way out is left.
@@ -110,6 +114,8 @@ export default function Cancel() {
   const result = (res: string, what: string) => {
     track('cancel_flow', { step: 'offer', reason: reason ?? '', offer: what, result: res });
     if (offerTaken(res) && what === 'discount') void markOfferSeen('discount');
+    // The monthly still shows until it renews: Settings must not offer the same switch again.
+    if (res === 'ok' && what === 'annual' && product && ends) rememberAnnualSwitch({ product, ends });
     // The store's own sheet already confirmed it: straight back, no extra alert.
     if (res === 'ok') router.back();
     else if (res === 'pending') notice(t('Compra pendente'), t('O Pro liga-se sozinho quando a {store} confirmar o pagamento.', { store: Platform.OS === 'android' ? 'Google Play' : 'App Store' }));

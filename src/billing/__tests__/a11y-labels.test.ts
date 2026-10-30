@@ -37,3 +37,9 @@ test('a button says its second line; the cancel flow asks the store once at a ti
 test('the cancel flow\'s switch to the yearly plan counts as a switch, not a paywall purchase', () => {
   assert.match(read('app/cancel.tsx'), /purchase\(ownPlans\.annual, 'switch', product \?\? undefined\)/);
 });
+
+test('a switch made in the cancel flow is remembered, so Settings doesn\'t offer it again', () => {
+  const c = read('app/cancel.tsx');
+  assert.match(c, /if \(res === 'ok' && what === 'annual' && product && ends\) rememberAnnualSwitch\(\{ product, ends \}\)/);
+  assert.match(c, /setEnds\(s\?\.ends \? new Date\(s\.ends\)\.toISOString\(\) : null\)/);
+});
