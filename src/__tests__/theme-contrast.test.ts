@@ -1,5 +1,7 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { AVATAR_HUES, AVATAR_HUES_LIGHT, DARK, LIGHT, POS_LIGHT, type Palette } from '../theme';
@@ -106,4 +108,53 @@ test('light position badges read on their tint', () => {
       assert.ok(r >= 4.5, `${pos} ${col} over ${ground}: ${r.toFixed(2)}:1`);
     }
   }
+});
+
+// Colours set inside components, checked against what they are drawn on (contraste-1a).
+const src = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
+/** `fg` faded to `o` together with its ground `bg`, over `under` (a folded plate on the felt). */
+const faded = (fg: string, bg: string, o: number, under: string) => {
+  const u = parse(under).rgb;
+  const hexOf = (c: RGB) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+  return ratio(hexOf(over(fg, over(bg, u)).map((v, i) => v * o + u[i] * (1 - o)) as RGB), hexOf(over(bg, u).map((v, i) => v * o + u[i] * (1 - o)) as RGB));
+};
+
+test('share cards: the secondary ink on the orange is AA', () => {
+  for (const f of ['components/YearCard.tsx', 'components/SessionCard.tsx', 'components/FestivalCard.tsx', 'components/MonthCard.tsx']) {
+    const m = src(f).match(/rgba\(26,10,4,(0\.\d+)\)/);
+    assert.ok(m, f);
+    const r = ratio(`rgba(26,10,4,${m[1]})`, DARK.accent);
+    assert.ok(r >= 4.5, `${f}: ${r.toFixed(2)}:1`);
+  }
+});
+
+test('replayer: action badges, folded seats and the fold dot', () => {
+  const t = src('components/replayer/ReplayerTable.tsx');
+  for (const [, kind, bg, fg] of t.matchAll(/(\w+): \{ bg: '(#[0-9A-Fa-f]{3,6})', fg: '(#[0-9A-Fa-f]{3,6})' \}/g)) {
+    const six = (h: string) => (h.length === 4 ? '#' + [...h.slice(1)].map((c) => c + c).join('') : h);
+    const r = ratio(six(fg), six(bg));
+    assert.ok(r >= 4.5, `badge ${kind}: ${r.toFixed(2)}:1`);
+  }
+  // A folded plate is faded to 55% over the felt: its position pill goes grey with white text.
+  assert.match(t, /s\.folded \? \{ bg: C\.surface3, fg: C\.text \}/);
+  assert.ok(faded(DARK.text, DARK.surface3, 0.55, DARK.felt) >= 4.5);
+  assert.ok(faded(DARK.text, '#0E0D0B', 0.55, DARK.felt) >= 4.5, 'folded name');
+  // The entry table fades a folded plate to 60%: its position text turns white.
+  assert.match(src('components/Table.tsx'), /styles\.posText, s\.folded && \{ color: C\.text \}/);
+  assert.ok(faded(DARK.text, DARK.surface3, 0.6, DARK.felt) >= 4.5);
+  // Timeline: the fold grey is the muted text colour, and steps ahead of the cursor fade the dot, not the text.
+  const r = src('components/Replayer.tsx');
+  assert.match(r, /fold: C\.muted, street: '#F5EDD8'/);
+  assert.match(r, /opacity: future \? 0\.25 : 1 \}\}>/);
+  assert.match(r, /color: idx > at \? C\.muted : street/);
+});
+
+test('month recap: a result never reads from colour alone', () => {
+  const m = src('app/month.tsx');
+  // Bars are the size of the result either way: a losing month is outlined, like the calendar.
+  assert.match(m, /h\.profit < 0 \? \{ borderWidth: 2, borderColor: C\.bad \} : null/);
+  // «This month / the average» has no sign: an arrow and the spoken «melhor» / «pior» say which way.
+  assert.match(m, /<Diff\s+trend\s/);
+  assert.match(m, /name=\{d > 0 \? 'caret-up' : 'caret-down'\}/);
+  assert.match(m, /d > 0 \? t\('melhor'\) : t\('pior'\)/);
 });

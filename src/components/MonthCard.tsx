@@ -16,7 +16,8 @@ import { DARK as C, F, ff } from '@/theme';
 import { Logo, POST_H, STORY_H, STORY_W, Watermark } from './story-brand';
 
 const INK = C.accentInk;
-const DIM = 'rgba(26,10,4,0.62)';
+// 4.8:1 on the orange (0.62 was 3.5:1, under AA for these 10–13 pt labels).
+const DIM = 'rgba(26,10,4,0.78)';
 const LINE = 'rgba(26,10,4,0.16)';
 const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + rawMoney(Math.round(n), cur);
 

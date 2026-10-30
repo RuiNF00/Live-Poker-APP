@@ -56,7 +56,8 @@ export interface YearCardProps {
 export function YearCard({ review: r, kind, hideMoney = true, brand = true, ref }: YearCardProps) {
   const accent = LOOK[kind] === 'brasa';
   const fg = accent ? INK : C.text;
-  const dim = accent ? 'rgba(26,10,4,0.62)' : C.textDim;
+  // 0.78: 4.8:1 on the orange (0.62 was 3.5:1, under AA for these 10–13 pt labels).
+  const dim = accent ? 'rgba(26,10,4,0.78)' : C.textDim;
   const line = accent ? 'rgba(26,10,4,0.16)' : C.border;
   const p = { r, fg, dim, line, accent, hideMoney };
 

@@ -121,6 +121,8 @@ const en: Record<string, string> = {
   'ROI torneios': 'Tournament ROI',
   'Melhor': 'Best',
   'Pior': 'Worst',
+  'melhor': 'better',
+  'pior': 'worse',
   'Histórico': 'History',
   'Sessão passada': 'Past session',
   'Guardar sessão': 'Save session',

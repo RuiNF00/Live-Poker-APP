@@ -530,10 +530,11 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
 const MDF_COLOR = currentScheme() === 'light' ? '#6D28D9' : '#A78BFA';
 
 // On paper the dark set's bright greens and ambers drop under 2:1, so the light theme takes the text tokens.
+// The fold grey is the muted text colour in both (#6B7280 was 3.9:1 under its «F»).
 const DOT: Record<TimelineItem['color'], string> =
   currentScheme() === 'light'
     ? { hero: C.accent, aggr: C.warn, passive: C.good, fold: C.muted, street: C.textDim }
-    : { hero: C.accent, aggr: '#F39C12', passive: '#2ECC71', fold: '#6B7280', street: '#F5EDD8' };
+    : { hero: C.accent, aggr: '#F39C12', passive: '#2ECC71', fold: C.muted, street: '#F5EDD8' };
 const ITEM_W = 62;
 
 /** Every action as a dot on a line, streets as diamonds: tap any of them to jump there. */
@@ -569,8 +570,9 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
             accessibilityRole="button"
             accessibilityLabel={future ? undefined : it.spoken}
             accessibilityState={{ selected: on }}
-            style={{ width: ITEM_W, alignItems: 'center', opacity: future ? 0.25 : idx > at ? 0.55 : 1 }}>
-            <View style={{ height: 20, justifyContent: 'center' }}>
+            style={{ width: ITEM_W, alignItems: 'center', opacity: future ? 0.25 : 1 }}>
+            {/* Steps ahead of the cursor: a faded dot and muted text, still readable (a faded label was 2.7:1 on paper). */}
+            <View style={{ height: 20, justifyContent: 'center', opacity: idx > at ? 0.55 : 1 }}>
               <View
                 style={{
                   width: street ? 11 : on ? 14 : 9,
@@ -584,11 +586,11 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
               />
             </View>
             {/* Past the question, only the dots: the names, sizes, streets and showdown would give the answer away. */}
-            <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: street ? (on ? C.accent : C.rpMuted) : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: idx > at ? C.muted : street ? (on ? C.accent : C.rpMuted) : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
               {future ? ' ' : it.label}
             </Text>
             {it.detail && !future ? (
-              <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
+              <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: idx > at ? C.muted : DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
                 {it.detail}
               </Text>
             ) : null}

@@ -55,7 +55,8 @@ export function SessionCard(props: SessionCardProps) {
 function FullCard({ session: s, stats, look, milestone, hideMoney, hideVenue, brand = true, format = 'story', ref }: SessionCardProps) {
   const accent = look === 'brasa';
   const fg = accent ? INK : C.text;
-  const dim = accent ? 'rgba(26,10,4,0.62)' : C.textDim;
+  // 0.78: 4.8:1 on the orange (0.62 was 3.5:1, under AA for these 10–13 pt labels).
+  const dim = accent ? 'rgba(26,10,4,0.78)' : C.textDim;
   const line = accent ? 'rgba(26,10,4,0.16)' : C.border;
   const title = s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash');
   const showMilestone = !!milestone;

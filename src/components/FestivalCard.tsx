@@ -60,7 +60,8 @@ export function FestivalCard({
 }: FestivalCardProps) {
   const ink = look === "brasa";
   const fg = ink ? INK : C.text;
-  const dim = ink ? "rgba(26,10,4,0.62)" : C.textDim;
+  // 0.78: 4.8:1 on the orange (0.62 was 3.5:1, under AA for these 10–13 pt labels).
+  const dim = ink ? "rgba(26,10,4,0.78)" : C.textDim;
   const line = ink ? "rgba(26,10,4,0.16)" : C.border;
   const ticks = dayTicks(r);
   const up = (r.result?.value ?? r.money) > 0;

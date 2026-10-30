@@ -24,7 +24,7 @@ export const BADGE: Record<BadgeKind, { bg: string; fg: string }> = {
   call: { bg: '#2ECC71', fg: '#000' },
   bet: { bg: '#F39C12', fg: '#000' },
   raise: { bg: '#F39C12', fg: '#000' },
-  allin: { bg: '#E74C3C', fg: '#fff' },
+  allin: { bg: '#E74C3C', fg: '#000' }, // white was 3.8:1; black 5.5:1, like the other badges
 };
 
 
@@ -337,7 +337,8 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
   const ph = SIZE.plateH * k;
   const cw = (s.hero ? SIZE.heroCardW : SIZE.seatCardW) * k;
   const ch = (s.hero ? SIZE.heroCardH : SIZE.seatCardH) * k;
-  const pos = { bg: posColor(s.pos), fg: '#0C1311' };
+  // A folded plate is faded to 55%: the coloured pill then drops under 3:1, a grey one with white text stays 4.9:1.
+  const pos = s.folded ? { bg: C.surface3, fg: C.text } : { bg: posColor(s.pos), fg: '#0C1311' };
   // The badge is narrow: "Full house" or "Par de Ases"; the line under the table says the rest.
   const winNote = s.run ? RUN_MARK[s.run] : s.handName?.split(/[,:]/)[0];
   // Room beside the plate before the stage edge, on the tighter side.

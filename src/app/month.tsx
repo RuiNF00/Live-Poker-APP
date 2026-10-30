@@ -296,7 +296,8 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
           const hgt = Math.max(3, (Math.abs(h.profit) / top) * 72);
           return (
             <View key={h.key} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-              <View style={{ width: '70%', height: hgt, borderRadius: 4, backgroundColor: h.profit > 0 ? C.good : h.profit < 0 ? C.bad : C.surface3, opacity: me ? 1 : 0.45 }} />
+              {/* Heights are the size of the result either way: a losing month is outlined, not only red. */}
+              <View style={{ width: '70%', height: hgt, borderRadius: 4, backgroundColor: h.profit > 0 ? C.good : h.profit < 0 ? 'transparent' : C.surface3, ...(h.profit < 0 ? { borderWidth: 2, borderColor: C.bad } : null), opacity: me ? 1 : 0.45 }} />
               <T v="tiny" color={me ? C.text : C.muted} numberOfLines={1} maxFontSizeMultiplier={1.3}>
                 {monthName(h.key).slice(0, 3)}
               </T>
@@ -309,9 +310,11 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
       ) : null}
       {c.avg ? (
         <Diff
+          trend
           label={c.avg.months === 1 ? t('Este mês / o mês anterior com sessões') : t('Este mês / média dos {n} meses anteriores', { n: c.avg.months })}
           rows={[
-            [t('Resultado'), `${fmt(r.profit)} / ${fmt(c.avg.profit)}`, r.profit - c.avg.profit],
+            // The average is rounded like the month, or it reads «5593€ / 8414,20€».
+            [t('Resultado'), `${fmt(Math.round(r.profit))} / ${fmt(Math.round(c.avg.profit))}`, r.profit - c.avg.profit],
             rateShown(r.hours) && rateShown(c.avg.hours * c.avg.months) ? [t('Por hora'), `${fmt(Math.round(r.hourly))} / ${fmt(Math.round(c.avg.hourly))}`, r.hourly - c.avg.hourly] : null,
             [t('Horas'), `${Math.round(r.hours)} / ${Math.round(c.avg.hours)}`, 0],
           ].filter((x): x is [string, string, number] => x !== null)}
@@ -323,15 +326,17 @@ function Compare({ r, c, fmt, signed }: { r: MonthRecap; c: MonthCompare; fmt: (
 
 const hrs = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n))} h`;
 
-function Diff({ label, rows }: { label: string; rows: [string, string, number][] }) {
+/** `trend`: the values carry no sign (this month / the average), so an arrow says which way it went, not only the colour. */
+function Diff({ label, rows, trend }: { label: string; rows: [string, string, number][]; trend?: boolean }) {
   return (
     <View style={{ gap: 6 }}>
       <T v="label">{label}</T>
       {rows.map(([k, v, d]) => (
-        <Row key={k}>
+        <Row key={k} accessible accessibilityLabel={`${k}: ${v}${trend && d ? ', ' + (d > 0 ? t('melhor') : t('pior')) : ''}`}>
           <T v="small" style={{ flex: 1 }}>
             {k}
           </T>
+          {trend && d ? <Ionicons name={d > 0 ? 'caret-up' : 'caret-down'} size={12} color={d > 0 ? C.good : C.bad} /> : null}
           <T v="mono" color={d > 0 ? C.good : d < 0 ? C.bad : C.text}>
             {v}
           </T>

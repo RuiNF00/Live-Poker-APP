@@ -104,6 +104,8 @@ const es: Record<string, string> = {
   'ROI torneios': 'ROI torneos',
   'Melhor': 'Mejor',
   'Pior': 'Peor',
+  'melhor': 'mejor',
+  'pior': 'peor',
   'Histórico': 'Historial',
   'Sessão passada': 'Sesión pasada',
   'Guardar sessão': 'Guardar sesión',

@@ -258,7 +258,8 @@ export function Table({
                     </FitText>
                     {s.pos && s.pos !== s.name ? (
                       <View style={styles.pos}>
-                        <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.posText}>{s.pos}</Text>
+                        {/* Faded with the folded plate, the dim text fell to 3.2:1 over the felt: white keeps it 5.4:1. */}
+                        <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.posText, s.folded && { color: C.text }]}>{s.pos}</Text>
                       </View>
                     ) : null}
                   </View>
