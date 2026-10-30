@@ -766,10 +766,8 @@ const es: Record<string, string> = {
   '{n} semanas seguidas': '{n} semanas seguidas',
   'Em pausa até voltares': 'En pausa hasta que vuelvas',
   'Esta semana já conta · próximo objetivo {n}': 'Esta semana ya cuenta · próximo objetivo {n}',
-  'Uma mão ou nota esta semana mantém-na': 'Una mano o nota esta semana la mantiene',
   '{n} gelos guardados': '{n} congelaciones guardadas',
   'Sequência de registo': 'Racha de registro',
-  'Conta as semanas em que registas pelo menos uma mão ou uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.': 'Cuenta las semanas en que registras al menos una mano o una nota. No se trata de jugar más: se trata de revisar tu juego con regularidad.',
   'A cada {n} semanas ganhas um gelo (até 2). Se falhares uma semana, o gelo guarda a sequência.': 'Cada {n} semanas ganas una congelación (hasta 2). Si fallas una semana, la congelación mantiene la racha.',
   'Modo pausa': 'Modo pausa',
   'Ver todas as mãos': 'Ver todas las manos',
@@ -3924,6 +3922,10 @@ const es: Record<string, string> = {
   'Range do vilão na grelha': 'Rango del villano en la cuadrícula',
   'Calculadora de equity, ICM e backup': 'Calculadora de equity, ICM y copia de seguridad',
   'Importar e exportar o histórico em CSV': 'Importar y exportar el historial en CSV',
+  // First week: checklist steps, importing from an empty bankroll, the streak counting reviews
+  'Vens de outra app? Importa o histórico': '¿Vienes de otra app? Importa tu historial',
+  'Uma mão, revista ou nova, ou uma nota mantém-na': 'Una mano, nueva o revisada, o una nota la mantiene',
+  'Conta as semanas em que registas ou revês pelo menos uma mão, ou escreves uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.': 'Cuenta las semanas en que registras o revisas al menos una mano, o escribes una nota. No se trata de jugar más: se trata de revisar tu juego con regularidad.',
 };
 
 export default es;

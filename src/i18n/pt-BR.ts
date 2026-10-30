@@ -386,7 +386,6 @@ const ptBR: Record<string, string> = {
   'Junta mãos para estudar depois, por exemplo "Rever com coach". As pastas são só tuas e nunca saem quando partilhas.': 'Junte mãos para estudar depois, por exemplo "Revisar com coach". As pastas são só suas e nunca saem quando você compartilha.',
   'Em pausa até voltares': 'Em pausa até você voltar',
   'Sequência de registo': 'Sequência de registros',
-  'Conta as semanas em que registas pelo menos uma mão ou uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.': 'Conta as semanas em que você registra pelo menos uma mão ou uma nota. Não tem nada a ver com jogar mais: é revisar seu jogo com regularidade.',
   'A cada {n} semanas ganhas um gelo (até 2). Se falhares uma semana, o gelo guarda a sequência.': 'A cada {n} semanas você ganha um gelo (até 2). Se perder uma semana, o gelo guarda a sequência.',
   'Pôr tag': 'Colocar tag',
   'Apagar {n} mãos?': 'Excluir {n} mãos?',
@@ -2130,6 +2129,10 @@ const ptBR: Record<string, string> = {
   '{days} dias grátis no plano anual. Cancelas quando quiseres nas Definições.': '{days} dias grátis no plano anual. Você cancela quando quiser nos Ajustes.',
   'Começar os {days} dias grátis': 'Começar {days} dias grátis',
   'O que tens hoje fica teu. O Pro junta o resto.': 'O que você tem hoje continua seu. O Pro junta o resto.',
+  // First week: checklist steps, importing from an empty bankroll, the streak counting reviews
+  'Vens de outra app? Importa o histórico': 'Vem de outro app? Importe o histórico',
+  'Uma mão, revista ou nova, ou uma nota mantém-na': 'Uma mão, nova ou revisada, ou uma nota mantém a sequência',
+  'Conta as semanas em que registas ou revês pelo menos uma mão, ou escreves uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.': 'Conta as semanas em que você registra ou revisa pelo menos uma mão, ou escreve uma nota. Não tem nada a ver com jogar mais: é revisar seu jogo com regularidade.',
 };
 
 export default ptBR;

@@ -21,7 +21,7 @@ const FORTNIGHT = 14 * 86_400_000;
  * keeps a single context card at a time.
  */
 export function useStartChecklist() {
-  const { hands, sessions, transfers } = useStore();
+  const { hands, sessions, transfers, activeSession } = useStore();
   const [hidden, setHidden] = useState(true);
   const [now] = useState(() => Date.now());
   // What they told us on first run: tournament players get a festival step.
@@ -49,8 +49,10 @@ export function useStartChecklist() {
   const go = (k: StartStep) => {
     tap();
     if (k === 'hand') router.push('/hand/new');
-    else if (k === 'session') router.push('/session');
-    else if (k === 'bankroll') router.push('/bankroll');
+    // Away from the table (where the list is read), the step is the session already played: its form, not a timer.
+    else if (k === 'session') router.navigate(activeSession ? '/session' : { pathname: '/bankroll', params: { add: 'session' } });
+    // Straight to the deposit, named «Saldo inicial», instead of a screen to look for it in.
+    else if (k === 'bankroll') router.navigate({ pathname: '/bankroll', params: { add: 'deposit' } });
     else if (k === 'festival') router.push('/festival');
     else {
       const last = [...hands].sort((a, b) => b.createdAt - a.createdAt)[0];

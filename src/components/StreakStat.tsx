@@ -28,7 +28,7 @@ export function StreakStat() {
     ? t('Em pausa até voltares')
     : s.loggedThisWeek
       ? t('Esta semana já conta · próximo objetivo {n}', { n: s.next })
-      : t('Uma mão ou nota esta semana mantém-na');
+      : t('Uma mão, revista ou nova, ou uma nota mantém-na');
 
   const setPaused = (on: boolean) => {
     tap('select');
@@ -78,7 +78,7 @@ export function StreakStat() {
             </Row>
             <T v="small">{sub}</T>
             <T v="body" style={{ color: C.textDim }}>
-              {t('Conta as semanas em que registas pelo menos uma mão ou uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.')}
+              {t('Conta as semanas em que registas ou revês pelo menos uma mão, ou escreves uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.')}
             </T>
             <Row gap={S.sm}>
               <Ionicons name="snow" size={18} color={C.info} />

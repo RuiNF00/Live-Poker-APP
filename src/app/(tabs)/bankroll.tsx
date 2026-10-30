@@ -99,6 +99,8 @@ function BankrollTab() {
   if (add !== addSeen) {
     setAddSeen(add);
     if (add === 'session') setSheet({ type: 'session', s: 'new' });
+    // The first-week step «Define o bankroll inicial»: the deposit form, already named.
+    else if (add === 'deposit') setSheet({ type: 'transfer', x: { ...blankTransfer(defaultBankroll.id, 'deposit'), note: t('Saldo inicial') }, isNew: true });
   }
   useEffect(() => {
     if (add) router.setParams({ add: undefined });
@@ -320,6 +322,8 @@ function BankrollTab() {
               <View style={{ gap: S.xs, alignSelf: 'stretch' }}>
                 <Button title={t('Começar sessão')} icon="play" onPress={() => router.push('/session')} />
                 <Button title={t('Já jogaste? Junta uma sessão passada')} kind="plain" size="sm" onPress={() => setSheet({ type: 'session', s: 'new' })} />
+                {/* Years of results in half a minute: the strongest first look for anyone coming from another app or a sheet. */}
+                <Button title={t('Vens de outra app? Importa o histórico')} kind="plain" size="sm" onPress={() => router.push('/import')} />
               </View>
             }
           />
