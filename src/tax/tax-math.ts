@@ -5,7 +5,7 @@
 // can be tested.
 
 import { inRange, type DateRange } from '@/store/bankroll-math';
-import { ownBounties, profit, soldShare } from '@/store/session-math';
+import { ownBounties, profit, resultAt, soldShare } from '@/store/session-math';
 import { EXPENSE_KINDS, toTripCurrency } from '@/store/trip-math';
 import type { ExpenseKind, Session, Trip } from '@/store/types';
 
@@ -38,6 +38,8 @@ export interface UsLosses {
   taxable: number;
   /** Losses that can't be deducted because of the 90% rule. */
   lostToCap: number;
+  /** The tax year, when the range covers more than one. */
+  year?: number;
 }
 
 export interface TaxReport {
@@ -66,7 +68,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /** `trips`: the trips in the range (from the report), for their expenses. */
 export function taxReport(sessions: Session[], range: DateRange, trips: { trip: Pick<Trip, 'currency' | 'fx' | 'expenses'> }[] = []): TaxReport {
-  const list = sessions.filter((s) => s.endedAt && inRange(s.startedAt, range));
+  const list = sessions.filter((s) => s.endedAt && inRange(resultAt(s), range));
   const rows = new Map<string, TaxRow>();
   for (const s of list) {
     const key = `${s.country ?? ''}|${s.currency}`;
@@ -82,7 +84,8 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { trip: 
     if (s.withheld?.status === 'recovered') row.recovered += w;
     if (w && soldShare(s) > 0) row.backedWithheld = true;
     row.docs += s.docs?.length ?? 0;
-    row.bounties += ownBounties(s);
+    // «Of which bounties»: only those inside the wins, so the column is never more than the wins.
+    if (g > 0) row.bounties += Math.min(ownBounties(s), g);
     rows.set(key, row);
   }
   const out = [...rows.values()]
@@ -93,20 +96,24 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { trip: 
   const usHint = list.some((s) => s.country === 'US' || s.withheld?.form === 'W-2G' || s.withheld?.form === '1042-S');
   let us: UsLosses[] | null = null;
   if (usHint) {
-    const by = new Map<string, { wins: number; losses: number; allowed: number }>();
+    // One row per currency and tax year: a loss in one year never offsets wins in another.
+    const by = new Map<string, { currency: string; year: number; wins: number; losses: number; allowed: number }>();
     for (const s of list) {
-      const x = by.get(s.currency) ?? { wins: 0, losses: 0, allowed: 0 };
+      const year = new Date(resultAt(s)).getFullYear();
+      const key = `${s.currency}|${year}`;
+      const x = by.get(key) ?? { currency: s.currency, year, wins: 0, losses: 0, allowed: 0 };
       const g = gamblingResult(s);
       if (g > 0) x.wins += g;
       else {
         x.losses -= g;
-        x.allowed -= g * usLossShare(new Date(s.startedAt).getFullYear());
+        x.allowed -= g * usLossShare(year);
       }
-      by.set(s.currency, x);
+      by.set(key, x);
     }
-    us = [...by.entries()].map(([currency, x]) => {
+    const years = new Set([...by.values()].map((x) => x.year)).size;
+    us = [...by.values()].sort((a, b) => a.year - b.year || a.currency.localeCompare(b.currency)).map(({ currency, year, ...x }) => {
       const deductible = Math.min(x.allowed, x.wins);
-      return { currency, wins: r2(x.wins), losses: r2(x.losses), deductible: r2(deductible), taxable: r2(x.wins - deductible), lostToCap: r2(Math.min(x.losses, x.wins) - deductible) };
+      return { currency, ...(years > 1 ? { year } : null), wins: r2(x.wins), losses: r2(x.losses), deductible: r2(deductible), taxable: r2(x.wins - deductible), lostToCap: r2(Math.min(x.losses, x.wins) - deductible) };
     });
   }
 

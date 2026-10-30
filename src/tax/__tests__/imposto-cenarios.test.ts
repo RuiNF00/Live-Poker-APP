@@ -132,3 +132,41 @@ test('a flight paid the year before the trip counts in the year it was paid', ()
   const total = (y: number) => taxReport([], Y(y), [{ trip }]).expenses.find((e) => e.currency === '$')?.total ?? 0;
   assert.deepEqual([total(2026), total(2027)], [900, 0]);
 });
+
+test('US losses: a loss in 2025 never offsets wins in 2026, even in a range over both years', () => {
+  const loss = sess({ country: 'US', currency: '$', buyIn: 10000, cashOut: 0, startedAt: at(2025, 11, 1), endedAt: at(2025, 11, 1) + 4 * H });
+  const win = sess({ country: 'US', currency: '$', buyIn: 100, cashOut: 10100, startedAt: at(2026, 2, 1), endedAt: at(2026, 2, 1) + 4 * H });
+  const twelve = taxReport([loss, win], { from: at(2025, 9, 31, 0), to: at(2026, 9, 30, 23) });
+  assert.deepEqual(twelve.us?.map((u) => [u.year, u.deductible, u.taxable]), [[2025, 0, 0], [2026, 0, 10000]]);
+  assert.match(reportHtml(buildReport({ sessions: [loss, win], transfers: [], bankrolls: [], range: { from: at(2025, 9, 31, 0), to: at(2026, 9, 30, 23) } }), { tax: twelve }), /2026 · \$/);
+  // One calendar year: no year on the row.
+  assert.equal(taxReport([loss, win], Y(2026)).us?.[0].year, undefined);
+});
+
+test('a tournament whose Day 2 is in the new year counts in the year it was paid, in the tax table and in the PDF', () => {
+  const s = sess({ country: 'US', currency: '$', kind: 'mtt', buyIn: 10000, cashOut: 110000, day: 2, startedAt: at(2026, 11, 30, 12), endedAt: at(2027, 0, 2, 22), withheld: { amount: 24000, form: 'W-2G', status: 'final' } });
+  const a = pdf([s], Y(2026));
+  const b = pdf([s], Y(2027));
+  assert.equal(a.tax.rows.length, 0);
+  assert.equal(a.report.currencies.length, 0);
+  assert.deepEqual([row(b.tax, 'US', '$')?.net, row(b.tax, 'US', '$')?.withheld], [100000, 24000]);
+  assert.equal(b.report.currencies[0].sessions.length, 1);
+  // Bagged, waiting for Day 2: still where Day 1 started.
+  const bagged = { ...s, day: undefined, cashOut: 0, withheld: undefined, endedAt: at(2026, 11, 31, 2), bag: { stack: 90000, at: at(2026, 11, 31, 2) } };
+  assert.equal(pdf([bagged], Y(2026)).report.currencies[0].sessions.length, 1);
+});
+
+test('«of which bounties» is never more than the wins: busted PKOs with bounties add nothing to it', () => {
+  const busts = Array.from({ length: 10 }, (_, i) => sess({ country: 'PT', kind: 'mtt', buyIn: 100, cashOut: 50, bounties: 50, startedAt: at(2026, 3, i + 1), endedAt: at(2026, 3, i + 1) + 2 * H }));
+  const win = sess({ country: 'PT', kind: 'mtt', buyIn: 100, cashOut: 300, bounties: 80, startedAt: at(2026, 4, 1), endedAt: at(2026, 4, 1) + 2 * H });
+  const r = row(taxReport([...busts, win], Y(2026)), 'PT', '€')!;
+  assert.deepEqual([r.wins, r.losses, r.bounties], [200, 500, 80]);
+});
+
+test('the PDF never shows «+0 €» or a red «0 €» for less than a cent', () => {
+  const s = (p: number, cur = '€') => sess({ currency: cur, buyIn: 100, cashOut: 100 + p, startedAt: at(2026, 5, 1), endedAt: at(2026, 5, 1) + H });
+  for (const [p, cur] of [[0.004, '€'], [-0.004, '€'], [-0.4, '¥']] as const) {
+    const html = reportHtml(buildReport({ sessions: [s(p, cur)], transfers: [], bankrolls: [], range: Y(2026) }));
+    assert.doesNotMatch(html, /class="n (pos|neg)">[+]?0/, `${p} ${cur}`);
+  }
+});

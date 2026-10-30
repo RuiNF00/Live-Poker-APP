@@ -1748,6 +1748,7 @@ const es: Record<string, string> = {
   'Nas sessões': 'En las sesiones',
   'Total': 'Total',
   'Quem declara como profissional pode deduzir viagens, coaching e software em muitos países. As despesas nas sessões já estão no resultado de cada sessão.': 'Quien declara como profesional puede deducir viajes, coaching y software en muchos países. Los gastos de las sesiones ya están en el resultado de cada sesión.',
+  'As despesas de viagem são de todas as bankrolls: uma viagem não pertence a uma só.': 'Los gastos de viaje son de todos los bankrolls: un viaje no pertenece a uno solo.',
   'A partir de 2026 só 90% das perdas são dedutíveis, e nunca mais do que os ganhos. Quem declara nos EUA precisa de cada sessão documentada: data, local, jogo, buy-ins e cash-outs.': 'Desde 2026 solo el 90% de las pérdidas es deducible, y nunca más que las ganancias. Quien declara en EE. UU. necesita cada sesión documentada: fecha, lugar, juego, buy-ins y cash-outs.',
   'A recuperar': 'Por recuperar',
   'Fica a tributar': 'Queda por tributar',

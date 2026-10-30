@@ -4,6 +4,7 @@
 
 import { locale, t } from '@/i18n';
 import { duration, rawMoney } from '@/poker/format';
+import { decimalsOf } from '@/store/currencies';
 import { cost, playedMs, profit, rateShown, type Breakdown } from '@/store/session-math';
 
 import { countryName, flag } from '@/tax/countries';
@@ -19,8 +20,16 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 const day = (ts: number) => new Date(ts).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
 const hours = (h: number) => h.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const signed = (n: number, cur: string) => (n > 0 ? '+' : '') + rawMoney(Math.round(n * 100) / 100, cur);
-const cls = (n: number) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
+// Rounded to the currency's cents first, so 0,004 € is a plain «0 €», not a green «+0 €» or a red «0 €».
+const shown = (n: number, cur: string) => {
+  const f = 10 ** decimalsOf(cur);
+  return Math.round(n * f) / f || 0;
+};
+const signed = (n: number, cur: string) => (shown(n, cur) > 0 ? '+' : '') + rawMoney(shown(n, cur), cur);
+const cls = (n: number, cur: string) => {
+  const v = shown(n, cur);
+  return v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+};
 
 /** Place, the day a multi-day tournament reached, and "no saco" while it waits for the next day. */
 function mttTag(s: Session): string {
@@ -46,7 +55,7 @@ function table(title: string, rows: Breakdown[], cur: string, label = (k: string
         ${rows
           .map(
             (b) =>
-              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${rateShown(b.hours) ? esc(rawMoney(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit)}">${esc(signed(b.profit, cur))}</td></tr>`,
+              `<tr><td>${esc(label(b.key))}</td><td class="n">${b.sessions}</td><td class="n">${hours(b.hours)}</td><td class="n">${rateShown(b.hours) ? esc(rawMoney(Math.round(b.hourly), cur)) : '—'}</td><td class="n ${cls(b.profit, cur)}">${esc(signed(b.profit, cur))}</td></tr>`,
           )
           .join('')}
       </tbody>
@@ -63,7 +72,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const cur = c.currency;
   const tt = c.totals;
   const tiles: [string, string, string?][] = [
-    [t('Resultado'), signed(tt.profit, cur), cls(tt.profit)],
+    [t('Resultado'), signed(tt.profit, cur), cls(tt.profit, cur)],
     [t('Horas'), hours(tt.hours)],
     [t('Por hora'), rateShown(tt.hours) ? rawMoney(Math.round(tt.hourly), cur) : '—'],
     [t('Sessões'), String(tt.sessions)],
@@ -100,7 +109,7 @@ function currencyBlock(c: CurrencyReport, many: boolean): string {
   const sessions = c.sessions
     .map(
       (s) =>
-        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${mttTag(s)}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td>${hasSwaps ? `<td class="n">${s.swapNet ? esc(signed(s.swapNet, cur)) : ''}</td>` : ''}<td class="n ${cls(profit(s))}">${esc(signed(profit(s), cur))}</td></tr>`,
+        `<tr><td>${esc(day(s.startedAt))}</td><td>${esc(s.name || (s.kind === 'mtt' ? t('Torneio') : 'Cash'))}${mttTag(s)}</td><td>${esc(s.venue)}</td><td class="n">${esc(duration(playedMs(s)))}</td><td class="n">${esc(rawMoney(Math.round(cost(s) * 100) / 100, cur))}</td><td class="n">${esc(rawMoney(Math.round((s.cashOut || 0) * 100) / 100, cur))}</td>${hasSwaps ? `<td class="n">${s.swapNet ? esc(signed(s.swapNet, cur)) : ''}</td>` : ''}<td class="n ${cls(profit(s), cur)}">${esc(signed(profit(s), cur))}</td></tr>`,
     )
     .join('');
 
@@ -132,7 +141,7 @@ function tripsBlock(r: Report): string {
   const rows = r.trips
     .map(({ trip, summary: s }) => {
       const conv = s.converted ? `<br/><span class="muted">≈ ${esc(signed(s.converted.net, s.converted.currency))}</span>` : '';
-      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span></td><td class="n">${s.sessions}</td><td class="n ${cls(s.poker)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(rawMoney(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
+      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span></td><td class="n">${s.sessions}</td><td class="n ${cls(s.poker, s.currency)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(rawMoney(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net, s.currency)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
     })
     .join('');
   return `
@@ -148,7 +157,7 @@ function tripsBlock(r: Report): string {
 
 const EXPENSE_LABEL: Record<ExpenseKind, string> = { flight: 'Voo', hotel: 'Hotel', food: 'Comida', coaching: 'Coaching', software: 'Software', other: 'Outros' };
 
-function expensesTable(x: TaxReport): string {
+function expensesTable(x: TaxReport, scoped: boolean): string {
   if (!x.expenses.length) return '';
   const kinds = EXPENSE_KINDS.filter((k) => x.expenses.some((e) => e.byKind[k]));
   const onSessions = x.expenses.some((e) => e.sessions);
@@ -159,10 +168,10 @@ function expensesTable(x: TaxReport): string {
       <thead><tr><th></th>${kinds.map((k) => `<th class="n">${esc(k === 'software' ? 'Software' : t(EXPENSE_LABEL[k]))}</th>`).join('')}${onSessions ? `<th class="n">${esc(t('Nas sessões'))}</th>` : ''}<th class="n">${esc(t('Total'))}</th></tr></thead>
       <tbody>${x.expenses.map((e) => `<tr><td>${esc(e.currency)}</td>${kinds.map((k) => cell(e.byKind[k], e.currency)).join('')}${onSessions ? cell(e.sessions, e.currency) : ''}<td class="n">${esc(rawMoney(e.total, e.currency))}</td></tr>`).join('')}</tbody>
     </table>
-    <p class="muted">${esc(t('Quem declara como profissional pode deduzir viagens, coaching e software em muitos países. As despesas nas sessões já estão no resultado de cada sessão.'))}</p>`;
+    <p class="muted">${esc(t('Quem declara como profissional pode deduzir viagens, coaching e software em muitos países. As despesas nas sessões já estão no resultado de cada sessão.'))}${scoped ? ' ' + esc(t('As despesas de viagem são de todas as bankrolls: uma viagem não pertence a uma só.')) : ''}</p>`;
 }
 
-function taxBlock(x: TaxReport): string {
+function taxBlock(x: TaxReport, scoped = false): string {
   const byCountry = x.rows.some((r) => r.country || r.withheld);
   if (!byCountry && !x.us) return '';
   // PKO: the bounties get their own column, only when there are any.
@@ -170,7 +179,7 @@ function taxBlock(x: TaxReport): string {
   const rows = x.rows
     .map(
       (r) =>
-        `<tr><td>${esc(r.country ? `${flag(r.country)} ${countryName(r.country)}` : countryName(undefined))}</td><td class="n">${r.sessions}</td><td class="n">${esc(rawMoney(r.wins, r.currency))}</td><td class="n">${esc(rawMoney(r.losses, r.currency))}</td><td class="n ${cls(r.net)}">${esc(signed(r.net, r.currency))}</td>${anyB ? `<td class="n">${r.bounties ? esc(rawMoney(r.bounties, r.currency)) : '—'}</td>` : ''}<td class="n">${r.withheld ? esc(rawMoney(r.withheld, r.currency)) : '—'}</td><td class="n">${r.toRecover ? esc(rawMoney(r.toRecover, r.currency)) : '—'}</td></tr>${
+        `<tr><td>${esc(r.country ? `${flag(r.country)} ${countryName(r.country)}` : countryName(undefined))}</td><td class="n">${r.sessions}</td><td class="n">${esc(rawMoney(r.wins, r.currency))}</td><td class="n">${esc(rawMoney(r.losses, r.currency))}</td><td class="n ${cls(r.net, r.currency)}">${esc(signed(r.net, r.currency))}</td>${anyB ? `<td class="n">${r.bounties ? esc(rawMoney(r.bounties, r.currency)) : '—'}</td>` : ''}<td class="n">${r.withheld ? esc(rawMoney(r.withheld, r.currency)) : '—'}</td><td class="n">${r.toRecover ? esc(rawMoney(r.toRecover, r.currency)) : '—'}</td></tr>${
           r.backedWithheld ? `<tr><td colspan="${anyB ? 8 : 7}" class="muted">${esc(t('Valor total do documento; a parte dos teus backers pode ser declarada com o formulário 5754 (EUA).'))}</td></tr>` : ''
         }`,
     )
@@ -183,7 +192,7 @@ function taxBlock(x: TaxReport): string {
       <tbody>${x.us
         .map(
           (u) =>
-            `<tr><td>${esc(u.currency)}</td><td class="n">${esc(rawMoney(u.wins, u.currency))}</td><td class="n">${esc(rawMoney(u.losses, u.currency))}</td><td class="n">${esc(rawMoney(u.deductible, u.currency))}</td><td class="n">${esc(rawMoney(u.taxable, u.currency))}</td></tr>`,
+            `<tr><td>${esc(u.year ? `${u.year} · ${u.currency}` : u.currency)}</td><td class="n">${esc(rawMoney(u.wins, u.currency))}</td><td class="n">${esc(rawMoney(u.losses, u.currency))}</td><td class="n">${esc(rawMoney(u.deductible, u.currency))}</td><td class="n">${esc(rawMoney(u.taxable, u.currency))}</td></tr>`,
         )
         .join('')}</tbody>
     </table>
@@ -198,7 +207,7 @@ function taxBlock(x: TaxReport): string {
       </table>
       <p class="muted">${esc(t('Ganhos e perdas somam as sessões que ganhaste e as que perdeste, antes de despesas. Retido: imposto que o casino reteve no prémio (W-2G, 1042-S).'))}${anyB ? ' ' + esc(t('Os ganhos incluem os bounties recebidos em dinheiro.')) : ''}${x.sharesIncluded ? ' ' + esc(t('Inclui swaps e a tua parte dos pacotes de staking.')) : ''}</p>` : ''}
       ${us}
-      ${expensesTable(x)}
+      ${expensesTable(x, scoped)}
       <p class="note">${esc(t('Isto não é aconselhamento fiscal. São os números que registaste, arrumados por país. Confirma com um contabilista as regras do teu país e de onde jogaste.'))}</p>
     </section>`;
 }
@@ -252,7 +261,7 @@ export function reportHtml(r: Report, opts: { player?: string; now?: number; tax
   </header>
   ${r.currencies.length ? r.currencies.map((c) => currencyBlock(c, many)).join('') : `<p>${esc(t('Sem sessões no período'))}</p>`}
   ${tripsBlock(r)}
-  ${opts.tax ? taxBlock(opts.tax) : ''}
+  ${opts.tax ? taxBlock(opts.tax, !!r.scoped) : ''}
   <footer>${esc(t('Resultados registados pelo jogador no Sweatbook. O resultado de cada sessão já desconta buy-ins, despesas, gorjetas e a parte dos backers.'))}</footer>
 </body>
 </html>`;

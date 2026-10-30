@@ -410,3 +410,12 @@ export function endCashOut(f: EndForm, s: Pick<Session, 'kind' | 'stack' | 'tour
   if (s.kind === 'mtt') return (f.place > 0 && s.tourney?.payouts?.[f.place - 1]) || 0;
   return s.stack;
 }
+
+/**
+ * When a finished session's result happened, for the year and month it counts in: its start, except a tournament that
+ * went past Day 1, whose prize (and any W-2G) is paid on the last day, so it counts when it ended. A bagged day
+ * still waiting stays at its start.
+ */
+export function resultAt(s: Pick<Session, 'startedAt' | 'endedAt' | 'day' | 'bag'>): number {
+  return (s.day ?? 1) > 1 && s.endedAt && !s.bag ? s.endedAt : s.startedAt;
+}

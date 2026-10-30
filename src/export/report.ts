@@ -8,7 +8,7 @@ import { comboLabel } from '@/poker/cards';
 import { positions, replay } from '@/poker/engine';
 import type { Hand } from '@/poker/types';
 import { bankrollOf, formatOf, inRange, type DateRange, type Scope, scopeIds } from '@/store/bankroll-math';
-import { breakdown, byCurrency, cost, owedToBackers, playedMs, profit, totals, type Breakdown, type Totals } from '@/store/session-math';
+import { breakdown, byCurrency, cost, owedToBackers, playedMs, profit, resultAt, totals, type Breakdown, type Totals } from '@/store/session-math';
 import { tripsIn, tripSummary, type TripSummary } from '@/store/trip-math';
 import type { Bankroll, Session, Transfer, Trip } from '@/store/types';
 import { csvCell, type CsvSep } from './csv';
@@ -49,6 +49,8 @@ export interface Report {
   first?: number;
   last?: number;
   scopeName: string;
+  /** One bankroll or one currency, not every bankroll. */
+  scoped?: boolean;
   currencies: CurrencyReport[];
   trips: { trip: Trip; summary: TripSummary }[];
 }
@@ -77,7 +79,7 @@ export function buildReport(inp: ReportInput): Report {
     const b = bankrollOf(s, inp.bankrolls);
     return !inp.bankrolls.length || (!!b && ids.has(b.id));
   };
-  const list = inp.sessions.filter((s) => s.endedAt && inScope(s) && inRange(s.startedAt, inp.range)).sort((a, b) => a.startedAt - b.startedAt);
+  const list = inp.sessions.filter((s) => s.endedAt && inScope(s) && inRange(resultAt(s), inp.range)).sort((a, b) => a.startedAt - b.startedAt);
   const tx = inp.transfers.filter((x) => ids.has(x.bankrollId) && inRange(x.at, inp.range));
   const currencyOfTx = (x: Transfer) => inp.bankrolls.find((b) => b.id === x.bankrollId)?.currency ?? '';
   const curs = new Set([...list.map((s) => s.currency), ...tx.map(currencyOfTx)]);
@@ -104,7 +106,7 @@ export function buildReport(inp: ReportInput): Report {
       byVenue: breakdown(ss, 'venue', currency),
       byFormat: group(ss, (s) => (formatOf(s) === 'online' ? 'Online' : 'Live')).sort(byProfit),
       byMonth: group(ss, (s) => {
-        const d = new Date(s.startedAt);
+        const d = new Date(resultAt(s));
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       }).sort((a, b) => a.key.localeCompare(b.key)),
       sessions: ss,
@@ -119,7 +121,7 @@ export function buildReport(inp: ReportInput): Report {
   const trips = tripsIn(inp.trips ?? [], inp.range)
     .reverse()
     .map((trip) => ({ trip, summary: tripSummary(trip, inp.sessions) }));
-  return { range: inp.range, first: list[0]?.startedAt, last: list[list.length - 1]?.startedAt, scopeName, currencies, trips };
+  return { range: inp.range, first: list[0]?.startedAt, last: list[list.length - 1]?.startedAt, scopeName, ...(inp.scope ? { scoped: true } : null), currencies, trips };
 }
 
 // ─── Hands CSV ───────────────────────────────────────────────────────────────

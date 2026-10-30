@@ -54,9 +54,13 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
   const spread = (xs: number[], w: number) => Math.sqrt(xs.reduce((a, x, i) => a + (x - w * hrs[i]) ** 2, 0) / hours);
   const hourly = rate(res);
   const sd = spread(res, hourly);
-  const bbHourly = rate(bbs);
-  const sdBb = spread(bbs, bbHourly);
+  // In BB, only the sessions with blinds: an imported one without them would count its hours at 0 BB.
+  const bbHrs = hrs.map((h, i) => (cash[i].bb > 0 ? h : 0));
+  const bbHours = bbHrs.reduce((a, b) => a + b, 0);
+  const bbHourly = bbHours ? bbs.reduce((a, b) => a + b, 0) / bbHours : 0;
+  const sdBb = bbHours ? Math.sqrt(bbs.reduce((a, x, i) => a + (x - bbHourly * bbHrs[i]) ** 2, 0) / bbHours) : 0;
   const m = Z95 / Math.sqrt(hours);
+  const mBb = bbHours ? Z95 / Math.sqrt(bbHours) : 0;
   return {
     sessions: cash.length,
     hours,
@@ -66,8 +70,8 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
     hi: hourly + m * sd,
     bbHourly,
     sdBb,
-    bbLo: bbHourly - m * sdBb,
-    bbHi: bbHourly + m * sdBb,
+    bbLo: bbHourly - mBb * sdBb,
+    bbHi: bbHourly + mBb * sdBb,
     small: hours < SMALL.hours || cash.length < SMALL.sessions,
   };
 }

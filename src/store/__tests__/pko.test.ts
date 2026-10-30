@@ -134,7 +134,8 @@ test('tax report: bounties per country and currency, the result unchanged', () =
   const r = taxReport([a, b, c], year);
   const pt = r.rows.find((x) => x.country === 'PT')!;
   assert.equal(pt.bounties, 450 + 50, 'your share only');
-  assert.equal(r.rows.find((x) => x.currency === '$')!.bounties, 400);
+  // «Of which bounties» never passes the wins: 400 of bounties on a 100 buy-in is a 300 win.
+  assert.equal(r.rows.find((x) => x.currency === '$')!.bounties, 300);
   const plain = taxReport([a, b, c].map(({ bounties: _, ...s }) => s), year);
   assert.deepEqual(
     r.rows.map((x) => [x.wins, x.losses, x.net]),

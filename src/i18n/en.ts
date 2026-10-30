@@ -1854,6 +1854,7 @@ const en: Record<string, string> = {
   'Nas sessões': 'On sessions',
   'Total': 'Total',
   'Quem declara como profissional pode deduzir viagens, coaching e software em muitos países. As despesas nas sessões já estão no resultado de cada sessão.': 'In many countries, professionals can deduct travel, coaching and software. Expenses typed on sessions are already in each session result.',
+  'As despesas de viagem são de todas as bankrolls: uma viagem não pertence a uma só.': 'Trip expenses cover every bankroll: a trip doesn\'t belong to just one.',
   'A partir de 2026 só 90% das perdas são dedutíveis, e nunca mais do que os ganhos. Quem declara nos EUA precisa de cada sessão documentada: data, local, jogo, buy-ins e cash-outs.': 'From 2026 only 90% of losses are deductible, and never more than your winnings. US filers need every session documented: date, place, game, buy-ins and cash-outs.',
   'A recuperar': 'To recover',
   'Fica a tributar': 'Left to tax',

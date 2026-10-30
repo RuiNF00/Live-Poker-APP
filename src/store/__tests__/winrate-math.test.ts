@@ -85,3 +85,12 @@ test('no win rate from a few minutes of play, but the minutes still count', () =
   assert.equal(tt.profit, 600);
   assert.equal(r2(tt.hours), 20.05);
 });
+
+test('BB/h leaves out the hours of imported sessions with no blinds', () => {
+  const withBlinds = [1, 2, 3].map((d) => cash(d, 4, 60, { sb: 1, bb: 2 }));
+  const noBlinds = [4, 5, 6].map((d) => cash(d, 4, 60, { sb: 0, bb: 0 }));
+  const w = winRate([...withBlinds, ...noBlinds])!;
+  assert.equal(r2(w.bbHourly), 7.5);
+  // The money rate still counts every session.
+  assert.equal(r2(w.hourly), 15);
+});
