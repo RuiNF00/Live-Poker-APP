@@ -20,16 +20,17 @@ function cash(day: number, hours: number, result: number, over: Partial<Session>
 }
 
 // Four 5-hour sessions at 2/5: +500, −100, +300, −300. 400 in 20 h = 20 €/h.
-// Off the rate: +400, −200, +200, −400 → squares sum to 400 000; ÷ 20 h = 20 000 → σ = 141.42 €/h.
-// σ/√20 = 31.62 → 95%: 20 ± 61.98.
+// Off the rate: +400, −200, +200, −400 → squares sum to 400 000. A 5 h session has variance 5σ², and
+// the rate itself was fitted to these 4 sessions: ÷ (20 − 4·25/20 = 15) h → σ² = 26 667, σ = 163.30 €/h
+// (÷ 20 read it 141.42, too small). σ/√20 = 36.51; with σ from 4 sessions, t = 3.182 → 95%: 20 ± 116.19.
 const four = [cash(1, 5, 500), cash(3, 5, -100), cash(5, 5, 300), cash(7, 5, -300)];
 
 test('hourly, spread and 95% interval match the hand calculation', () => {
   const w = winRate(four)!;
   assert.equal(w.hourly, 20);
-  assert.equal(r2(w.sd), 141.42);
-  assert.equal(r2(w.lo), -41.98);
-  assert.equal(r2(w.hi), 81.98);
+  assert.equal(r2(w.sd), 163.3);
+  assert.equal(r2(w.lo), -96.19);
+  assert.equal(r2(w.hi), 136.19);
   assert.equal(w.small, true, '20 h is a small sample');
   // Same hourly as the Bankroll totals.
   assert.equal(w.hourly, totals(four, '€').hourly);
@@ -38,7 +39,7 @@ test('hourly, spread and 95% interval match the hand calculation', () => {
 test('BB/h uses each session\'s own blinds', () => {
   const w = winRate(four)!;
   assert.equal(w.bbHourly, 4);
-  assert.equal(r2(w.sdBb), 28.28);
+  assert.equal(r2(w.sdBb), 32.66);
   // A 1/2 session next to 2/5: +200 at 1/2 is +100 BB, +500 at 2/5 is +100 BB too.
   const mixed = winRate([cash(1, 5, 200, { sb: 1, bb: 2 }), cash(2, 5, 500), cash(3, 5, 500)])!;
   assert.equal(mixed.bbHourly, 20);
@@ -46,12 +47,12 @@ test('BB/h uses each session\'s own blinds', () => {
 
 test('hours to know: (1.96 × σ_BB / 5)²', () => {
   const k = hoursToKnow(winRate(four)!);
-  // (1.96 × 28.284 / 5)² = 122.9 → 123 h; 103 still to play, about 21 sessions of 5 h.
-  assert.equal(k.needed, 123);
-  assert.equal(k.left, 103);
-  assert.equal(k.sessions, 21);
-  assert.equal(r2(k.margin), 12.4);
-  assert.equal(hoursToKnow({ ...winRate(four)!, hours: 500 }).left, 0);
+  // (1.96 × 32.660 / 5)² = 163.9 → 164 h; 144 still to play, about 29 sessions of 5 h.
+  assert.equal(k.needed, 164);
+  assert.equal(k.left, 144);
+  assert.equal(k.sessions, 29);
+  assert.equal(r2(k.margin), 14.31);
+  assert.equal(hoursToKnow({ ...winRate(four)!, bbHours: 500 }).left, 0);
 });
 
 test('breakdowns by game, stake, venue and weekday', () => {

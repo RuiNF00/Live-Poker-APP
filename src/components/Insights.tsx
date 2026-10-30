@@ -56,7 +56,7 @@ export function Insights({ list, cur, hidden, result, mind }: { list: Session[];
         </ProBlur>
         {/* What each finding is about, without the answer: the names and amounts stay behind Pro. */}
         <View style={{ gap: S.sm, paddingTop: S.sm }}>
-          {all.slice(0, 3).map((x) => (
+          {all.filter((x) => x.sure).slice(0, 3).map((x) => (
             <Row key={x.id} gap={S.sm}>
               <Ionicons name="lock-closed" size={14} color={C.accent} />
               <T v="small" color={C.text} style={{ flex: 1 }}>
@@ -110,6 +110,14 @@ function InsightCard({ x, fmt }: { x: Insight; fmt: (n: number) => string }) {
         {x.id === 'tilt' || x.id === 'tiltNext' ? x.detail + ' ' : ''}
         {t('Com base em {n} sessões e {h} h.', { n: x.sample.sessions, h: Math.round(x.sample.hours).toLocaleString(locale) })}
       </T>
+      {x.sure ? null : (
+        <Row gap={S.xs}>
+          <Ionicons name="help-circle-outline" size={14} color={C.warn} />
+          <T v="tiny" color={C.warn} style={{ flex: 1 }}>
+            {t('Pode ser sorte: com estas sessões, uma diferença assim ainda aparece por acaso. Fica mais certa com mais sessões.')}
+          </T>
+        </Row>
+      )}
     </Card>
   );
 }

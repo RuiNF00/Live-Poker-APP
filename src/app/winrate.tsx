@@ -84,12 +84,12 @@ function HoursCard({ w }: { w: WinRate }) {
         {t('Para saberes o teu win rate com uma margem de ±{u} BB/h precisas de cerca de {need} h com a tua variância. Hoje tens {have} h e a margem é de ±{m} BB/h.', {
           u: USEFUL_BB,
           need: n0(k.needed),
-          have: n0(w.hours),
+          have: n0(k.have),
           m: bb1(k.margin),
         })}
       </T>
       <View style={{ height: 6, borderRadius: R.pill, backgroundColor: C.surface3, overflow: 'hidden' }}>
-        <View style={{ width: `${Math.max(2, Math.min(1, w.hours / Math.max(1, k.needed)) * 100)}%`, height: 6, borderRadius: R.pill, backgroundColor: there ? C.good : C.accent }} />
+        <View style={{ width: `${Math.max(2, Math.min(1, k.have / Math.max(1, k.needed)) * 100)}%`, height: 6, borderRadius: R.pill, backgroundColor: there ? C.good : C.accent }} />
       </View>
       <T v="tiny">{t('±5 BB/h chega para decidir se sobes de stake ou que jogos escolher. Quanto mais variância tens, mais horas são precisas.')}</T>
     </Card>

@@ -2185,6 +2185,7 @@ const en: Record<string, string> = {
   'Só mostramos uma diferença com pelo menos {n} sessões de cada lado.': 'We only show a difference with at least {n} sessions on each side.',
   '{amount}/sessão': '{amount}/session',
   'Com base em {n} sessões e {h} h.': 'Based on {n} sessions and {h} h.',
+  'Pode ser sorte: com estas sessões, uma diferença assim ainda aparece por acaso. Fica mais certa com mais sessões.': 'Could be luck: with this many sessions, a gap like this still shows up by chance. It firms up with more sessions.',
   'de madrugada': 'overnight',
   'de manhã': 'in the morning',
   'à tarde': 'in the afternoon',

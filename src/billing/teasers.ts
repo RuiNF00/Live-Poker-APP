@@ -42,8 +42,8 @@ export function teaserText(x: Pick<Insight, 'id' | 'tone' | 'groups'>): string {
   }
 }
 
-/** Findings in the player's finished sessions in one currency, strongest first; the money formatter is never shown here. */
+/** Findings in the player's finished sessions in one currency, strongest first; the money formatter is never shown here. Only the ones beyond luck: a pitch never sells a pattern that can still be chance. */
 export function teasers(sessions: Session[], currency: string): Teaser[] {
   const list = sessions.filter((s) => s.endedAt && s.currency === currency);
-  return insights(list, () => '').map((x) => ({ id: x.id, tone: x.tone, text: teaserText(x) }));
+  return insights(list, () => '').filter((x) => x.sure).map((x) => ({ id: x.id, tone: x.tone, text: teaserText(x) }));
 }

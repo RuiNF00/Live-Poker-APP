@@ -3,12 +3,14 @@
 // the interval is narrow enough to mean something. Pure, so it can be tested.
 //
 // A session of h hours has variance h·σ², so the win rate's standard error
-// after H hours is σ/√H and the 95% interval is rate ± 1.96·σ/√H.
+// after H hours is σ/√H and the 95% interval is rate ± t·σ/√H, with t from
+// Student's table for the sessions behind σ (1.96 once there are plenty).
 
 import { t } from '@/i18n';
 
 import { stakeKey, stakeLabel } from './bankroll-math';
 import { playedMs, profit, rateShown } from './session-math';
+import { sdPerHour, t95 } from './spread-math';
 import type { Session } from './types';
 import { handCounts, sessionGame } from '@/poker/variant';
 import type { GameInfo } from '@/poker/types';
@@ -33,6 +35,8 @@ export interface WinRate {
   sdBb: number;
   bbLo: number;
   bbHi: number;
+  /** Hours of the sessions with blinds, the ones behind the BB figures. */
+  bbHours: number;
   /** Too few hours or sessions to lean on. */
   small: boolean;
 }
@@ -50,17 +54,15 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
   const res = cash.map(profit);
   const bbs = cash.map((s, i) => (s.bb > 0 ? res[i] / s.bb : 0));
   const hours = hrs.reduce((a, b) => a + b, 0);
-  const rate = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / hours;
-  const spread = (xs: number[], w: number) => Math.sqrt(xs.reduce((a, x, i) => a + (x - w * hrs[i]) ** 2, 0) / hours);
-  const hourly = rate(res);
-  const sd = spread(res, hourly);
+  const hourly = res.reduce((a, b) => a + b, 0) / hours;
+  const sd = sdPerHour(res, hrs, hourly);
   // In BB, only the sessions with blinds: an imported one without them would count its hours at 0 BB.
   const bbHrs = hrs.map((h, i) => (cash[i].bb > 0 ? h : 0));
   const bbHours = bbHrs.reduce((a, b) => a + b, 0);
   const bbHourly = bbHours ? bbs.reduce((a, b) => a + b, 0) / bbHours : 0;
-  const sdBb = bbHours ? Math.sqrt(bbs.reduce((a, x, i) => a + (x - bbHourly * bbHrs[i]) ** 2, 0) / bbHours) : 0;
-  const m = Z95 / Math.sqrt(hours);
-  const mBb = bbHours ? Z95 / Math.sqrt(bbHours) : 0;
+  const sdBb = sdPerHour(bbs, bbHrs, bbHourly);
+  const m = t95(cash.length) / Math.sqrt(hours);
+  const mBb = bbHours ? t95(bbHrs.filter((h) => h > 0).length) / Math.sqrt(bbHours) : 0;
   return {
     sessions: cash.length,
     hours,
@@ -72,6 +74,7 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
     sdBb,
     bbLo: bbHourly - mBb * sdBb,
     bbHi: bbHourly + mBb * sdBb,
+    bbHours,
     small: hours < SMALL.hours || cash.length < SMALL.sessions,
   };
 }
@@ -83,16 +86,20 @@ export interface HoursToKnow {
   left: number;
   /** The margin today, ±BB/h. */
   margin: number;
+  /** Hours played with blinds so far (what `needed` is measured against). */
+  have: number;
   /** Sessions of the player's usual length that `left` comes to. */
   sessions: number;
 }
 
 /** How long until the win rate is known within ±USEFUL_BB BB/h, at 95%. */
 export function hoursToKnow(w: WinRate, useful = USEFUL_BB): HoursToKnow {
+  // In hours with blinds: the BB spread comes from those, and an imported session without blinds isn't BB data.
+  const have = w.bbHours;
   const needed = Math.ceil(((Z95 * w.sdBb) / useful) ** 2);
-  const left = Math.max(0, needed - w.hours);
+  const left = Math.max(0, needed - have);
   const per = w.hours / w.sessions;
-  return { needed, left: Math.ceil(left), margin: (Z95 * w.sdBb) / Math.sqrt(w.hours), sessions: per > 0 ? Math.ceil(left / per) : 0 };
+  return { needed, left: Math.ceil(left), margin: have > 0 ? (Z95 * w.sdBb) / Math.sqrt(have) : 0, have, sessions: per > 0 ? Math.ceil(left / per) : 0 };
 }
 
 export type WinRateBy = 'game' | 'stake' | 'venue' | 'weekday';

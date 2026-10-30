@@ -2039,6 +2039,7 @@ const es: Record<string, string> = {
   'Só mostramos uma diferença com pelo menos {n} sessões de cada lado.': 'Solo mostramos una diferencia con al menos {n} sesiones de cada lado.',
   '{amount}/sessão': '{amount}/sesión',
   'Com base em {n} sessões e {h} h.': 'Con base en {n} sesiones y {h} h.',
+  'Pode ser sorte: com estas sessões, uma diferença assim ainda aparece por acaso. Fica mais certa com mais sessões.': 'Puede ser suerte: con estas sesiones, una diferencia así todavía aparece por casualidad. Será más fiable con más sesiones.',
   'de madrugada': 'de madrugada',
   'de manhã': 'por la mañana',
   'à tarde': 'por la tarde',

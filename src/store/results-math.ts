@@ -5,7 +5,10 @@
 import { t } from '@/i18n';
 
 import { cost, mainCurrency, ownBuyIns, playedMs, profit, rateShown } from './session-math';
+import { normCdf, sdPerHour } from './spread-math';
 import type { Session } from './types';
+
+export { normCdf };
 
 export interface Drawdown {
   /** Highest point the curve reached. */
@@ -42,7 +45,7 @@ export interface CashStats {
 
 /**
  * Cash: win rate per hour and its standard deviation per hour. A session of
- * h hours has variance h·σ², so σ² = Σ(resultᵢ − w·hᵢ)² / Σhᵢ.
+ * h hours has variance h·σ², so σ² = Σ(resultᵢ − w·hᵢ)² / (H − Σhᵢ²/H) (sdPerHour).
  */
 export function cashStats(list: Session[], currency = mainCurrency(list)): CashStats | null {
   const done = list.filter((s) => s.endedAt && s.kind === 'cash' && s.currency === currency && playedMs(s) > 0);
@@ -52,8 +55,7 @@ export function cashStats(list: Session[], currency = mainCurrency(list)): CashS
   const hours = hrs.reduce((a, b) => a + b, 0);
   if (!rateShown(hours)) return null;
   const hourly = res.reduce((a, b) => a + b, 0) / hours;
-  const varHour = res.reduce((a, r, i) => a + (r - hourly * hrs[i]) ** 2, 0) / hours;
-  return { hours, sessions: done.length, hourly, sdHour: Math.sqrt(varHour) };
+  return { hours, sessions: done.length, hourly, sdHour: sdPerHour(res, hrs, hourly) };
 }
 
 export interface MttStats {
@@ -62,8 +64,26 @@ export interface MttStats {
   avgBuyIn: number;
   /** % on your share of the buy-ins, the same figure as Bankroll and Torneios; null when all of it was sold. */
   roi: number | null;
-  /** Standard deviation of one tournament's result, in buy-ins. */
+  /** Standard deviation of one tournament's result, in buy-ins; never below a break-even player's in those fields (tourneySpread). */
   sdBuyIns: number;
+  /**
+   * Standard error of `roi`, in points. ROI is the total won over the total of your buy-ins, so a
+   * 1 000 € event weighs ten times a 100 € one: its error is the ratio estimator's, from each
+   * tournament's result against what the ROI says it should be (result − ROI × own buy-ins).
+   */
+  roiSe: number | null;
+}
+
+/** Field assumed for a tournament that didn't record one, when the player never recorded any. */
+const USUAL_FIELD = 200;
+
+/**
+ * Standard deviation of one tournament's result, in buy-ins, for a break-even player in a field of
+ * this size with 15% paid and a usual payout curve: about 0.85·∛field (2.8 at 30 players, 3.9 at
+ * 100, 8.5 at 1 000, 16 at 5 000).
+ */
+export function tourneySpread(field: number): number {
+  return 0.85 * Math.cbrt(Math.max(2, field));
 }
 
 /** Tournaments: ROI and the spread of one result measured in buy-ins (staking ignored, it's the game's variance). */
@@ -78,15 +98,21 @@ export function mttStats(list: Session[], currency = mainCurrency(list)): MttSta
   // ROI on the total of your buy-ins, the same figure as Torneios and Bankroll (an average of each ROI weighs a 100€ win like a 1000€ one).
   const own = done.reduce((a, s) => a + ownBuyIns(s), 0);
   const net = done.reduce((a, s) => a + profit(s), 0);
-  return { tournaments: done.length, avgBuyIn, roi: own > 0 ? (net / own) * 100 : null, sdBuyIns: sd };
-}
-
-/** Standard normal CDF (Abramowitz–Stegun 7.1.26, error < 1.5e-7). */
-export function normCdf(z: number): number {
-  const x = Math.abs(z) / Math.SQRT2;
-  const t = 1 / (1 + 0.3275911 * x);
-  const erf = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
-  return z >= 0 ? (1 + erf) / 2 : (1 - erf) / 2;
+  const n = done.length;
+  const r = own > 0 ? net / own : 0;
+  const ss = done.reduce((a, s) => a + (profit(s) - r * ownBuyIns(s)) ** 2, 0);
+  // Tournament results are lopsided: most samples of 50 or 200 haven't met the deep run that pays for the
+  // rest, so their own spread reads too small and a break-even player was told «já não é azar» 3 times in 10.
+  // The spread never counts below what a break-even player's has in fields that size (tourneySpread).
+  // A tournament without its field counts at the player's usual one (the median of those recorded).
+  const fields = done.map((s) => s.field ?? 0).filter((f) => f > 0).sort((a, b) => a - b);
+  const usual = fields.length ? fields[Math.floor(fields.length / 2)] : USUAL_FIELD;
+  const floor = done.reduce((a, s) => a + (tourneySpread(s.field && s.field > 0 ? s.field : usual) * ownBuyIns(s)) ** 2, 0);
+  const roiSe = own > 0 ? (Math.sqrt(Math.max((ss * n) / (n - 1), floor)) / own) * 100 : null;
+  // The same floor for the variance calculator: a projection from a spread that hasn't met the deep run yet
+  // would promise far narrower swings than tournaments give.
+  const floorBi = Math.sqrt(done.reduce((a, s) => a + tourneySpread(s.field && s.field > 0 ? s.field : usual) ** 2, 0) / n);
+  return { tournaments: n, avgBuyIn, roi: own > 0 ? r * 100 : null, sdBuyIns: Math.max(sd, floorBi), roiSe };
 }
 
 export interface Projection {
@@ -190,7 +216,8 @@ export function verdict(list: Session[], currency: string, money: (n: number) =>
     return { ready: true, tone: 'neutral', text: t('Com {h} h de cash, os teus {rate}/h ainda cabem na variância: nem dá para dizer que ganhas, nem que perdes.', { rate, h }) };
   }
   if (mtt && mtt.roi !== null && mtt.tournaments >= VERDICT_MIN.tournaments) {
-    const se = (mtt.sdBuyIns * 100) / Math.sqrt(mtt.tournaments);
+    // The ROI's own error (an average of each tournament's ROI in buy-ins misjudges it as soon as the buy-ins differ).
+    const se = mtt.roiSe ?? 0;
     const n = mtt.tournaments;
     const roi = `${Math.round(mtt.roi)}%`;
     if (mtt.roi - 1.645 * se > 0) return { ready: true, tone: 'good', text: t('Ganhas nos torneios: ROI de {roi} em {n} torneios, e já não é sorte.', { roi, n }) };

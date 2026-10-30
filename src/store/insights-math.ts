@@ -10,6 +10,7 @@ import { t } from '@/i18n';
 
 import { stakeKey, stakeLabel } from './bankroll-math';
 import { cost, playedMs, profit } from './session-math';
+import { normInv } from './spread-math';
 import type { Session } from './types';
 
 /** Insights from the mental game journal (Session.mind). */
@@ -42,6 +43,11 @@ export interface Insight {
   groups: Group[];
   unit: 'hour' | 'session';
   sample: { sessions: number; hours: number };
+  /**
+   * The gap is bigger than luck alone makes it, at 95% (see beyondLuck). False: the
+   * screen says it can still be chance, and the card goes after the sure ones.
+   */
+  sure: boolean;
 }
 
 export interface InsightOptions {
@@ -52,12 +58,53 @@ export interface InsightOptions {
   result?: (s: Session) => number;
 }
 
+/** The sessions and spread behind each group, for beyondLuck (kept off the Group the screen draws). */
+const behind = new WeakMap<Group, { weight: number; ss: number; df: number }>();
+
 function group(label: string, list: Session[], result: (s: Session) => number, unit: 'hour' | 'session'): Group {
   const hours = list.reduce((a, s) => a + playedMs(s), 0) / H;
   const p = list.reduce((a, s) => a + result(s), 0);
   // Per hour, only over sessions with time played (like timedProfit): one with no hours adds nothing to either side.
   const timed = list.reduce((a, s) => a + (playedMs(s) > 0 ? result(s) : 0), 0);
-  return { label, sessions: list.length, hours, profit: p, rate: unit === 'hour' ? (hours > 0 ? timed / hours : 0) : list.length ? p / list.length : 0 };
+  const g = { label, sessions: list.length, hours, profit: p, rate: unit === 'hour' ? (hours > 0 ? timed / hours : 0) : list.length ? p / list.length : 0 };
+  // Each session against the group's own rate: per hour, a session of h hours has variance h·σ²
+  // (degrees of freedom H − Σh²/H); per session, the usual n − 1.
+  let ss = 0;
+  let h2 = 0;
+  for (const s of list) {
+    const h = unit === 'hour' ? playedMs(s) / H : 1;
+    if (!(h > 0)) continue;
+    ss += (result(s) - g.rate * h) ** 2;
+    h2 += h * h;
+  }
+  const weight = unit === 'hour' ? hours : list.length;
+  behind.set(g, { weight, ss, df: weight > 0 ? weight - h2 / weight : 0 });
+  return g;
+}
+
+/**
+ * Is the gap between the best and the worst of `groups` more than luck? The spread comes from
+ * every group's sessions around its own rate, the gap's error is σ·√(1/w₁ + 1/w₂) (w in hours,
+ * or sessions per tournament), and with k groups to pick the best and worst from there are
+ * k(k−1)/2 pairs: the 95% bar is raised for all of them (Bonferroni), or the weekday card,
+ * picking the best and worst of 7 days, would find a "best day" in almost any player's luck.
+ */
+function beyondLuck(groups: Group[], best: Group, worst: Group): boolean {
+  let ss = 0;
+  let df = 0;
+  for (const g of groups) {
+    const b = behind.get(g);
+    if (b) {
+      ss += b.ss;
+      df += b.df;
+    }
+  }
+  const a = behind.get(best);
+  const b = behind.get(worst);
+  if (!a || !b || !(df > 0) || !(a.weight > 0) || !(b.weight > 0)) return false;
+  const se = Math.sqrt(ss / df) * Math.sqrt(1 / a.weight + 1 / b.weight);
+  const pairs = (groups.length * (groups.length - 1)) / 2;
+  return best.rate - worst.rate > normInv(1 - 0.025 / Math.max(1, pairs)) * se;
 }
 
 const enough = (g: Group, unit: 'hour' | 'session') => g.sessions >= MIN_SESSIONS && (unit === 'session' || g.hours >= MIN_HOURS);
@@ -105,7 +152,7 @@ function daytime(ts: number): string {
 
 /**
  * Insights for finished sessions in one currency (the caller has already
- * scoped and filtered them), strongest gap first.
+ * scoped and filtered them): the ones beyond luck first, each lot strongest gap first.
  */
 export function insights(all: Session[], money: (n: number) => string, opts: InsightOptions = {}): Insight[] {
   const result = opts.result ?? profit;
@@ -147,6 +194,7 @@ export function insights(all: Session[], money: (n: number) => string, opts: Ins
           groups: [short, long],
           unit: 'hour',
           sample: sample([short, long]),
+          sure: longWorse ? beyondLuck([short, long], short, long) : beyondLuck([short, long], long, short),
         },
         gapOf(short.rate, long.rate),
       );
@@ -170,6 +218,7 @@ export function insights(all: Session[], money: (n: number) => string, opts: Ins
         groups: shown,
         unit,
         sample: sample(shown),
+        sure: beyondLuck(shown, best, worst),
       },
       gapOf(best.rate, worst.rate),
     );
@@ -234,6 +283,7 @@ export function insights(all: Session[], money: (n: number) => string, opts: Ins
           groups: [a, r],
           unit: 'session',
           sample: sample([a, r]),
+          sure: beyondLuck([a, r], r, a),
         },
         // Tilt is worth seeing even when the gap is modest.
         gapOf(r.rate, a.rate) * 2,
@@ -268,6 +318,7 @@ export function insights(all: Session[], money: (n: number) => string, opts: Ins
         groups: [g, a],
         unit,
         sample: sample([a, g]),
+        sure: beyondLuck([g, a], g, a),
       },
       gapOf(g.rate, a.rate),
     );
@@ -296,10 +347,12 @@ export function insights(all: Session[], money: (n: number) => string, opts: Ins
         groups: [ta, tr],
         unit: 'session',
         sample: sample([ta, tr]),
+        sure: beyondLuck([ta, tr], tr, ta),
       },
       gapOf(tr.rate, ta.rate) * 2,
     );
   }
 
-  return out.sort((a, b) => b.gap - a.gap).map(({ gap: _, ...i }) => i);
+  // The sure ones first: a card that can still be luck never leads.
+  return out.sort((a, b) => Number(b.sure) - Number(a.sure) || b.gap - a.gap).map(({ gap: _, ...i }) => i);
 }

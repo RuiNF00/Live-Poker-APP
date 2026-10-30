@@ -39,8 +39,8 @@ test('cash stats: per-hour win rate and SD', () => {
   const list = [200, -120, 160].map((r, i) => mk({ id: String(i), kind: 'cash', buyIn: 200, cashOut: 200 + r }));
   const s = cashStats(list)!;
   assert.equal(s.hourly, 20);
-  // Σ(r − 80)² / 12 = (14400 + 40000 + 6400) / 12
-  assert.ok(Math.abs(s.sdHour - Math.sqrt(60800 / 12)) < 1e-9);
+  // Σ(r − 80)² / (12 − 3·16/12) = (14400 + 40000 + 6400) / 8: the rate was fitted to the same 3 sessions.
+  assert.ok(Math.abs(s.sdHour - Math.sqrt(60800 / 8)) < 1e-9);
   assert.equal(cashStats(list.slice(0, 2)), null);
   // Three 3-minute sessions: 9 minutes is under MIN_RATE_HOURS, so no rate for the variance calculator.
   const blips = [200, -50, 100].map((r, i) => mk({ id: 'b' + i, kind: 'cash', buyIn: 200, cashOut: 200 + r, endedAt: 0.05 * H }));
@@ -56,12 +56,15 @@ test('rateShown: a per-hour rate needs 15 minutes of play', () => {
 });
 
 test('tournament stats: ROI and SD in buy-ins', () => {
-  const list = [0, 0, 0, 0, 600].map((c, i) => mk({ id: String(i), cashOut: c }));
+  const list = [0, 0, 0, 0, 600].map((c, i) => mk({ id: String(i), cashOut: c, field: 30 }));
   const s = mttStats(list)!;
   assert.equal(s.roi, 20);
   assert.equal(s.avgBuyIn, 100);
   // results in BI: −1 ×4, +5; mean 0.2, sample SD = sqrt((4·1.44 + 23.04)/4)
   assert.ok(Math.abs(s.sdBuyIns - Math.sqrt((4 * 1.44 + 23.04) / 4)) < 1e-9);
+  // Without a field, the player's usual one, else 200: a break-even player's spread there (4.97) is the least it reads.
+  const bare = mttStats(list.map((x) => ({ ...x, field: undefined })))!;
+  assert.ok(Math.abs(bare.sdBuyIns - 0.85 * Math.cbrt(200)) < 1e-9);
 });
 
 test('projection: ranges, chance of losing and the sample needed', () => {

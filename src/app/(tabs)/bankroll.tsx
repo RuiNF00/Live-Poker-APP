@@ -515,7 +515,7 @@ function BankrollTab() {
                   title={t('Diário mental')}
                   subtitle={(() => {
                     const n = list.filter((x) => x.mind).length;
-                    const top = !insightsLocked && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => MIND_IDS.includes(x.id as MindId)) : undefined;
+                    const top = !insightsLocked && n ? insights(list, (v) => (hidden ? '•••' : fmt(Math.round(v), cur))).find((x) => x.sure && MIND_IDS.includes(x.id as MindId)) : undefined;
                     return top ? top.title : n ? t('{n} check-ins · só tu vês', { n }) : t('Sono, foco e tilt: o que mexem no teu resultado');
                   })()}
                   onPress={() => router.push({ pathname: '/mind', params: { currency: cur } })}
