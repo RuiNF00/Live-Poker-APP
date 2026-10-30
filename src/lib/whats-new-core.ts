@@ -25,3 +25,20 @@ export function whatsNewStep(seen: WhatsNewSeen | null, version: string, hasEntr
   }
   return { show: true, next: { ...seen, shownFor: version, shownAt: now } };
 }
+
+/** "1.10.0" after "1.9.2": numbers compared part by part. */
+export function versionAtMost(a: string, b: string): boolean {
+  const x = a.split('.').map((n) => Number(n) || 0);
+  const y = b.split('.').map((n) => Number(n) || 0);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) < (y[i] ?? 0);
+  return true;
+}
+
+/**
+ * The release this app version announces: the newest entry at or below it. The store version of an
+ * update isn't known when its entry is written (1.0.1 or 1.1.0), so an entry covers the versions
+ * after it until the next entry; a phone that skipped a version sees the newest.
+ */
+export function releaseFor<R extends { version: string }>(releases: readonly R[], version: string): R | undefined {
+  return releases.filter((r) => versionAtMost(r.version, version)).sort((a, b) => (versionAtMost(a.version, b.version) ? 1 : -1))[0];
+}

@@ -12,7 +12,7 @@ import { Pressable, View } from 'react-native';
 import { Card, IconButton, Row, T } from '@/components/ui';
 import { WHATS_NEW } from '@/data/whats-new';
 import { t } from '@/i18n';
-import { whatsNewStep, type WhatsNewSeen } from '@/lib/whats-new-core';
+import { releaseFor, whatsNewStep, type WhatsNewSeen } from '@/lib/whats-new-core';
 import { useStore } from '@/store/store';
 import { C, ff, R } from '@/theme';
 
@@ -23,7 +23,9 @@ const VERSION = Constants.expoConfig?.version ?? '0';
 export function useWhatsNewCard(): { item: { icon: string; title: string; body: string } | null; dismiss: () => void } {
   const { ready, hands, sessions, activeSession } = useStore();
   const [show, setShow] = useState(false);
-  const release = WHATS_NEW.find((r) => r.version === VERSION);
+  const release = releaseFor(WHATS_NEW, VERSION);
+  // What is remembered as dealt with: the release (not the app version), so 1.1.0 after 1.0.1's card doesn't show it twice.
+  const key = release?.version ?? VERSION;
   const decided = React.useRef(false);
 
   useEffect(() => {
@@ -36,17 +38,18 @@ export function useWhatsNewCard(): { item: { icon: string; title: string; body: 
         const raw = await AsyncStorage.getItem(KEY);
         seen = raw ? (JSON.parse(raw) as WhatsNewSeen) : null;
       } catch {}
-      const step = whatsNewStep(seen, VERSION, !!release?.items.length, hands.length + sessions.length > 0, Date.now());
+      const step = whatsNewStep(seen, key, !!release?.items.length, hands.length + sessions.length > 0, Date.now());
       if (step.next) await AsyncStorage.setItem(KEY, JSON.stringify(step.next)).catch(() => {});
       setShow(step.show);
     })();
-  }, [ready, activeSession, hands.length, sessions.length, release]);
+  }, [ready, activeSession, hands.length, sessions.length, release, key]);
 
   const dismiss = () => {
     setShow(false);
-    AsyncStorage.setItem(KEY, JSON.stringify({ version: VERSION })).catch(() => {});
+    AsyncStorage.setItem(KEY, JSON.stringify({ version: key })).catch(() => {});
   };
-  return { item: show && release ? release.items[0] : null, dismiss };
+  // A session started after the card was dealt: it steps aside until the session ends.
+  return { item: show && release && !activeSession ? release.items[0] : null, dismiss };
 }
 
 export function WhatsNewCard({ item, onDismiss }: { item: { icon: string; title: string; body: string }; onDismiss: () => void }) {

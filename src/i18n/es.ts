@@ -4001,6 +4001,17 @@ const es: Record<string, string> = {
   'Sessão guardada': 'Sesión guardada',
   '{h} h {m} min': '{h} h {m} min',
   '{m} min': '{m} min',
+  // Novidades da 1.ª atualização
+  'Notas sobre jogadores': 'Notas sobre jugadores',
+  'ICM e deals': 'ICM y deals',
+  'Cash ao vivo': 'Cash en vivo',
+  'Rebuys do valor que meteres, mudar de stakes a meio da sessão e um stop-loss diário que já não volta a zero à meia-noite.': 'Rebuys del importe que pongas, cambiar de stakes a mitad de sesión y un stop-loss diario que ya no vuelve a cero a medianoche.',
+  'Análise Pro mais honesta': 'Análisis Pro más honesto',
+  'Win rate e variância com a margem de erro certa, e insights que dizem quando um resultado ainda pode ser sorte.': 'Win rate y varianza con el margen de error correcto, e insights que dicen cuándo un resultado todavía puede ser suerte.',
+  'Na sessão ao vivo, «Procurar um jogador» encontra a nota pelo nome, aspeto ou tag, mesmo sem acentos.': 'En la sesión en vivo, «Buscar un jugador» encuentra la nota por nombre, aspecto o tag, incluso sin tildes.',
+  'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1.º prémio.': 'Equity más precisa y más rápida, y un chip chop que nunca paga más que el 1.er premio.',
+  'Mais rápida com anos de mãos': 'Más rápida con años de manos',
+  'O Resumo, a lista de Mãos e a pesquisa respondem logo, mesmo com milhares de mãos.': 'El Resumen, la lista de Manos y la búsqueda responden al instante, incluso con miles de manos.',
 };
 
 export default es;

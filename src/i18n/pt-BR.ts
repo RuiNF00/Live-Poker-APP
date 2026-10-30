@@ -2184,6 +2184,12 @@ const ptBR: Record<string, string> = {
   // Screen readers: a hand or session just saved, and time played (lib/spoken.ts).
   'Mão guardada': 'Mão salva',
   'Sessão guardada': 'Sessão salva',
+  // Novidades da 1.ª atualização
+  'Rebuys do valor que meteres, mudar de stakes a meio da sessão e um stop-loss diário que já não volta a zero à meia-noite.': 'Rebuys do valor que você colocar, mudar de stakes no meio da sessão e um stop-loss diário que não volta mais a zero à meia-noite.',
+  'Na sessão ao vivo, «Procurar um jogador» encontra a nota pelo nome, aspeto ou tag, mesmo sem acentos.': 'Na sessão ao vivo, «Procurar um jogador» encontra a nota pelo nome, aparência ou tag, mesmo sem acentos.',
+  'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1.º prémio.': 'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1º prêmio.',
+  'Mais rápida com anos de mãos': 'Mais rápido com anos de mãos',
+  'O Resumo, a lista de Mãos e a pesquisa respondem logo, mesmo com milhares de mãos.': 'O Resumo, a lista de Mãos e a busca respondem na hora, mesmo com milhares de mãos.',
 };
 
 export default ptBR;

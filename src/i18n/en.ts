@@ -4007,6 +4007,17 @@ const en: Record<string, string> = {
   'Sessão guardada': 'Session saved',
   '{h} h {m} min': '{h} h {m} min',
   '{m} min': '{m} min',
+  // Novidades da 1.ª atualização
+  'Notas sobre jogadores': 'Player notes',
+  'ICM e deals': 'ICM and deals',
+  'Cash ao vivo': 'Live cash',
+  'Rebuys do valor que meteres, mudar de stakes a meio da sessão e um stop-loss diário que já não volta a zero à meia-noite.': 'Rebuys for any amount, changing stakes mid-session, and a daily stop-loss that no longer resets at midnight.',
+  'Análise Pro mais honesta': 'More honest Pro analysis',
+  'Win rate e variância com a margem de erro certa, e insights que dizem quando um resultado ainda pode ser sorte.': 'Win rate and variance with the right margin of error, and insights that say when a result could still be luck.',
+  'Na sessão ao vivo, «Procurar um jogador» encontra a nota pelo nome, aspeto ou tag, mesmo sem acentos.': 'In a live session, "Look up a player" finds the note by name, looks or tag, even without accents.',
+  'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1.º prémio.': 'More precise and faster equity, and a chip chop that never pays more than 1st place.',
+  'Mais rápida com anos de mãos': 'Faster with years of hands',
+  'O Resumo, a lista de Mãos e a pesquisa respondem logo, mesmo com milhares de mãos.': 'Summary, the Hands list and search respond right away, even with thousands of hands.',
 };
 
 export default en;

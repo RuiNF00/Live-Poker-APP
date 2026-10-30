@@ -25,3 +25,45 @@ test('dismissed, or an update with nothing new: no card', () => {
 test('an existing player from before the card existed sees it', () => {
   assert.equal(whatsNewStep(null, '1.1.0', true, true, 0).show, true);
 });
+
+test('versions compare part by part', async () => {
+  const { versionAtMost } = await import('../whats-new-core');
+  assert.equal(versionAtMost('1.0.1', '1.1.0'), true);
+  assert.equal(versionAtMost('1.9.2', '1.10.0'), true);
+  assert.equal(versionAtMost('1.1.0', '1.0.9'), false);
+  assert.equal(versionAtMost('1.0.1', '1.0.1'), true);
+});
+
+test('the 1st update: the newest entry at or below the app version, shown once whichever store version it ships as', async () => {
+  const { releaseFor } = await import('../whats-new-core');
+  const { WHATS_NEW } = await import('../../data/whats-new');
+  assert.equal(releaseFor(WHATS_NEW, '1.0.0')?.version, '1.0.0');
+  for (const v of ['1.0.1', '1.0.2', '1.1.0']) {
+    const r = releaseFor(WHATS_NEW, v)!;
+    assert.equal(r.version, '1.0.1', v);
+    // A 1.0.0 player with data: the card shows once, then stays away (the release is what is remembered).
+    const first = whatsNewStep({ version: '1.0.0' }, r.version, true, true, 0);
+    assert.equal(first.show, true, v);
+    assert.equal(whatsNewStep({ version: r.version }, r.version, true, true, 0).show, false, v);
+  }
+  // A new player on the update: no card.
+  assert.equal(whatsNewStep(null, '1.0.1', true, false, 0).show, false);
+});
+
+test('the 1st update lists the five things, the first being the one on the card', async () => {
+  const { WHATS_NEW } = await import('../../data/whats-new');
+  const r = WHATS_NEW[0];
+  assert.equal(r.version, '1.0.1');
+  assert.deepEqual(r.items.map((x) => x.title), ['Cash ao vivo', 'Análise Pro mais honesta', 'Notas sobre jogadores', 'ICM e deals', 'Mais rápida com anos de mãos']);
+  // Store rules: nothing about money changing hands or betting.
+  for (const it of r.items) assert.doesNotMatch(`${it.title} ${it.body}`, /apost|apuest|\bbet\b|ganhei|perdi|comprar|investir/i);
+});
+
+test('the card: never over a live session, and what is remembered is the release', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../../components/WhatsNewCard.tsx', import.meta.url), 'utf8');
+  assert.match(src, /if \(!ready \|\| decided\.current \|\| activeSession\) return;/);
+  assert.match(src, /item: show && release && !activeSession \? release\.items\[0\] : null/);
+  assert.match(src, /JSON\.stringify\(\{ version: key \}\)/);
+  assert.doesNotMatch(src, /JSON\.stringify\(\{ version: VERSION \}\)/);
+});
