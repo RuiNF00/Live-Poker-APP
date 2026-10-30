@@ -15,7 +15,7 @@ import { STAGES, type Hand, type Suit } from '@/poker/types';
 import { SUIT_SYMBOL } from '@/poker/cards';
 import { positions } from '@/poker/engine';
 import { posterTitle } from '@/share/hand-poster';
-import type { StoryMoment } from '@/story/moment';
+import { heroNet, type StoryMoment } from '@/story/moment';
 import { DARK as C, F, R, ff, posColorDark as posColor } from '@/theme';
 
 import { ReplayerTable } from './replayer/ReplayerTable';
@@ -117,7 +117,10 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
           .map((c) => c[0] + SUIT_SYMBOL[c[1] as Suit])
           .join('  ')
       : null;
-  const heroNet = result?.resolved ? result.net[hand.hero] : 0;
+  // Known once settled, or as soon as hero folds (the hand stops there with no result to settle).
+  const net = atEnd ? heroNet(hand, moment.replay) : null;
+  const heroNetV = net ?? 0;
+  const folded = !!moment.replay.final.folded[hand.hero];
   // Run it twice: hero's hand on each board.
   const heroSeat = view.seats.find((x) => x.hero);
   const heroHand = heroSeat?.handName && heroSeat.handName2
@@ -345,14 +348,14 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
             </View>
             <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 16, color: C.textDim }}>{view.potLabel}</Text>
           </View>
-        ) : result ? (
+        ) : net !== null ? (
           <View
             style={{
               height: 48,
               borderRadius: R.md,
               borderWidth: 1,
-              borderColor: heroNet > 0 ? 'rgba(74,222,128,0.30)' : C.borderStrong,
-              backgroundColor: heroNet > 0 ? C.goodSoft : C.surface2,
+              borderColor: heroNetV > 0 ? 'rgba(74,222,128,0.30)' : C.borderStrong,
+              backgroundColor: heroNetV > 0 ? C.goodSoft : C.surface2,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -361,12 +364,12 @@ export function StoryCard({ hand, moment, comment, inBB, brand = true, voice = n
             <View style={{ gap: 1 }}>
               <Text allowFontScaling={false} style={{ fontFamily: ff(800), fontSize: 10, letterSpacing: 1.2, color: C.muted }}>{t('RESULTADO DO HERO')}</Text>
               <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontFamily: ff(700), fontSize: 12, color: C.textDim }}>
-                {heroHand ?? (heroNet > 0 ? t('Hero leva o pote') : t('Pote {pot}', { pot: moment.pot }))}
+                {folded ? t('Hero fez fold') : (heroHand ?? (heroNetV > 0 ? t('Hero leva o pote') : t('Pote {pot}', { pot: moment.pot })))}
               </Text>
             </View>
-            <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 22, color: heroNet > 0 ? C.good : heroNet < 0 ? C.bad : C.text }}>
-              {heroNet > 0 ? '+' : heroNet < 0 ? '−' : ''}
-              {amount(Math.abs(heroNet), hand, inBB)}
+            <Text allowFontScaling={false} style={{ fontFamily: F.mono, fontSize: 22, color: heroNetV > 0 ? C.good : heroNetV < 0 ? C.bad : C.text }}>
+              {heroNetV > 0 ? '+' : heroNetV < 0 ? '−' : ''}
+              {amount(Math.abs(heroNetV), hand, inBB)}
             </Text>
           </View>
         ) : null}

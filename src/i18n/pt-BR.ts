@@ -1895,6 +1895,7 @@ const ptBR: Record<string, string> = {
   'Telegram, Signal, e-mail…': 'Telegram, Signal, e-mail…',
   'Enviar por Mensagens': 'Enviar por Mensagens',
   'Apareces como Hero': 'Você aparece como Hero',
+  'Hero fez fold': 'Hero deu fold',
   'O nome que deste ao teu lugar': 'O nome que você deu ao seu lugar',
   'Nome do jogo': 'Nome do jogo',
   'Nunca veem o buy-in, os teus resultados, a bankroll nem as notas por rua.': 'Nunca veem o buy-in, os seus resultados, a bankroll nem as notas por street.',

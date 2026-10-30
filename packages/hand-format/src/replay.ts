@@ -309,7 +309,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     winners = hand.winners.map((w) => ({ ...w, handLabel: seatState(w.seat).handLabel }));
   } else if (second) {
     const two = evaluateOn(second, hand.winnerSeats2, false);
-    const halves = awardRuns(seats, [first.values, two.values], pot, centBlinds, [first.manual, two.manual]);
+    const halves = awardRuns(seats, [first.values, two.values], pot, centBlinds, [first.manual, two.manual], hand.buttonSeat);
     const named = (list: { seat: number; amount: number }[], labels: Map<number, string>) =>
       list.map((w) => ({ ...w, handLabel: labels.get(w.seat) }));
     runs = [
@@ -320,7 +320,7 @@ export function buildReplay(hand: HandRecord, opts: BuildOptions = {}): ReplaySt
     for (const run of halves) for (const w of run) total.set(w.seat, (total.get(w.seat) ?? 0) + w.amount);
     winners = [...total].map(([seat, amount]) => ({ seat, amount, handLabel: seatState(seat).handLabel }));
   } else {
-    winners = awardPots(seats, first.values, pot, centBlinds, first.manual);
+    winners = awardPots(seats, first.values, pot, centBlinds, first.manual, hand.buttonSeat);
   }
   for (const w of winners) {
     const s = seatState(w.seat);
@@ -350,8 +350,8 @@ function splitChips(amount: number, k: number, cents = false): number[] {
 }
 
 /** Splits the pot into main/side pots by investment and awards each to the best eligible hand. */
-export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number, cents = false, picked?: number[]) {
-  return awardRuns(seats, [values], totalPot, cents, [picked])[0];
+export function awardPots(seats: SeatState[], values: Map<number, HandValue | null>, totalPot: number, cents = false, picked?: number[], buttonSeat?: number) {
+  return awardRuns(seats, [values], totalPot, cents, [picked], buttonSeat)[0];
 }
 
 /**
@@ -364,7 +364,11 @@ export function awardRuns(
   totalPot: number,
   cents = false,
   picked: (number[] | undefined)[] = [],
+  /** The odd chip of a chop goes to the first winner left of the button (TDA rule 20), like the app. */
+  buttonSeat?: number,
 ) {
+  const maxSeat = Math.max(...seats.map((s) => s.seat), buttonSeat ?? 0);
+  const fromButton = (seat: number) => (buttonSeat === undefined ? seat : (seat - buttonSeat - 1 + 2 * maxSeat) % maxSeat);
   // Pots break only where a player still in is all-in, like the app: a folded blind's chips join
   // the pot they fell in, so a chop or a run-it-twice half isn't split (and rounded) once per level.
   const levels = [...new Set(seats.filter((s) => !s.folded).map((s) => s.invested).filter((v) => v > 0))].sort((a, b) => a - b);
@@ -400,6 +404,7 @@ export function awardRuns(
         const short = Math.min(...w.map((s) => s.invested));
         best = w.filter((s) => s.invested === short);
       }
+      best.sort((a, b) => fromButton(a.seat) - fromButton(b.seat));
       const shares = splitChips(runAmount, best.length, cents);
       best.forEach((b, i) => won[k].set(b.seat, (won[k].get(b.seat) ?? 0) + shares[i]));
     });

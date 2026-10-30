@@ -41,6 +41,19 @@ export function decisionStep(hand: Hand, r: Replay = replay(hand)): number | nul
   return null;
 }
 
+/**
+ * Hero's result for the story, once it is known: settled at showdown, or the chips put in when hero
+ * folded (the hand stops there, so it has no showdown to settle). A pot hero is in that nobody has won
+ * yet: null, nothing to show.
+ */
+export function heroNet(hand: Hand, r: Replay = replay(hand)): number | null {
+  const h = hand.hero;
+  const res = r.result;
+  if (res && res.pots.every((p) => !p.eligible.includes(h) || (p.winners !== null && p.winners2 !== null))) return res.net[h];
+  if (r.final.folded[h]) return -(r.final.invested[h] + r.final.antes[h]);
+  return null;
+}
+
 /** Whether a hand can be posted as a question (hero made at least one decision). */
 export function canAsk(hand: Hand): boolean {
   return decisionStep(hand) !== null;

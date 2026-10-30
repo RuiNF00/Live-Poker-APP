@@ -580,9 +580,13 @@ export function computeResult(hand: Hand, s: TableState, boards: CardCode[][] = 
       return w.filter((i) => s.invested[i] === short);
     };
     const cash = centGame(hand);
+    // The odd chip of a chop goes to the first winner left of the button, as at a real table
+    // (TDA rule 20): not to the lowest seat number.
+    const fromButton = (i: number) => (i - hand.button - 1 + 2 * n) % n;
     const pay = (amount: number, winners: number[] | null) => {
       if (!winners) return;
-      splitPot(amount, winners.length, cash).forEach((x, k) => (won[winners[k]] += x));
+      const order = [...winners].sort((a, b) => fromButton(a) - fromButton(b));
+      splitPot(amount, order.length, cash).forEach((x, k) => (won[order[k]] += x));
     };
     for (const pot of pots) {
       pot.winners = pick(pot, runs[0]);

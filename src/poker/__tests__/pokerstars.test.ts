@@ -298,7 +298,8 @@ test('a chopped pot with cents splits to the cent, never more than the pot', () 
     board: ['Ac', 'Kc', 'Qd', 'Jd', 'Th'],
   });
   const txt = roundTrip(h);
-  assert.ok(txt.includes('Hero collected €1.63 from pot\nUTG collected €1.62 from pot'), txt);
+  // The odd cent to the first winner left of the button (Hero is on it): UTG.
+  assert.ok(txt.includes('Hero collected €1.62 from pot\nUTG collected €1.63 from pot'), txt);
   assert.ok(txt.includes('Total pot €3.25 | Rake €0'), txt);
 });
 

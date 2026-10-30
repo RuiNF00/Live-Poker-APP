@@ -262,6 +262,7 @@ const es: Record<string, string> = {
   'O QUE FAZIAS?': '¿QUÉ HARÍAS?',
   'MÃO JOGADA': 'MANO JUGADA',
   'Hero leva o pote': 'Hero se lleva el bote',
+  'Hero fez fold': 'Hero se retiró',
   'RESULTADO DO HERO': 'RESULTADO DEL HERO',
   'Vídeo': 'Video',
   'A mão a jogar-se, em 15 a 30 segundos. Para Reels, TikTok e estado do WhatsApp.': 'La mano jugándose, en 15 a 30 segundos. Para Reels, TikTok y estados de WhatsApp.',
