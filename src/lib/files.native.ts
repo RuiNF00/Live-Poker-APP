@@ -2,11 +2,11 @@
 // email…); pick a file with the system document picker.
 
 import * as DocumentPicker from 'expo-document-picker';
-import { File, Paths } from 'expo-file-system';
+import { File, FileMode, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { decodeText } from '@/import/decode';
-import { MAX_FILE_BYTES } from '@/lib/file-limits';
+import { bigButNotBackup, HEAD_BYTES, MAX_FILE_BYTES } from '@/lib/file-limits';
 
 export async function saveTextFile(name: string, text: string, mime: string): Promise<void> {
   const f = new File(Paths.cache, name);
@@ -26,6 +26,20 @@ export async function pickTextFile(): Promise<string | null> {
   return new File(r.assets[0].uri).text();
 }
 
+/** The first bytes of a picked file; none when they can't be read (the whole file is read then, as before). */
+function head(uri: string): Uint8Array {
+  try {
+    const h = new File(uri).open(FileMode.ReadOnly);
+    try {
+      return h.readBytesSync(HEAD_BYTES);
+    } finally {
+      h.close();
+    }
+  } catch {
+    return new Uint8Array([0x7b]);
+  }
+}
+
 /** Like pickTextFile, with the file's own name and where the picked copy is (to attach it as it was). */
 export async function pickTextFileWithName(): Promise<{ text: string; name: string; uri: string } | null> {
   const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true });
@@ -34,9 +48,11 @@ export async function pickTextFileWithName(): Promise<{ text: string; name: stri
   // An .xlsx or a PDF isn't text: keep the file anyway, so it can go to support as it is.
   // Read as bytes: Excel's CSV is often Windows-1252 or UTF-16, which text() would garble.
   if ((a.size ?? 0) > MAX_FILE_BYTES) throw new Error('too_big');
+  if (a.size && bigButNotBackup(a.size, head(a.uri))) throw new Error('csv_too_big');
   const b = await new File(a.uri).bytes().catch(() => null);
   // Some pickers don't give a size: check what was read, so a huge file can't go on to the parser.
   if (b && b.length > MAX_FILE_BYTES) throw new Error('too_big');
+  if (b && bigButNotBackup(b.length, b.subarray(0, HEAD_BYTES))) throw new Error('csv_too_big');
   const text = b ? decodeText(b).text : '';
   return { text, name: a.name, uri: a.uri };
 }

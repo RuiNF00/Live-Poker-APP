@@ -12,7 +12,7 @@
 import type { Hand } from '@/poker/types';
 
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip } from './types';
-import { alive, cleanDeleted, DELETED_KEY, type Deleted } from './deleted-math';
+import { alive, cleanDeleted, DELETED_KEY, keyOf, type Deleted } from './deleted-math';
 import { loadCollection, type CollectionSpec, type KV, type Loaded } from './persist';
 import { fixBacked, fixHand, fixItem, fixPlayer, fixSession, fixSettings, fixTrip } from './validate';
 
@@ -162,6 +162,13 @@ async function leftovers(kv: KV, lists: Lists, keys: readonly string[], del: Del
     const spec = SPECS[name];
     const l = lists[name];
     const have = new Set(l.items.map((x) => x.id));
+    // Deleted on this phone, read or not: an unreadable value of a deleted item goes, never to
+    // quarantine (which backups carry). Bankrolls are marked with their currency: kept as they were.
+    const wasDeleted = (k: string) => name !== 'bankrolls' && del[keyOf(name, k.slice(spec.prefix.length))] !== undefined;
+    if (l.bad.some(([k]) => wasDeleted(k))) {
+      for (const [k] of l.bad) if (wasDeleted(k)) gone.push(k);
+      l.bad = l.bad.filter(([k]) => !wasDeleted(k));
+    }
     const skipped = new Set(l.bad.map(([k]) => k));
     const loose = keys.filter((k) => k.startsWith(spec.prefix) && !have.has(k.slice(spec.prefix.length)) && !skipped.has(k));
     const found: { id: string }[] = [];
@@ -182,7 +189,9 @@ async function leftovers(kv: KV, lists: Lists, keys: readonly string[], del: Del
         }
         const x = v === undefined ? null : FIX[name](v);
         // Unreadable or for another key: to quarantine like any bad value, never deleted unread.
-        if (!x || spec.prefix + x.id !== k) bad.push([k, raw]);
+        // A readable one is judged by alive() below: edited after its delete, it stays.
+        if (!x && wasDeleted(k)) gone.push(k);
+        else if (!x || spec.prefix + x.id !== k) bad.push([k, raw]);
         else found.push(x);
       }
     }
@@ -260,18 +269,20 @@ export async function loadAll(kv: KV, now = Date.now()): Promise<Boot> {
     readValue(kv, KEYS.draft),
   ]);
   const lists = [hands, sessions, players, bankrolls, transfers, backers, packages, payments, trips, backing];
-  const bad: [string, string][] = lists.flatMap((l) => l.bad);
+  const loose: [string, string][] = [];
 
   // A write the app didn't finish: see leftovers.
   try {
     const keys = await kv.getAllKeys();
     const del = cleanDeleted((await readValue(kv, DELETED_KEY)).value);
     const left = await leftovers(kv, { hands, sessions, players, bankrolls, transfers, backers, packages, payments, trips, backing } as unknown as Lists, keys, del);
-    bad.push(...left.bad);
+    loose.push(...left.bad);
     if (left.gone.length) await kv.multiRemove(left.gone).catch(() => {});
   } catch {
     // Keys can't be listed: the lists stay as their id lists say, as before.
   }
+  // After leftovers: it takes out of each list's bad values those of items deleted on this phone.
+  const bad: [string, string][] = [...lists.flatMap((l) => l.bad), ...loose];
 
   // Settings are written back right after launch, so a bad copy must be kept first.
   const st = fixSettings(rawSettings.value);

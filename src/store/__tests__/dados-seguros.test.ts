@@ -142,3 +142,35 @@ test('the phone fills up half-way through a restore: told once, nothing lost, an
   d = await loadAll(kv);
   assert.equal(d.hands.items.length, before.length + incoming.length);
 });
+
+test('an unreadable value of a hand deleted on this phone goes, never to quarantine (backups carry it)', async () => {
+  const kv = new FakeStorage();
+  const [a, b] = bigHistory(2, Date.UTC(2026, 0, 1));
+  await saved(kv, [a, b]);
+  const torn = '{"id":"h_';
+  // b listed but torn and deleted; c a torn leftover, deleted; d a torn leftover nobody deleted.
+  kv.data.set(H.prefix + b.id, torn);
+  kv.data.set(H.prefix + 'c', torn);
+  kv.data.set(H.prefix + 'd', torn);
+  kv.data.set(DELETED, JSON.stringify({ [`hands:${b.id}`]: Date.now(), 'hands:c': Date.now() }));
+  const d = await loadAll(kv);
+  assert.deepEqual(d.hands.items.map((h) => h.id), [a.id]);
+  const keys = [...kv.data.keys()];
+  const held = keys.filter((k) => k.startsWith(QUARANTINE));
+  assert.equal(held.length, 1, held.join());
+  assert.ok(held[0].endsWith(H.prefix + 'd'), 'only the one never deleted is kept aside');
+  for (const id of [b.id, 'c']) assert.ok(!keys.includes(H.prefix + id), `${id} removed`);
+});
+
+test('a leftover hand edited after its delete mark stays (the edit wins, as everywhere)', async () => {
+  const kv = new FakeStorage();
+  const [a, b] = bigHistory(2, Date.UTC(2026, 0, 1));
+  await saved(kv, [a]);
+  // b deleted, then edited again on another phone and restored: only its value reached the disk.
+  const edited = { ...b, updatedAt: b.updatedAt + 60_000 };
+  kv.data.set(H.prefix + b.id, JSON.stringify(edited));
+  kv.data.set(DELETED, JSON.stringify({ [`hands:${b.id}`]: b.updatedAt + 1 }));
+  const d = await loadAll(kv);
+  assert.deepEqual(byId(d.hands.items).get(b.id), edited);
+  assert.ok(kv.data.has(H.prefix + b.id));
+});

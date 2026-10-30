@@ -3,7 +3,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 
 import { decodeText } from '@/import/decode';
-import { MAX_FILE_BYTES } from '@/lib/file-limits';
+import { bigButNotBackup, HEAD_BYTES, MAX_FILE_BYTES } from '@/lib/file-limits';
 
 export async function saveTextFile(name: string, text: string, mime: string): Promise<void> {
   // CSV: a byte-order mark, or Excel reads the accents (ç, ã, ñ) as the wrong letters.
@@ -32,9 +32,11 @@ export async function pickTextFileWithName(): Promise<{ text: string; name: stri
   const a = r.assets[0];
   // Read as bytes: Excel's CSV is often Windows-1252 or UTF-16, which text() would garble.
   if ((a.size ?? 0) > MAX_FILE_BYTES) throw new Error('too_big');
+  if (a.file && bigButNotBackup(a.file.size, new Uint8Array(await a.file.slice(0, HEAD_BYTES).arrayBuffer()))) throw new Error('csv_too_big');
   const b = await (a.file ? a.file.arrayBuffer() : fetch(a.uri).then((r) => r.arrayBuffer())).catch(() => null);
   // Some pickers don't give a size: check what was read, so a huge file can't go on to the parser.
   if (b && b.byteLength > MAX_FILE_BYTES) throw new Error('too_big');
+  if (b && bigButNotBackup(b.byteLength, new Uint8Array(b, 0, Math.min(HEAD_BYTES, b.byteLength)))) throw new Error('csv_too_big');
   const text = b ? decodeText(new Uint8Array(b)).text : '';
   return { text, name: a.name, uri: a.file ? URL.createObjectURL(a.file) : a.uri };
 }

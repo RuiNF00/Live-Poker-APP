@@ -11,7 +11,7 @@ import { bigSessionsAndHands } from '../../../scripts/big-history';
 import { handsCsv } from '../../export/report';
 import { parseCsv } from '../../import/csv';
 import { prepare, toSessions } from '../../import/convert';
-import { MAX_CSV_BYTES, MAX_FILE_BYTES } from '../../lib/file-limits';
+import { bigButNotBackup, MAX_CSV_BYTES, MAX_FILE_BYTES } from '../../lib/file-limits';
 import { buildBackup, parseBackup, sessionsCsv } from '../backup';
 import { playedMs, profit } from '../session-math';
 import { DEFAULT_SETTINGS } from '../types';
@@ -41,6 +41,24 @@ test('the file pickers take the bigger copy; spreadsheets keep their own limit',
   }
   const imp = readFileSync(new URL('../../app/import.tsx', import.meta.url), 'utf8');
   assert.ok(imp.indexOf('parseBackup(text)') < imp.indexOf("throw new Error('csv_too_big')"), 'a copy is never held to the spreadsheet limit');
+});
+
+test('a file over the spreadsheet limit that is not a backup is turned away from its first bytes', () => {
+  const big = MAX_CSV_BYTES + 1;
+  const b = (s: string) => new TextEncoder().encode(s);
+  assert.equal(bigButNotBackup(big, b('{"app":"sweatbook"')), false);
+  assert.equal(bigButNotBackup(big, b('\uFEFF \r\n {"app"')), false, 'a byte-order mark and spaces first');
+  assert.equal(bigButNotBackup(big, b('date,start_time,type')), true);
+  assert.equal(bigButNotBackup(big, new Uint8Array([0x50, 0x4b, 3, 4])), true, 'a zip or .xlsx');
+  assert.equal(bigButNotBackup(big, new Uint8Array()), true);
+  assert.equal(bigButNotBackup(MAX_CSV_BYTES, b('date,start_time')), false, 'at or under the limit the CSV path decides');
+  // Both pickers look before they read the whole file.
+  for (const f of ['../../lib/files.ts', '../../lib/files.native.ts']) {
+    const src = readFileSync(new URL(f, import.meta.url), 'utf8');
+    const pick = src.slice(src.indexOf('export async function pickTextFileWithName'));
+    const peek = pick.indexOf('bigButNotBackup(');
+    assert.ok(peek > 0 && peek < pick.search(/\.(bytes|arrayBuffer)\(\)\.catch|a\.file\.arrayBuffer\(\) :/), f);
+  }
 });
 
 for (const sep of [',', ';'] as const) {
