@@ -33,7 +33,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { decimalComma, t } from '@/i18n';
 import { numText, parseNum, syncText, typedText } from '@/lib/num-input';
 import { MASK, moneyMasked } from '@/poker/format';
-import { C, F, R, S, SHADOW, ff, posColor } from '@/theme';
+import { C, F, R, S, SHADOW, currentScheme, ff, posColor } from '@/theme';
 
 import { OfflineBadge, useOffline } from './NetStatus';
 
@@ -548,9 +548,9 @@ export function ToggleItem({ title, subtitle, value, onChange, icon, iconColor, 
             importantForAccessibility="no-hide-descendants"
             value={value}
             onValueChange={flip}
-            trackColor={{ true: C.accent, false: C.surface3 }}
+            trackColor={{ true: C.accent, false: C.switchOff }}
             thumbColor="#FFFFFF"
-            ios_backgroundColor={C.surface3}
+            ios_backgroundColor={C.switchOff}
             // react-native-web only: its default "on" thumb is teal.
             {...({ activeThumbColor: '#FFFFFF' } as object)}
           />
@@ -699,7 +699,8 @@ export function Button({
           flexDirection: 'row',
           gap: 8,
           opacity: disabled ? 0.4 : pressed && kind !== 'primary' ? 0.75 : 1,
-          borderWidth: kind === 'ghost' || kind === 'outline' ? 1 : 0,
+          // On paper a secondary button's fill matches the footer it sits on: the outline keeps its shape.
+          borderWidth: kind === 'ghost' || kind === 'outline' || (kind === 'secondary' && currentScheme() === 'light') ? 1 : 0,
           borderColor: kind === 'outline' ? C.accentLine : C.borderStrong,
         },
         kind === 'primary' && !disabled ? { shadowColor: C.accent, shadowOpacity: 0.3, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 4 } : null,

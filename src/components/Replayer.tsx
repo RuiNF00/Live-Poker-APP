@@ -11,7 +11,7 @@ import { legal, raiseName, replay } from '@/poker/engine';
 import { pct } from '@/poker/format';
 import { topClasses } from '@/poker/ranges';
 import type { Hand, Street } from '@/poker/types';
-import { C, F, R, ff } from '@/theme';
+import { C, F, R, currentScheme, ff } from '@/theme';
 
 import { STAGE_RATIO } from './replayer/layout';
 import { timeline, viewAt, type TimelineItem } from './replayer/model';
@@ -422,7 +422,7 @@ function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewA
       style={{
         minHeight: 36,
         borderRadius: R.md,
-        backgroundColor: '#0E0D0B',
+        backgroundColor: C.rpPanel,
         borderWidth: 1,
         borderColor: f || view.decision || view.heroBet ? 'rgba(255,106,61,0.45)' : C.border,
         paddingHorizontal: 12,
@@ -441,7 +441,7 @@ function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewA
           </Text>
           <Stat label="Call" value={f.toCall} color={C.good} />
           <Stat label={t('Pot odds')} value={pct(f.potOdds, 1)} color={C.info} />
-          <Stat label="MDF" value={pct(f.mdf)} color="#A78BFA" />
+          <Stat label="MDF" value={pct(f.mdf)} color={MDF_COLOR} />
           <Stat label="Bet" value={pct(f.betPct)} color={C.text} />
           <Stat label="V:B" value={ratio(f.vb)} color={C.warn} />
           {view.rangeEq ? <RangeEq eq={view.rangeEq} onPress={onRange} locked={rangeLocked} /> : null}
@@ -459,7 +459,7 @@ function InfoBar({ view, onRange, rangeLocked }: { view: ReturnType<typeof viewA
           <Stat label="V:B" value={ratio(view.heroBet.vb)} color={C.warn} />
           <Text style={{ color: C.textDim, fontFamily: F.medium, fontSize: 12 }}>
             {view.heroBet.vs}: {t('pot odds')} <Text style={{ color: C.info, fontFamily: F.mono, fontSize: 13 }}>{pct(view.heroBet.vsPotOdds, 1)}</Text> · MDF{' '}
-            <Text style={{ color: '#A78BFA', fontFamily: F.mono, fontSize: 13 }}>{pct(view.heroBet.vsMdf)}</Text>
+            <Text style={{ color: MDF_COLOR, fontFamily: F.mono, fontSize: 13 }}>{pct(view.heroBet.vsMdf)}</Text>
           </Text>
           <Text numberOfLines={1} style={{ color: C.textDim, fontFamily: F.mono, fontSize: 11 }}>
             {view.info}
@@ -526,13 +526,14 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
   );
 }
 
-const DOT: Record<TimelineItem['color'], string> = {
-  hero: C.accent,
-  aggr: '#F39C12',
-  passive: '#2ECC71',
-  fold: '#6B7280',
-  street: '#F5EDD8',
-};
+// MDF's violet: the dark one is 2.6:1 on paper, so the light theme takes a deeper one (7:1).
+const MDF_COLOR = currentScheme() === 'light' ? '#6D28D9' : '#A78BFA';
+
+// On paper the dark set's bright greens and ambers drop under 2:1, so the light theme takes the text tokens.
+const DOT: Record<TimelineItem['color'], string> =
+  currentScheme() === 'light'
+    ? { hero: C.accent, aggr: C.warn, passive: C.good, fold: C.muted, street: C.textDim }
+    : { hero: C.accent, aggr: '#F39C12', passive: '#2ECC71', fold: '#6B7280', street: '#F5EDD8' };
 const ITEM_W = 62;
 
 /** Every action as a dot on a line, streets as diamonds: tap any of them to jump there. */
@@ -576,14 +577,14 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
                   height: street ? 11 : on ? 14 : 9,
                   borderRadius: street ? 2 : 7,
                   transform: street ? [{ rotate: '45deg' }] : undefined,
-                  backgroundColor: street ? (on ? C.accent : '#2A2620') : DOT[it.color],
+                  backgroundColor: street ? (on ? C.accent : C.rpLine) : DOT[it.color],
                   borderWidth: on ? 2 : street ? 1 : 0,
-                  borderColor: on ? '#FFF' : '#7A7260',
+                  borderColor: on ? C.text : C.rpDot,
                 }}
               />
             </View>
             {/* Past the question, only the dots: the names, sizes, streets and showdown would give the answer away. */}
-            <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: street ? (on ? C.accent : C.rpMuted) : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
               {future ? ' ' : it.label}
             </Text>
             {it.detail && !future ? (
@@ -612,7 +613,7 @@ function QuizPanel({ state, onPick, onShow }: { state: ReturnType<typeof replay>
         shown.current = true;
         onShow?.(e.nativeEvent.layout.y, e.nativeEvent.layout.height);
       }}
-      style={{ backgroundColor: '#14100D', borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
+      style={{ backgroundColor: C.rpPanel, borderRadius: R.lg, padding: 14, gap: 10, borderWidth: 1, borderColor: 'rgba(255,106,61,0.5)' }}>
       <Text accessibilityRole="header" style={{ color: C.text, fontFamily: ff(800), fontSize: 18, textAlign: 'center' }}>{t('O que fazes aqui?')}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {opts.map((o) => (
@@ -663,9 +664,9 @@ function Ctrl({
         flex: 1,
         height: 46,
         borderRadius: R.md,
-        backgroundColor: active ? C.accentSoft : '#141210',
+        backgroundColor: active ? C.accentSoft : C.rpPanel2,
         borderWidth: 1,
-        borderColor: active ? 'rgba(255,106,61,0.45)' : '#2A2620',
+        borderColor: active ? 'rgba(255,106,61,0.45)' : C.rpLine,
         alignItems: 'center',
         justifyContent: 'center',
         opacity: pressed ? 0.7 : 1,

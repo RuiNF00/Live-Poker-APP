@@ -12,7 +12,7 @@ import { locale, t } from '@/i18n';
 import { decimal, money, shortDate } from '@/poker/format';
 import type { Score, Summary } from '@/store/tourney-stats';
 import { MIN_SAMPLE } from '@/store/tourney-stats';
-import { C, F, ff } from '@/theme';
+import { DARK as C, F, ff } from '@/theme';
 import { ordinal } from '@/share/festival-card';
 
 import { linkHost, POST_H, STORY_H, STORY_W, Wordmark } from './story-brand';

@@ -154,7 +154,7 @@ export function VoiceHandSheet({
           tap('select');
           setPicking(on ? null : s);
         }}
-        hitSlop={4}
+        hitSlop={7} // 30×42 card + 7 = 44×56; the rows keep 14 between cards so the areas don't overlap
         style={{ alignItems: 'center', gap: 3 }}>
         <PlayingCard card={c} size="sm" highlight={!!on} />
         <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: g ? C.warn : 'transparent' }} />

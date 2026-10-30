@@ -170,7 +170,7 @@ const grid = StyleSheet.create({
   row: { flexDirection: 'row', gap: 2 },
   cell: { flex: 1, aspectRatio: 1, borderRadius: 4, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   pair: { backgroundColor: C.surface3 },
-  suited: { backgroundColor: '#1A2622' },
+  suited: { backgroundColor: C.surface2 },
   sel: { backgroundColor: C.accent },
   txt: { fontFamily: F.mono, fontSize: 9, letterSpacing: -0.4, color: C.textDim },
   txtSel: { color: C.bgDeep, fontFamily: F.mono },

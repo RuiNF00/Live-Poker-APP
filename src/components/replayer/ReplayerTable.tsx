@@ -8,7 +8,7 @@ import { Defs, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { t } from '@/i18n';
 import { pct } from '@/poker/format';
-import { BRAND, C, F, ff, posColor } from '@/theme';
+import { BRAND, DARK as C, F, R, ff, posColorDark as posColor } from '@/theme';
 
 import { ChipStack } from './ChipStack';
 import { BOARD_Y, boardScale, BRAND_Y, cardShow, dealerSpot, EDGE, POT_Y, scaleFor, seatCenter, SIZE, STAGE_RATIO, tableMap } from './layout';
@@ -160,7 +160,8 @@ export function ReplayerTable({
   const riseAt = (c: number) => (still?.anims ?? motion?.anims)?.find((x) => x.kind === 'boardRise' && x.card === c);
 
   return (
-    <View onLayout={onLayout} {...swipe.panHandlers} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / STAGE_RATIO }}>
+    // The felt's own dark ground: on the light theme the seats and FOLD tags past the rail would sit on paper.
+    <View onLayout={onLayout} {...swipe.panHandlers} style={{ width: '100%', height: h || undefined, aspectRatio: w ? undefined : 1 / STAGE_RATIO, backgroundColor: C.bg, borderRadius: R.lg }}>
       {w > 0 && (
         <Pressable
           style={{ flex: 1 }}
@@ -385,7 +386,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
           borderColor: border,
           paddingHorizontal: 4 * k,
           justifyContent: 'center',
-          opacity: s.folded ? 0.45 : 1,
+          opacity: s.folded ? 0.55 : 1,
           shadowColor: s.acting ? C.accent : '#000',
           shadowOpacity: s.acting ? 0.7 : 0.4,
           shadowRadius: s.acting ? 8 : 4,
@@ -396,7 +397,7 @@ function Seat({ seat: s, x, y, w, k, bestEquity, reduce }: { seat: RpSeat; x: nu
           </Text>
           {s.pos && s.pos !== s.name ? (
             <View style={{ backgroundColor: pos.bg, borderRadius: 3, paddingHorizontal: 2.5 * k, flexShrink: 0 }}>
-              <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} style={{ color: pos.fg, fontFamily: ff(800), fontSize: 8 * k }}>
+              <Text maxFontSizeMultiplier={TABLE_TEXT} allowFontScaling={false} style={{ color: pos.fg, fontFamily: ff(800), fontSize: 9 * k }}>
                 {s.pos}
               </Text>
             </View>

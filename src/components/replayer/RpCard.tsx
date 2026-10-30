@@ -6,7 +6,7 @@ import { Platform, Text, View, type StyleProp, type ViewStyle } from 'react-nati
 
 import { displayRank, SUIT_SYMBOL } from '@/poker/cards';
 import type { CardCode, Suit } from '@/poker/types';
-import { C, ff } from '@/theme';
+import { DARK as C, ff } from '@/theme';
 
 export const SERIF = Platform.select({ ios: 'Georgia', android: 'serif', default: "Georgia, 'Times New Roman', serif" });
 

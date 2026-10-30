@@ -14,7 +14,7 @@ import { playedMs } from '@/store/session-math';
 import { placeLabel } from '@/share/festival-card';
 import type { StakeRow, YearCardKind, YearReview } from '@/share/year-review';
 import { countryName, flag } from '@/tax/countries';
-import { C, F, R, ff } from '@/theme';
+import { DARK as C, F, R, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
 import { Logo, Watermark } from './SessionCard';

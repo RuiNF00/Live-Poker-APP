@@ -13,7 +13,7 @@ import { t } from '@/i18n';
 import { shortDate } from '@/poker/format';
 import type { CardStat, CardStyle, Milestone } from '@/share/session-card';
 import type { Session } from '@/store/types';
-import { C, F, R, ff } from '@/theme';
+import { DARK as C, F, R, ff } from '@/theme';
 
 import { linkHost, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, POST_H, STORY_H, STORY_W } from './story-brand';
 

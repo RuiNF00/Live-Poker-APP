@@ -256,7 +256,7 @@ export default function Paywall() {
     <>
       {short ? <Row style={{ justifyContent: 'center' }}>{restoreLink}</Row> : null}
       {(reason === 'hands' || reason === 'handsLive') && FREE.handsPerDay ? (
-        <Row style={{ justifyContent: 'center', paddingTop: 2 }} gap={S.lg}>
+        <Row style={{ justifyContent: 'center', paddingTop: 2, flexWrap: 'wrap' }} gap={S.lg}>
           <Pressable onPress={() => router.replace('/invite')} accessibilityRole="button" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="gift-outline" size={14} color={C.accent} />
             <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>

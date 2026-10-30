@@ -6,7 +6,8 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { Path, Svg } from '@/components/svg';
 
-import { BRAND, C, ff } from '@/theme';
+// Only share images use these, and those look the same in either theme: the dark palette, never the live `C`.
+import { BRAND, DARK as C, ff } from '@/theme';
 
 export const STORY_W = 360;
 export const STORY_H = 640;

@@ -20,7 +20,7 @@ import {
   type RecapStat,
 } from "@/share/festival-card";
 import type { CardStyle } from "@/share/session-card";
-import { C, F, R, ff, posColor } from "@/theme";
+import { DARK as C, F, R, ff, posColorDark as posColor } from "@/theme";
 
 import { PlayingCard } from "./PlayingCard";
 import { linkHost, Mark, MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX, STORY_H, STORY_W } from "./story-brand";

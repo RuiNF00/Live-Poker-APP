@@ -11,7 +11,7 @@ import { locale, t } from '@/i18n';
 import { duration, rawMoney, shortDate } from '@/poker/format';
 import { monthName, type MonthRecap } from '@/store/month-recap';
 import { playedMs } from '@/store/session-math';
-import { C, F, ff } from '@/theme';
+import { DARK as C, F, ff } from '@/theme';
 
 import { Logo, Watermark } from './SessionCard';
 import { POST_H, STORY_H, STORY_W } from './story-brand';

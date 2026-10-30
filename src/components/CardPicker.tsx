@@ -13,9 +13,8 @@ import { C, ff } from '@/theme';
 import { tap } from './ui';
 
 const FACE = '#F5EDD8';
-// Suit ink on the cream face: four colours, dark enough for 4.5:1 on the cream
-// (the brighter red, blue and green were 4.1, 4.4 and 2.8:1).
-const INK: Record<string, string> = { s: '#1E1E1E', h: '#B91C1C', d: '#1D4ED8', c: '#166534' };
+// Suit ink on the cream face: the same four colours as the cards on the table.
+const INK = C.suit;
 
 export function CardPicker({
   used,

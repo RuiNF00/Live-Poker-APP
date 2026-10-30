@@ -80,7 +80,7 @@ export function Scrubber({ k, last, items, onSeek }: { k: number; last: number; 
               top: 20,
               height: 4,
               borderRadius: 2,
-              backgroundColor: '#2A2620',
+              backgroundColor: C.rpLine,
             }}
           />
           <View

@@ -10,7 +10,7 @@ import { Defs, RadialGradient, Rect, Stop, Svg } from '@/components/svg';
 
 import { t } from '@/i18n';
 import { fitPlan, type PlanDay } from '@/share/festival-plan';
-import { C, R, ff } from '@/theme';
+import { DARK as C, R, ff } from '@/theme';
 
 import { Logo } from './FestivalCard';
 import { linkHost, STORY_H, STORY_W } from './story-brand';

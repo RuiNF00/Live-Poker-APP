@@ -18,7 +18,7 @@ import { STAGES, type CardCode, type Hand, type Suit } from '@/poker/types';
 import { posterStats, posterTitle } from '@/share/hand-poster';
 import { storyMoment, type StoryMoment } from '@/story/moment';
 import { posterLine } from '@/story/poster';
-import { C, F, R, ff, posColor } from '@/theme';
+import { DARK as C, F, R, ff, posColorDark as posColor } from '@/theme';
 
 import { FitText } from './FitText';
 import { STREET_LABEL, viewAt } from './replayer/model';

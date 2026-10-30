@@ -9,7 +9,7 @@ import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react
 
 import { t } from '@/i18n';
 import type { CardCode } from '@/poker/types';
-import { C, ff } from '@/theme';
+import { DARK as C, ff } from '@/theme';
 
 import { PlayingCard } from './PlayingCard';
 import { FitText } from './ui';

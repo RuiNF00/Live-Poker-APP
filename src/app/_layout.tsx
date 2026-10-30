@@ -7,7 +7,7 @@ import {
 } from '@expo-google-fonts/hanken-grotesk';
 import { JetBrainsMono_500Medium, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import { useFonts } from 'expo-font';
-import { DarkTheme, router, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
@@ -41,7 +41,7 @@ import '@/lib/swap-create-queue';
 // Same for the public profile's delete.
 import '@/lib/public-profile';
 import { StoreProvider } from '@/store/store';
-import { C, ff } from '@/theme';
+import { C, currentScheme, ff } from '@/theme';
 
 // Reminders, syncs and the lock-screen and widget bridges draw nothing on the first frame: their code loads after it.
 const AfterStart = React.lazy(() => import('@/components/AfterStart'));
@@ -52,9 +52,11 @@ const RescueCopy = React.lazy(() => import('@/components/RescueCopy').then((m) =
 // without the tabs under it, "Fechar" and back had nowhere to go. On the web the link page stands alone.
 export const unstable_settings = Platform.OS === 'web' ? {} : { anchor: '(tabs)' };
 
+// Noite or Dia, set before this module loaded (lib/appearance, imported by index.js).
+const navBase = currentScheme() === 'light' ? DefaultTheme : DarkTheme;
 const theme = {
-  ...DarkTheme,
-  colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, text: C.text, border: C.border, primary: C.accent },
+  ...navBase,
+  colors: { ...navBase.colors, background: C.bg, card: C.bg, text: C.text, border: C.border, primary: C.accent },
 };
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -87,7 +89,7 @@ export default function RootLayout() {
         <StoreProvider>
           <ProProvider>
           <HideSplash />
-          <StatusBar style="light" />
+          <StatusBar style={currentScheme() === 'light' ? 'dark' : 'light'} />
           <Deferred>
             <Suspense fallback={null}>
               <AfterStart />

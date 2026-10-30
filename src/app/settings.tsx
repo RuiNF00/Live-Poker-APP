@@ -18,6 +18,7 @@ import { AppLockSetting } from '@/components/AppLockSetting';
 import { CURRENCIES } from '@/components/BankrollSheets';
 import { Badge, Button, Card, Chip, confirmAction, Field, ListGroup, ListItem, Pill, Row, Section, Segmented, T, tap, ToggleItem, Wordmark } from '@/components/ui';
 import { LANG_KEY, locale, t, VARIANT_NAME, VARIANTS, variant, type Variant } from '@/i18n';
+import { appearancePref, setAppearance, type AppearancePref } from '@/lib/appearance';
 import { useSharedHands } from '@/lib/friend-hands';
 import { lockSupported } from '@/lib/app-lock';
 import { saveTextFile } from '@/lib/files';
@@ -107,6 +108,7 @@ export default function SettingsScreen() {
     void (pro.isPro ? hasLifetime() : Promise.resolve(false)).then(setForGood);
   }, [pro.isPro, pro.isPlus, restored]);
   const insets = useSafeAreaInsets();
+  const [appearance, setAppearanceState] = useState<AppearancePref>(appearancePref);
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const stamp = new Date().toISOString().slice(0, 10);
@@ -197,6 +199,23 @@ export default function SettingsScreen() {
             <View style={{ gap: S.sm }}>
               <T v="label">{t('Jogadores na mesa')}</T>
               <Segmented options={[6, 7, 8, 9, 10].map((n) => ({ key: n, label: String(n) }))} value={settings.defaultTableSize} onChange={(defaultTableSize) => setSettings({ defaultTableSize })} />
+            </View>
+            <View style={{ gap: S.sm }}>
+              <T v="label">{t('Aspeto')}</T>
+              {/* Claro is for bright rooms and daylight. Picking one restarts the app (Settings is never open mid-hand). */}
+              <Segmented
+                options={[
+                  { key: 'auto', label: t('Automático') },
+                  { key: 'dark', label: t('Escuro') },
+                  { key: 'light', label: t('Claro') },
+                ]}
+                value={appearance}
+                onChange={(next: AppearancePref) => {
+                  if (next === appearance) return;
+                  setAppearanceState(next);
+                  void setAppearance(next);
+                }}
+              />
             </View>
           </Card>
           <ListGroup>

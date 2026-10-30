@@ -16,7 +16,7 @@ import { SUIT_SYMBOL } from '@/poker/cards';
 import { positions } from '@/poker/engine';
 import { posterTitle } from '@/share/hand-poster';
 import type { StoryMoment } from '@/story/moment';
-import { C, F, R, ff, posColor } from '@/theme';
+import { DARK as C, F, R, ff, posColorDark as posColor } from '@/theme';
 
 import { ReplayerTable } from './replayer/ReplayerTable';
 import { STAGE_RATIO } from './replayer/layout';

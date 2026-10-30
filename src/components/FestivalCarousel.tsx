@@ -13,7 +13,7 @@ import { locale, t } from '@/i18n';
 import { positions, replay } from '@/poker/engine';
 import { chips, rawMoney } from '@/poker/format';
 import { biLabel, dayKey, placeLabel, tripWeeks, type SlideKind, moneyLabel, resultParts, type EventRow, type FestivalRecap, type RecapStat } from '@/share/festival-card';
-import { C, F, R, ff, posColor } from '@/theme';
+import { DARK as C, F, R, ff, posColorDark as posColor } from '@/theme';
 
 import { dateRange, dayTicks, Logo } from './FestivalCard';
 import { STAGE_RATIO } from './replayer/layout';
