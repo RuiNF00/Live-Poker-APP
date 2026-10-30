@@ -3981,6 +3981,14 @@ const es: Record<string, string> = {
   'Vão tal como as escreveste. Revê se têm algo que não queres mostrar.': 'Van tal como las escribiste. Revisa que no tengan nada que no quieras mostrar.',
   'Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que ele tem.': 'Top %: las manos más fuertes contra una mano al azar. Toca o arrastra para pintar el rango que crees que tiene.',
   'Com quanto começaste? Junta o saldo inicial e o saldo passa a bater certo.': '¿Con cuánto empezaste? Añade el saldo inicial para que el saldo cuadre.',
+  'Procurar outro jogador': 'Buscar otro jugador',
+  'Procurar um jogador': 'Buscar un jugador',
+  'Nome, aspeto ou tag': 'Nombre, aspecto o tag',
+  'Nota sobre um jogador': 'Nota sobre un jugador',
+  'Quem é, como joga. Na próxima vez, já sabes.': 'Quién es, cómo juega. La próxima vez, ya lo sabes.',
+  'Nova nota: {name}': 'Nueva nota: {name}',
+  'Já tens uma nota sobre {name}': 'Ya tienes una nota sobre {name}',
+  'Toca para a abrir': 'Toca para abrirla',
 };
 
 export default es;

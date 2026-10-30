@@ -4,6 +4,7 @@
 
 import type { Hand } from '@/poker/types';
 
+import { nameKey } from './player-search';
 import type { PlayerNote, Session } from './types';
 
 /** "Casino Lisboa", " casino  lisboa " and "Casíno Lisboa" are the same room. */
@@ -34,14 +35,14 @@ export function regularsAt(
   if (!key) return [];
   const roomOf = new Map(sessions.map((s) => [s.id, venueKey(s.venue)]));
   const byId = new Map(players.map((p) => [p.id, p]));
-  const byName = new Map(players.filter((p) => p.name.trim()).map((p) => [p.name.trim().toLowerCase(), p]));
+  const byName = new Map(players.filter((p) => p.name.trim()).map((p) => [nameKey(p.name), p]));
   const seen = new Map<string, number>();
   for (const h of hands) {
     const room = (h.sessionId && roomOf.get(h.sessionId)) || venueKey(h.game.venue);
     if (room !== key) continue;
     h.players.forEach((x, i) => {
       if (i === h.hero) return;
-      const p = (x.playerId && byId.get(x.playerId)) || (x.name.trim() ? byName.get(x.name.trim().toLowerCase()) : undefined);
+      const p = (x.playerId && byId.get(x.playerId)) || (x.name.trim() ? byName.get(nameKey(x.name)) : undefined);
       if (p && hasRead(p)) seen.set(p.id, Math.max(seen.get(p.id) ?? 0, h.createdAt));
     });
   }

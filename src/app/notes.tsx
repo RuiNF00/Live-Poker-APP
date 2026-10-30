@@ -22,6 +22,7 @@ import { shortDate } from '@/poker/format';
 import { MAX_NAME_LENGTH } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 import { handCounts, opponentStats, type OpponentStats } from '@/store/queries';
+import { findPlayers, nameKey, sameName } from '@/store/player-search';
 import { regularsAt } from '@/store/regulars';
 import { uid, useStore } from '@/store/store';
 import { PLAYER_TAGS, type PlayerNote } from '@/store/types';
@@ -39,8 +40,8 @@ const TYPE_TAGS = TYPES.map((x) => x.tag);
 const TENDENCIES = PLAYER_TAGS.filter((x) => !TYPE_TAGS.includes(x));
 
 function handsWith(hands: Hand[], p: PlayerNote) {
-  const n = p.name.trim().toLowerCase();
-  return hands.filter((h) => h.players.some((x, i) => i !== h.hero && (x.playerId === p.id || (n && x.name.trim().toLowerCase() === n))));
+  const n = nameKey(p.name);
+  return hands.filter((h) => h.players.some((x, i) => i !== h.hero && (x.playerId === p.id || (n && nameKey(x.name) === n))));
 }
 
 export default function NotesScreen() {
@@ -50,8 +51,9 @@ export default function NotesScreen() {
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
   // From a live session ("Tens notas sobre N regulares daqui"): only the regulars of that room.
-  const { id, venue } = useLocalSearchParams<{ id?: string; venue?: string }>();
-  const blank = (): PlayerNote => ({ id: uid('p_'), name: '', look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
+  // `find`: from the live session, straight into the search field.
+  const { id, venue, find } = useLocalSearchParams<{ id?: string; venue?: string; find?: string }>();
+  const blank = (name = ''): PlayerNote => ({ id: uid('p_'), name, look: '', tags: [], notes: '', createdAt: Date.now(), updatedAt: Date.now() });
   // From the Resumo: straight into the note that was tapped, or a new one.
   const [edit, setEdit] = useState<PlayerNote | null>(() => (id === 'new' ? blank() : (players.find((p) => p.id === id) ?? null)));
   // Closing the sheet (X, swipe, back) keeps what was typed: notes are written at the table, in a hurry.
@@ -69,11 +71,11 @@ export default function NotesScreen() {
   // Last time each player was in a hand you saved, so the list says when you saw them.
   const seen = useMemo(() => {
     const m = new Map<string, number>();
-    const byName = new Map(players.map((p) => [p.name.trim().toLowerCase(), p.id]));
+    const byName = new Map(players.map((p) => [nameKey(p.name), p.id]));
     for (const h of hands)
       h.players.forEach((x, i) => {
         if (i === h.hero) return;
-        const pid = x.playerId ?? byName.get(x.name.trim().toLowerCase());
+        const pid = x.playerId ?? byName.get(nameKey(x.name));
         if (pid && (m.get(pid) ?? 0) < h.createdAt) m.set(pid, h.createdAt);
       });
     return m;
@@ -84,11 +86,11 @@ export default function NotesScreen() {
     const sid = activeSession?.id ?? [...hands].filter((h) => h.sessionId).sort((a, b) => b.createdAt - a.createdAt)[0]?.sessionId;
     if (!sid) return null;
     const ids = new Set<string>();
-    const byName = new Map(players.map((p) => [p.name.trim().toLowerCase(), p.id]));
+    const byName = new Map(players.map((p) => [nameKey(p.name), p.id]));
     for (const h of hands) {
       if (h.sessionId !== sid) continue;
       h.players.forEach((x, i) => {
-        const pid = i === h.hero ? undefined : (x.playerId ?? byName.get(x.name.trim().toLowerCase()));
+        const pid = i === h.hero ? undefined : (x.playerId ?? byName.get(nameKey(x.name)));
         if (pid) ids.add(pid);
       });
     }
@@ -106,12 +108,10 @@ export default function NotesScreen() {
 
   const regulars = useMemo(() => (venue ? regularsAt(venue, hands, sessions, players) : null), [venue, hands, sessions, players]);
   const rows = useMemo(() => {
-    const qq = q.trim().toLowerCase();
     // The room's regulars keep their order: the one met there most recently first.
-    return (regulars ?? [...players].sort((a, b) => Math.max(b.updatedAt, seen.get(b.id) ?? 0) - Math.max(a.updatedAt, seen.get(a.id) ?? 0)))
-      .filter((p) => !tag || p.tags.includes(tag))
-      // Tags are stored in pt-PT and shown translated: either matches ('Agressivo', 'Aggressive').
-      .filter((p) => !qq || [p.name, p.look, p.notes, ...p.tags, ...p.tags.map((x) => t(x))].join(' ').toLowerCase().includes(qq));
+    const base = (regulars ?? [...players].sort((a, b) => Math.max(b.updatedAt, seen.get(b.id) ?? 0) - Math.max(a.updatedAt, seen.get(a.id) ?? 0))).filter((p) => !tag || p.tags.includes(tag));
+    // Accents and word order don't matter; a name that starts with it comes first. Tags match shown or stored ('Aggressive', 'Agressivo').
+    return findPlayers(base, q, (x) => t(x));
   }, [players, regulars, q, tag, seen]);
 
   const counts = useMemo(() => handCounts(hands, players), [hands, players]);
@@ -130,7 +130,7 @@ export default function NotesScreen() {
           players.length > 0 ? (
             <View style={{ gap: S.md, marginBottom: S.md }}>
               {table && !filtered ? <TableStrip {...table} onOpen={setEdit} /> : null}
-              <SearchField value={q} onChange={setQ} placeholder={t('Nome, aspeto, tag…')} />
+              <SearchField value={q} onChange={setQ} placeholder={t('Nome, aspeto, tag…')} autoFocus={find === '1'} />
               {venue ? (
                 <Row>
                   <Chip icon="close" label={t('Regulares de {venue}', { venue })} active onPress={() => router.setParams({ venue: undefined })} />
@@ -158,7 +158,12 @@ export default function NotesScreen() {
               action={<Button title={t('Nova nota')} icon="create-outline" onPress={() => setEdit(blank())} />}
             />
           ) : (
-            <Empty icon="search" title={t('Nada encontrado')} />
+            <Empty
+              icon="search"
+              title={t('Nada encontrado')}
+              // At the table: what was typed is usually the name of someone new.
+              action={q.trim() ? <Button title={t('Nova nota: {name}', { name: q.trim() })} icon="create-outline" onPress={() => setEdit(blank(q.trim().slice(0, MAX_NAME_LENGTH)))} /> : undefined}
+            />
           )
         }
         renderItem={({ item, index }) => (
@@ -184,8 +189,15 @@ export default function NotesScreen() {
       <Modal visible={!!edit} animationType={sheetAnim} presentationStyle="pageSheet" onRequestClose={closeEditor}>
         {edit && (
           <PlayerEditor
+            // A new note that opens the existing one starts again with that one's fields.
+            key={edit.id}
             p={edit}
             hands={handsWith(hands, edit)}
+            players={players}
+            onOpen={(o) => {
+              draft.current = null;
+              setEdit(o);
+            }}
             onDraft={setDraft}
             onClose={closeEditor}
             onSave={(p) => {
@@ -290,10 +302,12 @@ function NoteRow({ p, first, last, hands, seen, vpip, onPress }: { p: PlayerNote
   );
 }
 
-function PlayerEditor({ p, hands, onDraft, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; onDraft: (p: PlayerNote) => void; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {
+function PlayerEditor({ p, hands, players, onOpen, onDraft, onSave, onClose, onDelete }: { p: PlayerNote; hands: Hand[]; players: PlayerNote[]; onOpen: (p: PlayerNote) => void; onDraft: (p: PlayerNote) => void; onSave: (p: PlayerNote) => void; onClose: () => void; onDelete: () => void }) {
   const [x, setX] = useState(p);
   useEffect(() => onDraft(x), [x, onDraft]);
-  const known = !!p.name;
+  const known = players.some((o) => o.id === p.id);
+  // A new note with a name already in the notes: open that one instead of starting a second.
+  const twin = known ? undefined : sameName(players, x);
   const toggle = (tg: string) => setX((v) => ({ ...v, tags: v.tags.includes(tg) ? v.tags.filter((k) => k !== tg) : [...v.tags, tg] }));
   // One type at a time: picking one replaces the other three; tapping it again clears it.
   const pickType = (tg: string) => setX((v) => ({ ...v, tags: v.tags.includes(tg) ? v.tags.filter((k) => k !== tg) : [tg, ...v.tags.filter((k) => !TYPE_TAGS.includes(k))] }));
@@ -304,6 +318,11 @@ function PlayerEditor({ p, hands, onDraft, onSave, onClose, onDelete }: { p: Pla
   const who = (
     <View style={{ gap: S.md }}>
       <Field label={t('Nome ou alcunha')} value={x.name} onChangeText={(name) => setX({ ...x, name })} placeholder={t('Ex.: Boné azul')} autoFocus={!known} maxLength={MAX_NAME_LENGTH} />
+      {twin ? (
+        <ListGroup>
+          <ListItem icon="person-circle-outline" title={t('Já tens uma nota sobre {name}', { name: twin.name })} subtitle={t('Toca para a abrir')} onPress={() => onOpen(twin)} />
+        </ListGroup>
+      ) : null}
       <Field label={t('Como o reconheces')} value={x.look} onChangeText={(look) => setX({ ...x, look })} placeholder={t('Boné, óculos, lugar 3…')} />
     </View>
   );

@@ -15,6 +15,7 @@ import { useLockScreenUp } from '@/components/AppLock';
 import { useAfterFirstFrame } from '@/components/Deferred';
 import { useNow } from '@/components/useNow';
 import { StopLossBanner } from '@/components/BankrollRules';
+import { tagColor } from '@/components/OpponentStats';
 import { RegularsHere } from '@/components/RegularsHere';
 import { LineChart } from '@/components/LineChart';
 import { firstSession, nextSession, SessionForm } from '@/components/SessionForm';
@@ -45,6 +46,7 @@ import { claimOnce } from '@/lib/once';
 import { usePro } from '@/billing/pro';
 import { voiceLocked as lockedForVoice } from '@/billing/voice-access';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
+import { nameKey } from '@/store/player-search';
 import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
 import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
@@ -920,15 +922,17 @@ const styles = StyleSheet.create({
   thumb: { flex: 1, minHeight: 52, borderRadius: 14, borderWidth: 1, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', gap: 2 },
 });
 
-/** Who's at your table, with your notes on them: a glance between hands. */
+/**
+ * Who's at your table, with your notes on them: a glance between hands. Below them, one tap to
+ * look anyone else up (or write the first note). No names on that row: the player beside you can see the screen.
+ */
 function TableReads({ roster }: { roster: string[] }) {
   const { players, settings } = useStore();
   const known = roster
-    .map((name, seat) => ({ seat, name: name.trim(), note: players.find((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase()) }))
+    .map((name, seat) => ({ seat, name: name.trim(), note: players.find((p) => nameKey(p.name) === nameKey(name)) }))
     .filter((x) => x.name && x.name.toLowerCase() !== 'hero' && x.name !== settings.nickname && x.note && (x.note.tags.length || x.note.notes || x.note.look));
-  if (!known.length) return null;
   return (
-    <Section title={t('Na tua mesa')} action={t('Notas')} onAction={() => router.push('/notes')}>
+    <Section title={t('Na tua mesa')} action={players.length ? t('Notas') : undefined} onAction={() => router.push('/notes')}>
       <ListGroup>
         {known.map(({ seat, name, note }) => (
           <ListItem
@@ -938,13 +942,19 @@ function TableReads({ roster }: { roster: string[] }) {
               <Row gap={6} style={{ flexWrap: 'wrap' }}>
                 <T v="h3">{name}</T>
                 {note!.tags.slice(0, 3).map((x) => (
-                  <Pill key={x} label={t(x)} color={C.accent} />
+                  <Pill key={x} label={t(x)} color={tagColor(x) ?? C.accent} />
                 ))}
               </Row>
             }
             subtitle={note!.notes || note!.look ? [note!.look, note!.notes].filter(Boolean).join(' · ') : undefined}
+            onPress={() => router.push({ pathname: '/notes', params: { id: note!.id } })}
           />
         ))}
+        {players.length ? (
+          <ListItem icon="search" title={known.length ? t('Procurar outro jogador') : t('Procurar um jogador')} subtitle={t('Nome, aspeto ou tag')} onPress={() => router.push({ pathname: '/notes', params: { find: '1' } })} />
+        ) : (
+          <ListItem icon="create-outline" title={t('Nota sobre um jogador')} subtitle={t('Quem é, como joga. Na próxima vez, já sabes.')} onPress={() => router.push({ pathname: '/notes', params: { id: 'new' } })} />
+        )}
       </ListGroup>
     </Section>
   );

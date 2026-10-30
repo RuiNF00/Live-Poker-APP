@@ -3987,6 +3987,14 @@ const en: Record<string, string> = {
   'Vão tal como as escreveste. Revê se têm algo que não queres mostrar.': "They go as you wrote them. Check they don't hold anything you'd rather not show.",
   'Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que ele tem.': 'Top %: the strongest hands against a random hand. Tap or drag to paint the range you think they have.',
   'Com quanto começaste? Junta o saldo inicial e o saldo passa a bater certo.': 'How much did you start with? Add your starting balance so the balance adds up.',
+  'Procurar outro jogador': 'Look up another player',
+  'Procurar um jogador': 'Look up a player',
+  'Nome, aspeto ou tag': 'Name, looks or tag',
+  'Nota sobre um jogador': 'Note on a player',
+  'Quem é, como joga. Na próxima vez, já sabes.': 'Who they are, how they play. Next time, you\'ll know.',
+  'Nova nota: {name}': 'New note: {name}',
+  'Já tens uma nota sobre {name}': 'You already have a note on {name}',
+  'Toca para a abrir': 'Tap to open it',
 };
 
 export default en;
