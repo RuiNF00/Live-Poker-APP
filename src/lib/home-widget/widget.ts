@@ -3,4 +3,4 @@
 
 import type { WidgetProps } from './widget-state';
 
-export function updateWidget(_props: WidgetProps): void {}
+export function updateWidget(_props: WidgetProps, _next?: { at: number; props: WidgetProps }): void {}

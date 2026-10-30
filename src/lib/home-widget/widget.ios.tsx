@@ -30,7 +30,7 @@ const HomeWidget = createWidget<WidgetProps>('SweatbookHome', (p, env) => {
   if (p.live) {
     const clock = (
       <Text
-        timerInterval={{ lower: new Date(p.clockFrom), upper: new Date(p.clockFrom + DAY) }}
+        timerInterval={{ lower: new Date(p.clockFrom), upper: new Date(p.clockFrom + 7 * DAY) }}
         countsDown={false}
         pauseTime={p.pausedAt ? new Date(p.pausedAt) : undefined}
         modifiers={[font({ size: medium ? 30 : 26, weight: 'bold', design: 'monospaced' }), monospacedDigit(), foregroundStyle(p.paused ? warn : text)]}
@@ -118,6 +118,10 @@ const HomeWidget = createWidget<WidgetProps>('SweatbookHome', (p, env) => {
   );
 });
 
-export function updateWidget(props: WidgetProps): void {
-  HomeWidget.updateSnapshot(props);
+export function updateWidget(props: WidgetProps, next?: { at: number; props: WidgetProps }): void {
+  if (!next) return HomeWidget.updateSnapshot(props);
+  HomeWidget.updateTimeline([
+    { date: new Date(), props },
+    { date: new Date(next.at), props: next.props },
+  ]);
 }

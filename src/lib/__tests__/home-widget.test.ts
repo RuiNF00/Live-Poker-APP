@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import type { Session } from '../../store/types';
 import { money } from '../../poker/format';
-import { widgetProps, type WidgetInput } from '../home-widget/widget-state';
+import { widgetProps, widgetTimeline, type WidgetInput } from '../home-widget/widget-state';
 
 const H = 3_600_000;
 // Wednesday 14 Oct 2026, 12:00 local: the week starts Monday the 12th.
@@ -66,4 +66,22 @@ test('running session: live props for the clock, stack and blinds', () => {
   assert.equal(p.paused, false);
   assert.match(p.stackBB, /52/);
   assert.match(p.blinds, /400/);
+});
+
+test('sem sessão, o widget já leva a semana seguinte: na segunda à meia-noite volta a zeros sem abrir a app', () => {
+  const sessions = [mk({ id: 'a', cashOut: 1740 })];
+  const { now, next } = widgetTimeline({ ...base, showResult: true, sessions }, NOW);
+  assert.equal(now.result, '+' + money(1240, '$'));
+  assert.ok(next);
+  assert.equal(next.at, new Date(2026, 9, 19, 0).getTime());
+  assert.equal(next.props.result, '—');
+  assert.equal(next.props.tone, 'flat');
+  assert.equal(next.props.streakOn, false);
+});
+
+test('com sessão a decorrer, só o agora: o relógio do widget anda sozinho', () => {
+  const live = mk({ id: 'live', startedAt: NOW - H, endedAt: undefined });
+  const { now, next } = widgetTimeline({ ...base, activeSession: live, sessions: [live] }, NOW);
+  assert.equal(now.live, true);
+  assert.equal(next, undefined);
 });

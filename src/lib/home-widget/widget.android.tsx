@@ -65,6 +65,7 @@ const HomeWidget = createWidget<WidgetProps>('SweatbookHome', (p) => {
   );
 });
 
-export function updateWidget(props: WidgetProps): void {
+/** `_next` (next Monday's week) not yet: timelines unverified on Android, check with the first .aab. */
+export function updateWidget(props: WidgetProps, _next?: { at: number; props: WidgetProps }): void {
   HomeWidget.updateSnapshot(props);
 }

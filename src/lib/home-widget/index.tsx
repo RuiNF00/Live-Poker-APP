@@ -9,7 +9,7 @@ import { AppState } from 'react-native';
 import { useStore } from '@/store/store';
 
 import { lockScreenAvailable } from '../lock-screen';
-import { widgetProps, type WidgetProps } from './widget-state';
+import { widgetTimeline, type WidgetInput } from './widget-state';
 
 type Native = typeof import('./widget');
 
@@ -26,9 +26,10 @@ function widget(): Native | null {
   return native;
 }
 
-function push(props: WidgetProps) {
+function push(input: WidgetInput) {
   try {
-    widget()?.updateWidget(props);
+    const { now, next } = widgetTimeline(input);
+    widget()?.updateWidget(now, next);
   } catch (e) {
     // No widget entry in this build, or the widget extension isn't there yet.
     console.warn('[home-widget] update', e);
@@ -53,10 +54,10 @@ export function HomeWidgetSync() {
 
   useEffect(() => {
     if (!lockScreenAvailable) return;
-    push(widgetProps(input));
+    push(input);
     // The week and the played time move on by themselves: refresh on the way out.
     const sub = AppState.addEventListener('change', (st) => {
-      if (st !== 'active') push(widgetProps(input));
+      if (st !== 'active') push(input);
     });
     return () => sub.remove();
   }, [input]);

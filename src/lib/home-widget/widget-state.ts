@@ -93,3 +93,17 @@ export function widgetProps(x: WidgetInput, now = Date.now()): WidgetProps {
     labels: { time: t('Tempo'), stack: 'Stack', newHand: t('Nova mão'), pause: lp?.labels.pause ?? t('Pausa'), rebuy: lp?.labels.rebuy ?? 'Rebuy' },
   };
 }
+
+/**
+ * What the widget shows now and, with no session running, from next Monday: the widget can't
+ * work out a new week by itself, so last week's result would stay up until the app is opened.
+ */
+export function widgetTimeline(x: WidgetInput, now = Date.now()): { now: WidgetProps; next?: { at: number; props: WidgetProps } } {
+  const props = widgetProps(x, now);
+  if (props.live) return { now: props };
+  const d = new Date(weekStart(now));
+  // Through setDate, so a daylight-saving change never shifts Monday.
+  d.setDate(d.getDate() + 7);
+  const at = d.getTime();
+  return { now: props, next: { at, props: widgetProps(x, at) } };
+}
