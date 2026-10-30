@@ -35,7 +35,7 @@ export function StakeFields({ s, onChange, expenses = true }: { s: Session; onCh
     );
   return (
     <View style={{ gap: S.lg }}>
-      <Section title={sold ? t('Ação vendida · {n}%', { n: Math.round(sold * 10) / 10 }) : t('Ação vendida')}>
+      <Section title={sold ? t('Ação vendida · {n}%', { n: num(Math.round(sold * 10) / 10) }) : t('Ação vendida')}>
         {stakes.length > 0 && (
           <ListGroup>
             {stakes.map((x, i) => {
@@ -49,7 +49,7 @@ export function StakeFields({ s, onChange, expenses = true }: { s: Session; onCh
                   subtitle={[`${num(x.share)}%`, p ? p.name : markupLabel(x.markup), x.unpaid ? t('por pagar') : ''].filter(Boolean).join(' · ')}
                   value={money(stakeCost(s, x), s.currency)}
                   chevron={false}
-                  right={<IconButton name="close" size={30} label={t('Tirar')} onPress={() => setStakes(stakes.filter((_, k) => k !== i))} />}
+                  right={<IconButton name="close" size={30} label={t('Tirar {name}', { name: b?.name ?? t('Sem nome') })} onPress={() => setStakes(stakes.filter((_, k) => k !== i))} />}
                 />
               );
             })}
@@ -175,7 +175,7 @@ function AddStake({ s, maxShare, taken, onAdd, onCancel }: { s: Session; maxShar
         </>
       ) : pkg.share > maxShare ? (
         <T v="small" color={C.warn}>
-          {t('Só restam {n}% da tua ação por registar: fica com {n}%.', { n: maxShare })}
+          {t('Só restam {n}% da tua ação por registar: fica com {n}%.', { n: num(maxShare) })}
         </T>
       ) : null}
 
@@ -188,7 +188,7 @@ function AddStake({ s, maxShare, taken, onAdd, onCancel }: { s: Session; maxShar
         <Button
           size="md"
           style={{ flex: 1 }}
-          title={t('Adicionar {n}%', { n: finalShare })}
+          title={t('Adicionar {n}%', { n: num(finalShare) })}
           disabled={naming || !finalShare}
           onPress={() =>
             onAdd({

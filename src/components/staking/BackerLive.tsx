@@ -16,6 +16,7 @@ import { createLive, deleteLive, liveSnapshot, liveUrl, snapshotKey, updateLive 
 import { isRateLimited } from '@/lib/net';
 import { shareRef } from '@/lib/referrals';
 import { useOnline } from '@/lib/sync';
+import { num } from '@/poker/format';
 import { useStore } from '@/store/store';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
@@ -136,7 +137,7 @@ export function BackerLiveCard({ s }: { s: Session }) {
       {s.live && named.length ? (
         <ChipRow>
           {named.map((b) => (
-            <Chip key={b.id} icon="paper-plane-outline" label={t('Enviar a {name} ({n}%)', { name: b.name, n: b.share })} onPress={() => shareLink(s, s.live!.id, b.share, b.bountiesKept)} />
+            <Chip key={b.id} icon="paper-plane-outline" label={t('Enviar a {name} ({n}%)', { name: b.name, n: num(b.share) })} onPress={() => shareLink(s, s.live!.id, b.share, b.bountiesKept)} />
           ))}
         </ChipRow>
       ) : null}

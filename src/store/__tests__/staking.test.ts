@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { liveSnapshot, snapshotKey } from '../../lib/live-link';
 import { owedToBackers, profit, soldShare, stakeIn, stakingSummary, totals } from '../session-math';
 import { sessionsCsv } from '../backup';
-import { addOfferDue, backerLedger, paymentCurrency, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, offerRatesNow, packageDefaults, packageStates, savedOfferRate, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
+import { addOfferDue, backerLedger, settleUp, paymentCurrency, carriedTo, closePackage, endPreview, keepCuts, lastStakeTerms, ledgerYears, offerRatesNow, packageDefaults, packageStates, savedOfferRate, yearStatement, pieceSteps, stakingRatesSince, stakingTotals, unconverted, headlineOf, withCuts } from '../staking';
 import type { BackerPayment, Session, StakePackage } from '../types';
 import { fixSession } from '../validate';
 import { rate } from '../fx-math';
@@ -661,4 +661,33 @@ test('festival action only: payments count in the festival currency, new and old
     assert.equal(l.paid, -1000);
     assert.equal(l.payCurrency.y1, '$');
   }
+});
+
+test('settle up pays the unpaid pieces too: «Acertado» stays at zero after a tap on the piece', () => {
+  // 50% of a 200 € buy-in sold and not paid yet: they owe you 100 €.
+  const s = mk({ buyIn: 200, cashOut: 0, stakes: [{ backerId: 'b1', share: 50, markup: 1, unpaid: true }] });
+  const l = backerLedger('b1', [s], [], []);
+  assert.equal(l.balance, -100);
+  const { amount, paid } = settleUp(l, () => 1);
+  assert.equal(paid.length, 1);
+  // The piece is what they owed: paying it squares the deal with no other payment.
+  assert.equal(amount, 0);
+  const after = { ...s, stakes: s.stakes!.map((x) => ({ ...x, unpaid: undefined })) };
+  assert.equal(backerLedger('b1', [after], [], []).balance, 0);
+  // A win on top: the payment is the whole prize share, and the piece is paid with it.
+  const won = mk({ buyIn: 200, cashOut: 1000, stakes: [{ backerId: 'b1', share: 50, markup: 1, unpaid: true }] });
+  const lw = backerLedger('b1', [won], [], []);
+  const sw = settleUp(lw, () => 1);
+  const pay: BackerPayment[] = [{ id: 'y', backerId: 'b1', amount: sw.amount, at: 0, note: '', createdAt: 0 }];
+  const wonPaid = { ...won, stakes: won.stakes!.map((x) => ({ ...x, unpaid: undefined })) };
+  assert.equal(backerLedger('b1', [wonPaid], [], pay).balance, 0);
+  // Pieces another flow pays (festival lines) stay out.
+  assert.equal(settleUp(l, () => 1, () => true).paid.length, 0);
+});
+
+test('a backer gets the same cents on the player\'s app as on their page: 10% of 160,45 € is 16,05 €', () => {
+  const s = mk({ kind: 'cash', buyIn: 0, cashOut: 160.45, stakes: [{ backerId: 'b1', share: 10, markup: 1 }] });
+  const l = backerLedger('b1', [s], [], []);
+  assert.equal(l.rows[0].prize, 16.05);
+  assert.equal(owedToBackers(s), 16.05);
 });

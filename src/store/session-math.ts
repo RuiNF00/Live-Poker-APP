@@ -44,7 +44,8 @@ export function stakingSummary(stakes: Stake[]): Session['staking'] {
 
 /** Share sold to backers, 0–1. */
 /** To the cent, per backer: the same rounding as the backer's own ledger (staking.ts). */
-const c2 = (n: number) => Math.round(n * 100) / 100;
+// The same epsilon too: 10% of 160,45 € is 16,05 € on both sides, never 16,04 € here and 16,05 € on the backer's page.
+const c2 = (n: number) => Math.round(n * 100 + (n >= 0 ? 1e-7 : -1e-7)) / 100;
 
 export function soldShare(s: Session): number {
   const sold = stakesOf(s).reduce((a, x) => a + x.share, 0);

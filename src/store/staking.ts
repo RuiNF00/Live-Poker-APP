@@ -324,6 +324,16 @@ export interface BackerLedger {
 }
 
 /** Everything between you and one backer, newest session first. */
+/**
+ * «Marcar como pago» on the whole balance, like Splitwise's settle up: the session pieces still unpaid are paid
+ * with it, so the payment covers them too and their «Por pagar» goes. Left unpaid, a later tap on the piece
+ * counted it twice: «Acertado» became «Deves 100 €». `skip` keeps out pieces another flow pays (festival lines).
+ */
+export function settleUp(l: BackerLedger, toDeal: (s: Session) => number, skip: (r: BackerLedgerRow) => boolean = () => false): { amount: number; paid: BackerLedgerRow[] } {
+  const paid = l.rows.filter((r) => r.stake.unpaid && !skip(r));
+  return { amount: cents(l.balance + paid.reduce((a, r) => a + cents(r.cost * toDeal(r.session)), 0)), paid };
+}
+
 export function backerLedger(
   backerId: string,
   sessions: Session[],

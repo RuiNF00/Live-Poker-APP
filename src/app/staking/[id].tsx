@@ -34,7 +34,7 @@ import { allFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, unconverted, withPackageBounties, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, settleUp, unconverted, withPackageBounties, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -161,10 +161,21 @@ function BackerScreen() {
       () => {
         const now = Date.now();
         const pieces = piecesPaid();
-        const rest = Math.round((l.balance + pieces.reduce((a, x) => a + x.due, 0)) * 100) / 100;
-        if (Math.abs(rest) >= 0.01) savePayment({ id: uid('y_'), backerId: backer.id, amount: rest, at: now, note: '', createdAt: now, fx: ratesNow(), currency: cur });
-        // Skipped events with no session stay unpaid for (never refunded); the started ones' stakes become paid.
         const before = offerPackageIds(getOffers());
+        // Pieces sold on a session and not paid yet are paid with it too (settleUp).
+        const settle = settleUp(
+          l,
+          (s) => (!s.currency || s.currency === cur ? 1 : (rate(fx.table, s.currency, cur, s.startedAt, fx.manual) ?? 1)),
+          (r) => (r.session.stakes ?? []).some((x) => !!x.packageId && before.has(x.packageId)),
+        );
+        const loose = settle.paid;
+        const rest = Math.round((settle.amount + pieces.reduce((a, x) => a + x.due, 0)) * 100) / 100;
+        if (Math.abs(rest) >= 0.01) savePayment({ id: uid('y_'), backerId: backer.id, amount: rest, at: now, note: '', createdAt: now, fx: ratesNow(), currency: cur });
+        for (const s of new Set(loose.map((r) => r.session))) {
+          const paidNow = new Set(loose.filter((r) => r.session === s).map((r) => r.stake));
+          saveSession({ ...s, stakes: (s.stakes ?? []).map((x) => (paidNow.has(x) ? { ...x, unpaid: undefined } : x)) });
+        }
+        // Skipped events with no session stay unpaid for (never refunded); the started ones' stakes become paid.
         for (const x of pieces) setLinePaid(x.offerId, x.lineId, true, getPlan(x.festivalId).sessions);
         for (const fid of new Set(pieces.map((x) => x.festivalId))) for (const s of offerStakeChanges(sessions, getOffers(), fid, getPlan(fid).sessions, before)) saveSession(s);
         tap('medium');
@@ -550,6 +561,7 @@ function BackerScreen() {
       <PackageSheet
         pkg={pkg}
         suggestName={trip ? trip.name || trip.venue : undefined}
+        played={pkg ? (pk.states.get(pkg.id)?.sessions ?? 0) : 0}
         balance={
           square
             ? null

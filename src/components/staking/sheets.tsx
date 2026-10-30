@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Card, Chip, ChipRow, Field, NumField, Section, Segmented, SheetHeader, T, ToggleItem, ListGroup } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, confirmAction, Field, NumField, Section, Segmented, SheetHeader, T, ToggleItem, ListGroup } from '@/components/ui';
 import { decimalComma, t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
 import { money, num } from '@/poker/format';
@@ -93,11 +93,14 @@ export function PackageSheet({
   suggestName,
   makeup,
   balance,
+  played = 0,
   onSave,
   onDelete,
   onClose,
 }: {
   pkg: StakePackage | null;
+  /** Sessions already in the package: changing its deal then rewrites what they paid, so it asks first. */
+  played?: number;
   /** Name a new package starts with (the trip the player is on), editable. */
   suggestName?: string;
   makeup?: string | null;
@@ -109,12 +112,12 @@ export function PackageSheet({
 }) {
   return (
     <Sheet visible={!!pkg} title={pkg?.name ? pkg.name : t('Novo pacote')} onClose={onClose}>
-      {pkg ? <PackageForm key={pkg.id} pkg={pkg} suggestName={suggestName} makeup={makeup ?? null} balance={balance ?? null} onSave={onSave} onDelete={onDelete} /> : null}
+      {pkg ? <PackageForm key={pkg.id} pkg={pkg} suggestName={suggestName} makeup={makeup ?? null} balance={balance ?? null} played={played} onSave={onSave} onDelete={onDelete} /> : null}
     </Sheet>
   );
 }
 
-function PackageForm({ pkg, suggestName, makeup, balance, onSave, onDelete }: { pkg: StakePackage; suggestName?: string; makeup: string | null; balance: string | null; onSave: (p: StakePackage, carry: boolean) => void; onDelete?: () => void }) {
+function PackageForm({ pkg, suggestName, makeup, balance, played, onSave, onDelete }: { pkg: StakePackage; suggestName?: string; makeup: string | null; balance: string | null; played: number; onSave: (p: StakePackage, carry: boolean) => void; onDelete?: () => void }) {
   const [x, setX] = useState(() => (pkg.name || !suggestName ? pkg : { ...pkg, name: suggestName }));
   const set = (p: Partial<StakePackage>) => setX((v) => ({ ...v, ...p }));
   // Closing it now with makeup still to win back: forgive it, or carry it to a new package (the usual deal).
@@ -130,7 +133,13 @@ function PackageForm({ pkg, suggestName, makeup, balance, onSave, onDelete }: { 
             { key: 'makeup', label: t('Com makeup') },
           ]}
           value={x.kind}
-          onChange={(kind) => set({ kind, markup: kind === 'makeup' ? 1 : x.markup === 1 ? 1.1 : x.markup })}
+          onChange={(kind) => {
+            const apply = () => set({ kind, markup: kind === 'makeup' ? 1 : x.markup === 1 ? 1.1 : x.markup });
+            // With sessions played, a new deal rewrites their money (a makeup cut gone, the backer owed more): ask, as for bounties.
+            if (played > 0 && kind !== x.kind)
+              confirmAction(t('Mudar o acordo?'), t('Os {n} torneios já jogados neste pacote passam a contar com o acordo novo, e o saldo com o backer muda.', { n: played }), t('Mudar'), apply, false);
+            else apply();
+          }}
         />
         <Card tone="inset" style={{ paddingVertical: S.md }}>
           <T v="small">
