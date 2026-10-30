@@ -1234,7 +1234,7 @@ const es: Record<string, string> = {
   'Colar o link': 'Pegar el link',
   'Ou escreve-o aqui': 'O escríbelo aquí',
   'Este link não tem contas da Sweatbook. Confirma que copiaste a mensagem toda.': 'Este link no tiene cuentas de Sweatbook. Comprueba que copiaste el mensaje entero.',
-  'Quem eu banco': 'Jugadores que respaldo',
+  'Jogadores que banco': 'Jugadores que respaldo',
   'Segue quem bancas': 'Sigue a quienes respaldas',
   'Quando um jogador te envia as contas da Sweatbook, guarda o link aqui. Vês a ação em aberto, o que te deve, o makeup e as sessões em direto, de todos num só sítio.': 'Cuando un jugador te envíe sus cuentas de Sweatbook, guarda el link aquí. Ves la acción abierta, lo que te debe, el makeup y las sesiones en vivo, de todos en un solo lugar.',
   'Colar o link das contas': 'Pegar el link de las cuentas',

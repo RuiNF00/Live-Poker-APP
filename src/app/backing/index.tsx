@@ -23,7 +23,7 @@ export default function BackingScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t('Quem eu banco'), headerBackTitle: t('Voltar') }} />
+      <Stack.Screen options={{ title: t('Jogadores que banco'), headerBackTitle: t('Voltar') }} />
       <Screen contentStyle={{ paddingTop: S.lg }}>
         {sts.length === 0 ? (
           <Empty

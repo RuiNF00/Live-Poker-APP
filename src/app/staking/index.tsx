@@ -115,7 +115,7 @@ function StakingScreen() {
           </>
         )}
 
-        <Section title={t('Quem eu banco')}>
+        <Section title={t('Jogadores que banco')}>
           <ListGroup>
             <ListItem
               icon="people-circle-outline"

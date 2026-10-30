@@ -1325,7 +1325,7 @@ const en: Record<string, string> = {
   'Colar o link': 'Paste the link',
   'Ou escreve-o aqui': 'Or type it here',
   'Este link não tem contas da Sweatbook. Confirma que copiaste a mensagem toda.': "This link has no Sweatbook statement. Check you copied the whole message.",
-  'Quem eu banco': 'Players I back',
+  'Jogadores que banco': 'Players I back',
   'Segue quem bancas': 'Follow the players you back',
   'Quando um jogador te envia as contas da Sweatbook, guarda o link aqui. Vês a ação em aberto, o que te deve, o makeup e as sessões em direto, de todos num só sítio.': 'When a player sends you their Sweatbook statement, save the link here. See open action, what they owe you, makeup and live sessions for everyone in one place.',
   'Colar o link das contas': 'Paste the statement link',
