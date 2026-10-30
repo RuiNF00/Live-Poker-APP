@@ -50,6 +50,9 @@ test('a PKO flight busted with bounties: the next flight is a re-entry, and the 
   assert.equal(b.levelStartedAt, published);
   assert.equal(b.stack, 60000);
   assert.equal(b.stackLog.at(-1)!.level, 1);
+  // Bounties written above the prize (an edit of the prize after them) or unreadable: only what the prize holds stays.
+  assert.equal(reenterFlight({ ...busted, cashOut: 5000 }, 'B', 30 * H).cashOut, 5000);
+  assert.equal(reenterFlight({ ...busted, bounties: NaN, tourney: { ...busted.tourney!, bounties: undefined } }, 'B', 30 * H).cashOut, 0);
   // Players left was Flight A's count.
   assert.equal(b.tourney!.left, undefined);
   assert.equal(b.tourney!.entries, 431);

@@ -12,6 +12,7 @@
 import { MTT_LEVELS } from '@/poker/factory';
 import { syncTo } from '@/poker/tourney';
 
+import { bountiesOf } from './session-math';
 import type { Session } from './types';
 
 export function isBagged(s: Session): boolean {
@@ -78,7 +79,8 @@ export function reenterFlight(s: Session, name: string, now = Date.now(), start:
     day: undefined,
     entries: s.entries + 1,
     // A PKO flight busted with bounties: that money was paid out, it stays in the prize.
-    cashOut: s.kind === 'mtt' ? Math.max(0, s.bounties ?? s.tourney?.bounties ?? 0) : 0,
+    // bountiesOf, like the planner's check: never more than the prize the session had, nor NaN from an old backup.
+    cashOut: bountiesOf(s),
     finish: undefined,
     field: undefined,
     stack: startStack,
