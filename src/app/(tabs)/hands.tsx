@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Alert, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -79,11 +79,14 @@ export default function HandsScreen() {
 
   // The search also looks in the hand's session ("Main Event Dia 1", "Casino Lisboa").
   const sessionText = useMemo(() => new Map(sessions.map((x) => [x.id, ` ${x.name} ${x.venue}`.toLowerCase()])), [sessions]);
-  const searchWords = useMemo(() => parseSearch(q), [q]);
+  // The box shows each letter at once; the list (thousands of hands) catches up when the phone is free.
+  const typed = useDeferredValue(q);
+  const searchWords = useMemo(() => parseSearch(typed), [typed]);
+  // Newest first, sorted once per change of hands rather than on every letter.
+  const newest = useMemo(() => [...hands].sort((a, b) => b.createdAt - a.createdAt), [hands]);
   const sections = useMemo(() => {
     const words = searchWords;
-    const rows = [...hands]
-      .sort((a, b) => b.createdAt - a.createdAt)
+    const rows = newest
       .filter(
         (h) =>
           (!tag || (tag === INCOMPLETE ? !rowSummary(h).done : tag === TO_REVIEW ? needsReview(h, sentToCoach) : tag.startsWith(FOLDER) ? !!h.folders?.includes(tag.slice(FOLDER.length)) : h.tags.includes(tag))) &&
@@ -106,7 +109,7 @@ export default function HandsScreen() {
       out[out.length - 1].data.push(h);
     }
     return out;
-  }, [hands, searchWords, tag, sentToCoach, filter, sessionText]);
+  }, [newest, searchWords, tag, sentToCoach, filter, sessionText]);
 
   const sessionName = useCallback((id: string) => {
     const x = sessions.find((y) => y.id === id);

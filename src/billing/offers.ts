@@ -21,3 +21,11 @@ export interface WelcomeOfferState {
 export function shouldOfferWelcome(s: WelcomeOfferState): boolean {
   return !s.isPro && !s.shown && !s.invited && s.handsSaved >= 1 && s.trialDays > 0;
 }
+
+/**
+ * «Primeira mão feita» only when it is true: a player who brought years of hands (import, a backup
+ * on a new phone) sees the plain Pro title instead.
+ */
+export function welcomeReason(handsSaved: number): 'welcome' | 'generic' {
+  return handsSaved <= 3 ? 'welcome' : 'generic';
+}

@@ -143,3 +143,11 @@ test('a price never splits across two lines', async () => {
     assert.equal(breaks(p), false, JSON.stringify(p));
   assert.equal(priceLike('199,99 US$', 16.67, 'USD', 'pt-PT'), '16,67\u00a0US\u2060$');
 });
+
+test('«Primeira mão feita» só a quem acabou de começar; quem trouxe anos de mãos vê o título do Pro', async () => {
+  const { welcomeReason } = await import('../offers');
+  assert.equal(welcomeReason(1), 'welcome');
+  assert.equal(welcomeReason(3), 'welcome');
+  assert.equal(welcomeReason(4), 'generic');
+  assert.equal(welcomeReason(5000), 'generic');
+});

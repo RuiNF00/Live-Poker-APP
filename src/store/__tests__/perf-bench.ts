@@ -17,6 +17,11 @@ import { packageStates, withCuts } from '@/store/staking';
 import { finishedTourneys, summarize } from '@/store/tourney-stats';
 import { cashDone, winRate, winRateBy } from '@/store/winrate-math';
 import { heavyData, heavyStorage } from '@/store/__tests__/heavy-seed';
+import { buildReport, handsCsv } from '@/export/report';
+import { reportHtml } from '@/export/report-html';
+import { sessionsCsv } from '@/store/backup';
+import { handSearchText, matchesSearch, parseSearch } from '@/store/hand-filters';
+import { reviewYears, yearReview } from '@/share/year-review';
 
 export async function bench() {
   const out: Record<string, number> = {};
@@ -56,6 +61,13 @@ export async function bench() {
   await time('jogadores: contagem de mãos', () => handCounts(hands, boot.players.items));
   await time('jogadores: estatísticas de adversários', () => opponentStats(hands, boot.players.items));
   await time('staking: pacotes', () => packageStates(sessions, boot.packages.items));
+  const words = parseSearch('alemão');
+  await time('mãos: pesquisa numa letra', () => hands.filter((h) => matchesSearch(h, words, handSearchText(h))).length);
+  await time('ano em revisão', () => yearReview(reviewYears(sessions)[0], sessions, hands));
+  // A tap on Exportar, with a spinner: its own, longer budget.
+  await time('exportar: CSV das mãos', () => handsCsv(hands, sessions).length);
+  await time('exportar: CSV das sessões', () => sessionsCsv(sessions, boot.bankrolls.items, boot.transfers.items).length);
+  await time('exportar: relatório', () => reportHtml(buildReport({ sessions, transfers: boot.transfers.items, bankrolls: boot.bankrolls.items, range: {} })).length);
   return out;
 }
 

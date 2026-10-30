@@ -16,10 +16,11 @@ import { slowness } from './perf-calibrate';
 
 const BOOT_MS = 2000 / 6 * 2; // reading and checking everything stored
 const STAT_MS = 200 / 6 * 2; // any one screen's numbers
+const EXPORT_MS = 2000 / 6 * 2; // a file from Exportar, behind a spinner
 
 test('5 anos de dados: arranque e estatísticas dentro do orçamento', async () => {
   const slow = slowness();
-  const limitOf = (name: string) => (name.startsWith('arranque') ? BOOT_MS : STAT_MS) * slow;
+  const limitOf = (name: string) => (name.startsWith('arranque') ? BOOT_MS : name.startsWith('exportar') ? EXPORT_MS : STAT_MS) * slow;
   const best: Record<string, number> = {};
   let over: string[] = [];
   for (let run = 0; run < 3; run++) {

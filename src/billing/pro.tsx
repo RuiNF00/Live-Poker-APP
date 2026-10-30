@@ -11,7 +11,7 @@ import { devPro, localProFrom, TEST_BUILD_MARK } from './dev-pro';
 import { DEFAULT_PAYWALL, type PaywallConfig } from './experiments';
 import { rememberTrial, syncNudges } from './nudges-sync';
 import { ONBOARDING_KEY } from './onboarding';
-import { shouldOfferWelcome } from './offers';
+import { shouldOfferWelcome, welcomeReason } from './offers';
 import { cachedTier, canUse, proCache, pruneLog, remainingToday, type UsageEvent, type UsageKind } from './limits';
 import { invitePct } from './disclosure';
 import { FREE, INVITE, PLANS, TIER_RANK, unlocks, type FeatureKey, type PaywallReason, type PlanId, type Tier } from './plans';
@@ -359,7 +359,7 @@ export function useWelcomeOffer(handsSaved: number) {
         const invited = !!claim && (claim.result === 'ok' || claim.result === 'already');
         if (!live || !shouldOfferWelcome({ isPro: isPlus, handsSaved, shown: shown === '1' || !!atSession?.shown, trialDays, invited })) return;
         await Promise.all([AsyncStorage.setItem(KEYS.welcome, '1').catch(() => {}), markSessionOffer(atSession)]);
-        if (live) paywall('welcome');
+        if (live) paywall(welcomeReason(handsSaved));
       }, 700);
       return () => {
         live = false;
