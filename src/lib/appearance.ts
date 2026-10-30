@@ -34,7 +34,11 @@ export function appearancePref(): AppearancePref {
   }
 }
 
-applyScheme(resolveScheme(appearancePref(), Appearance.getColorScheme()));
+const pref = appearancePref();
+applyScheme(resolveScheme(pref, Appearance.getColorScheme()));
+// app.json lets the phone pick (Automático needs it), so the keyboard, alerts and the share sheet
+// follow the app's look when one is picked: no white keyboard under the dark app on a phone in light mode.
+if (Platform.OS !== 'web' && pref !== 'auto') Appearance.setColorScheme(pref);
 // What shows behind screens while they slide or the keyboard opens.
 if (Platform.OS !== 'web') SystemUI.setBackgroundColorAsync(C.bg).catch(() => {});
 
