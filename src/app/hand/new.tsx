@@ -38,7 +38,7 @@ import { entrySeconds } from '@/lib/friction';
 import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
-import { board2Needed, buttonForHeroPosition, callName, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
+import { board2Needed, buttonForHeroPosition, callName, heroFolded, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { holeCount } from '@/poker/variant';
 import { allInFor, autoActions, callerCandidates, checkAround, closingCall, foldsToCard, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
@@ -429,15 +429,16 @@ export default function NewHand() {
     router.back();
   };
 
-  // A hand is over with its last tap («Todos fold», the last Fold, the villain's second card at a
-  // heads-up showdown): it saves itself, with no «Guardar» to find. Only a hand entered here with taps: an edit, a reopened draft
+  // A hand is over with its last tap («Todos fold», the last Fold, hero's Fold, the villain's second card
+  // at a heads-up showdown): it saves itself, with no «Guardar» to find. Only a hand entered here with taps: an edit, a reopened draft
   // or a hand told in words waits for «Guardar», so what came in can be checked first. Tags and notes
   // are on the saved hand.
   const autoSaved = useRef(new Set<string>());
   useEffect(() => {
     // A showdown ends the same way once every cards shown are in and the pot has its winner (one board).
     const shownDown = phase === 'showdown' && r.boards.length < 2 && !!r.result?.resolved && liveVillains.length > 0 && liveVillains.every((i) => hand.players[i].cards?.length === holeCount(hand.game));
-    const over = (phase === 'done' && s.foldWin) || shownDown;
+    // Hero's fold ends the hand for hero (isComplete says so too): nobody types what the others did next.
+    const over = (phase === 'done' && s.foldWin) || shownDown || heroFolded(hand, r);
     if (isEdit || toldRef.current || saved.current || !over || !history.length || capturing) return;
     if (autoSaved.current.has(autoKey)) return;
     autoSaved.current.add(autoKey);

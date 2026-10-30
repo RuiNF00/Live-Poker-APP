@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buttonForHeroPosition, legal, positions, replay } from '../engine';
+import { buttonForHeroPosition, heroFolded, legal, positions, replay } from '../engine';
 import { allInFor, autoActions, closingCall, foldsToCard, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTo, type SizeMemory } from '../entry';
 import { holeCount } from '../variant';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
@@ -205,7 +205,7 @@ class Entry {
     const r = replay(this.hand);
     const live = this.hand.players.map((_, i) => i).filter((i) => i !== this.hand.hero && !r.final.folded[i]);
     const shownDown = !r.final.foldWin && r.boards.length < 2 && !!r.result?.resolved && live.length > 0 && live.every((i) => this.hand.players[i].cards?.length === holeCount(this.hand.game));
-    assert.ok(r.final.foldWin || shownDown, 'the hand is not over, so it waits for «Guardar»');
+    assert.ok(r.final.foldWin || shownDown || heroFolded(this.hand, r), 'the hand is not over, so it waits for «Guardar»');
     return r;
   }
   /** Multiway showdown: a tap on the seat, then its two cards. */
@@ -1268,4 +1268,13 @@ test('QA · PLO: the showdown waits for all four of the villain cards before it 
   assert.throws(() => e.autoSave(), 'two of four cards: not over');
   e.hand = { ...e.hand, players: e.hand.players.map((p, i) => (i === e.seat('BB') ? { ...p, cards: ['Qc', 'Qd', '8s', '8h'] } : p)) };
   assert.doesNotThrow(() => e.autoSave(), 'all four in: it saves itself');
+});
+
+test('round 9 · hero folds to an open: the hand saves itself, no «Guardar já» — 6 taps (was 7)', () => {
+  const e = new Entry('BTN', ['7h', '2c']);
+  e.entered('CO');
+  e.size('2.5x');
+  e.act('fold');
+  e.autoSave();
+  assert.equal(e.taps, 6, 'position, 2 cards, the opener, its size, Fold');
 });
