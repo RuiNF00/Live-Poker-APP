@@ -7,21 +7,21 @@ import { ScrollView, View } from 'react-native';
 import { Card, Row, Section, T } from '@/components/ui';
 import { WHATS_NEW } from '@/data/whats-new';
 import { t } from '@/i18n';
-import { releaseFor } from '@/lib/whats-new-core';
+import { releaseFor, releaseTitle } from '@/lib/whats-new-core';
 import { C, R, S } from '@/theme';
 
 const VERSION = Constants.expoConfig?.version ?? '0';
 
 /** What each version brought, newest first. */
 export default function WhatsNewScreen() {
-  // The entry this version announces is titled with the version the player has (1.0.1's entry on 1.1.0 says 1.1.0).
+  // The entry this version announces is titled with the version the player has (releaseTitle).
   const current = releaseFor(WHATS_NEW, VERSION);
   return (
     <>
       <Stack.Screen options={{ title: t('Novidades') }} />
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, paddingBottom: S.xxl, gap: S.lg }}>
         {WHATS_NEW.map((r) => (
-          <Section key={r.version} title={t('Versão {v}', { v: r === current ? VERSION : r.version })}>
+          <Section key={r.version} title={t('Versão {v}', { v: releaseTitle(r.version, r === current, VERSION) })}>
             <Card style={{ gap: S.lg }}>
               {r.items.map((it) => (
                 <Row key={it.title} gap={S.md} style={{ alignItems: 'flex-start' }}>

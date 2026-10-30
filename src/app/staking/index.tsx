@@ -43,7 +43,12 @@ function StakingScreen() {
             icon="people-outline"
             title={t('Regista a ação que vendes, com nome')}
             body={t('Junta os teus backers, regista pacotes de vários torneios e vê quanto deves a cada um, com makeup incluído.')}
-            action={<Button title={t('Adicionar backer')} icon="person-add-outline" onPress={() => setEdit(blankBacker())} />}
+            action={
+              <View style={{ alignItems: 'center', gap: S.sm }}>
+                <Button title={t('Adicionar backer')} icon="person-add-outline" onPress={() => setEdit(blankBacker())} />
+                <Help k="staking" label={t('Como funciona?')} />
+              </View>
+            }
           />
         ) : (
           <>

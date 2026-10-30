@@ -38,3 +38,11 @@ test('each topic has its «?» on the screen of that feature', () => {
   };
   for (const [k, f] of Object.entries(where)) assert.match(readFileSync(new URL(`../../${f}`, import.meta.url), 'utf8'), new RegExp(`help=\\{<Help k="${k}" />\\}`), f);
 });
+
+test('the «?» is 44 pt to tap and grows with larger text; an empty staking screen has the help too', () => {
+  const h = readFileSync(new URL('../../components/Help.tsx', import.meta.url), 'utf8');
+  assert.match(h, /hitSlop=\{14\}/);
+  assert.match(h, /Math\.min\(Math\.max\(useWindowDimensions\(\)\.fontScale, 1\), 1\.6\)/);
+  const st = readFileSync(new URL('../../app/staking/index.tsx', import.meta.url), 'utf8');
+  assert.match(st, /<Help k="staking" label=\{t\('Como funciona\?'\)\} \/>/);
+});

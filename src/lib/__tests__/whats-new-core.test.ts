@@ -1,7 +1,10 @@
+/// <reference types="node" />
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { whatsNewStep } from '../whats-new-core';
+import { WHATS_NEW } from '../../data/whats-new';
+import { releaseTitle, whatsNewStep } from '../whats-new-core';
 
 const D = 86_400_000;
 
@@ -54,7 +57,7 @@ test('the 1st update lists the five things, the first being the one on the card'
   const { WHATS_NEW } = await import('../../data/whats-new');
   const r = WHATS_NEW[0];
   assert.equal(r.version, '1.0.1');
-  assert.deepEqual(r.items.map((x) => x.title), ['Cash ao vivo', 'Análise Pro mais honesta', 'Notas sobre jogadores', 'ICM e deals', 'Mais rápida com anos de mãos']);
+  assert.deepEqual(r.items.map((x) => x.title), ['Cash ao vivo', 'Análise Pro mais rigorosa', 'Notas sobre jogadores', 'ICM e deals', 'Mais rápida com anos de mãos']);
   // Store rules: nothing about money changing hands or betting.
   for (const it of r.items) assert.doesNotMatch(`${it.title} ${it.body}`, /apost|apuest|\bbet\b|ganhei|perdi|comprar|investir/i);
 });
@@ -81,4 +84,20 @@ test('the 7 days start when the card is on screen, not while the first week hold
   const day = 86_400_000;
   const first = whatsNewStep({ version: '1.0.0' }, '1.0.1', true, true, 10 * day);
   assert.deepEqual(first, { show: true, next: { version: '1.0.0', shownFor: '1.0.1', shownAt: 10 * day } });
+});
+
+test('Novidades titles the entry with the version that brought it, never a later bugfix', () => {
+  assert.equal(releaseTitle('1.0.1', true, '1.1.0'), '1.1.0');
+  assert.equal(releaseTitle('1.0.1', true, '1.0.1'), '1.0.1');
+  // A bugfix with no entry of its own doesn't claim the 1st update's news.
+  assert.equal(releaseTitle('1.0.1', true, '1.0.2'), '1.0.1');
+  assert.equal(releaseTitle('1.0.1', true, '1.1.1'), '1.1.0');
+  assert.equal(releaseTitle('1.0.0', false, '1.1.0'), '1.0.0');
+});
+
+test('the home card keeps the news to two lines, and the notes item has the Notes tile icon', () => {
+  const card = readFileSync(new URL('../../components/WhatsNewCard.tsx', import.meta.url), 'utf8');
+  assert.match(card, /<T v="small" numberOfLines=\{2\}>\s*\{t\(item\.body\)\}/);
+  const notes = WHATS_NEW[0].items.find((x) => x.title === 'Notas sobre jogadores');
+  assert.equal(notes?.icon, 'create-outline');
 });

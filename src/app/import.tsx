@@ -412,7 +412,7 @@ function Review({ file, initial, picked, bottom, onBack, onImport }: { file: Pre
     const o = { currency: settings.currency, tableSize: settings.defaultTableSize, source: file.source, order, defaultKind };
     convert().then(({ toSessionsAsync }) => toSessionsAsync(file.table, mapping, o, { cancelled: () => gone })).then((r) => {
       if (r && !gone) setConv({ r, mapping, ...o });
-    });
+    }).catch(() => {}); // the converters' chunk unreachable (web, offline after an update): the review keeps what it shows
     return () => {
       gone = true;
     };

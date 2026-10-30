@@ -10,8 +10,8 @@ export const WHATS_NEW: Release[] = [
     version: '1.0.1',
     items: [
       { icon: 'cash-outline', title: 'Cash ao vivo', body: 'Rebuys do valor que meteres, mudar de stakes a meio da sessão e um stop-loss diário que já não volta a zero à meia-noite.' },
-      { icon: 'analytics-outline', title: 'Análise Pro mais honesta', body: 'Win rate e variância com a margem de erro certa, e insights que dizem quando um resultado ainda pode ser sorte.' },
-      { icon: 'person-outline', title: 'Notas sobre jogadores', body: 'Na sessão ao vivo, «Procurar um jogador» encontra a nota pelo nome, aspeto ou tag, mesmo sem acentos.' },
+      { icon: 'analytics-outline', title: 'Análise Pro mais rigorosa', body: 'Win rate e variância com a margem de erro certa, e insights que dizem quando um resultado ainda pode ser sorte.' },
+      { icon: 'create-outline', title: 'Notas sobre jogadores', body: 'Na sessão ao vivo, «Procurar um jogador» encontra a nota pelo nome, aspeto ou tag, mesmo sem acentos.' },
       { icon: 'pie-chart-outline', title: 'ICM e deals', body: 'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1.º prémio.' },
       { icon: 'flash-outline', title: 'Mais rápida com anos de mãos', body: 'O Resumo, a lista de Mãos e a pesquisa respondem logo, mesmo com milhares de mãos.' },
     ],

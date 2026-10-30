@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { HELP, type HelpKey } from '@/data/help';
 import { t } from '@/i18n';
@@ -12,14 +12,27 @@ import { SheetHeader, T, useSheetPad } from './ui';
  * A small «?» beside a feature that isn't obvious. Opens two or three lines on what it is,
  * so the screen itself stays short. Goes in a Section's `help` slot.
  */
-export function Help({ k }: { k: HelpKey }) {
+export function Help({ k, label }: { k: HelpKey; label?: string }) {
   const [open, setOpen] = useState(false);
   const title = t(HELP[k].title);
+  // Grows with the section title in larger text, up to the same cap as buttons, so it doesn't look lost beside it.
+  const size = Math.round(16 * Math.min(Math.max(useWindowDimensions().fontScale, 1), 1.6));
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('Ajuda: {topic}', { topic: title })}>
-        <Ionicons name="help-circle-outline" size={16} color={C.muted} />
-      </Pressable>
+      {label ? (
+        // A link with words, for an empty screen where there is no section title to sit beside.
+        <Pressable onPress={() => setOpen(true)} accessibilityRole="button" accessibilityHint={title} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="help-circle-outline" size={size} color={C.accent} />
+          <T v="small" color={C.accent}>
+            {label}
+          </T>
+        </Pressable>
+      ) : (
+        // 16 + 2 × 14 = 44 pt to tap.
+        <Pressable onPress={() => setOpen(true)} hitSlop={14} accessibilityRole="button" accessibilityLabel={t('Ajuda: {topic}', { topic: title })}>
+          <Ionicons name="help-circle-outline" size={size} color={C.muted} />
+        </Pressable>
+      )}
       <HelpSheet k={open ? k : null} onClose={() => setOpen(false)} />
     </>
   );

@@ -84,7 +84,10 @@ export function WhatsNewCard({ item, onDismiss, onShown }: { item: { icon: strin
             {t('Novo na versão {v}', { v: VERSION })}
           </T>
           <T v="h3">{t(item.title)}</T>
-          <T v="small">{t(item.body)}</T>
+          {/* Two lines on the card, so the update doesn't push the Resumo down; «Ver tudo» has the whole text. */}
+          <T v="small" numberOfLines={2}>
+            {t(item.body)}
+          </T>
           <T v="small" color={C.accent} style={{ fontFamily: ff(700), fontWeight: '700', marginTop: 2 }}>
             {t('Ver tudo')} ›
           </T>
