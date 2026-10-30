@@ -1040,6 +1040,7 @@ const es: Record<string, string> = {
   'Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez': 'Línea incompleta, quizá dividida en dos: corrígela en el archivo e importa otra vez',
   'Acaba mais de 14 dias depois de começar: confirma a data de fim': 'Termina más de 14 días después de empezar: revisa la fecha de fin',
   'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este archivo tiene más de 20 MB. Exporta solo las sesiones, o año por año, y vuelve a intentarlo.',
+  'Este ficheiro tem mais de {mb} MB, demasiado para abrir no telemóvel. Confirma que escolheste o ficheiro certo.': 'Este archivo tiene más de {mb} MB, demasiado para abrirlo en el móvil. Comprueba que elegiste el archivo correcto.',
   'Importar também as que parecem repetidas': 'Importar también las que parecen repetidas',
   '1 sessão tem o mesmo dia e resultado de uma que já tens.': '1 sesión tiene el mismo día y resultado que una que ya tienes.',
   '{n} sessões têm o mesmo dia e resultado de outras que já tens.': '{n} sesiones tienen el mismo día y resultado que otras que ya tienes.',

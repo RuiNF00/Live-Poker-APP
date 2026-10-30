@@ -1126,6 +1126,7 @@ const en: Record<string, string> = {
   'Linha incompleta, talvez partida em duas: corrige-a no ficheiro e importa outra vez': 'Incomplete line, maybe split in two: fix it in the file and import again',
   'Acaba mais de 14 dias depois de começar: confirma a data de fim': 'Ends more than 14 days after it starts: check the end date',
   'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'This file is over 20 MB. Export only the sessions, or one year at a time, and try again.',
+  'Este ficheiro tem mais de {mb} MB, demasiado para abrir no telemóvel. Confirma que escolheste o ficheiro certo.': 'This file is over {mb} MB, too much to open on a phone. Check that you picked the right file.',
   'Importar também as que parecem repetidas': 'Also import the ones that look repeated',
   '1 sessão tem o mesmo dia e resultado de uma que já tens.': '1 session has the same day and result as one you already have.',
   '{n} sessões têm o mesmo dia e resultado de outras que já tens.': '{n} sessions have the same day and result as ones you already have.',

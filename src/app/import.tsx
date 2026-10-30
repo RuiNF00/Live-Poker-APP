@@ -19,6 +19,7 @@ import { prepareAsync, toSessionsAsync, type DateOrder, type FailedRow, type Fai
 import type { Field, Mapping, SourceId } from '@/import/mapping';
 import { importRecap, type ImportRecap } from '@/import/recap';
 import { track } from '@/lib/events';
+import { MAX_CSV_BYTES, MAX_FILE_BYTES } from '@/lib/file-limits';
 import { pickTextFileWithName } from '@/lib/files';
 import { useSheetAnimation } from '@/lib/motion';
 import { money, plus } from '@/poker/format';
@@ -159,6 +160,8 @@ export default function ImportScreen() {
         setError(t('Este ficheiro é XML. Exporta as sessões em CSV na outra app e escolhe esse ficheiro.'));
         return;
       }
+      // A spreadsheet from another app is read row by row: past this it would take minutes.
+      if (text.length > MAX_CSV_BYTES) throw new Error('csv_too_big');
       // A spreadsheet (.xlsx), an image or a zip is not text: say so instead of listing junk rows.
       if (text.includes('\0') || (text.match(/\uFFFD/g)?.length ?? 0) > text.length / 100) throw new Error('binary');
       // Years of sessions take a moment to read: the bar shows before the first row is.
@@ -178,7 +181,8 @@ export default function ImportScreen() {
       if (first) setStep({ at: 'review', file, first });
     } catch (e) {
       // A backup from a later version: refused whole, so say why instead of "can't read".
-      if ((e as Error)?.message === 'too_big') setError(t('Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.'));
+      if ((e as Error)?.message === 'csv_too_big') setError(t('Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.'));
+      else if ((e as Error)?.message === 'too_big') setError(t('Este ficheiro tem mais de {mb} MB, demasiado para abrir no telemóvel. Confirma que escolheste o ficheiro certo.', { mb: MAX_FILE_BYTES / 1024 / 1024 }));
       else if ((e as Error)?.message === 'newer') setError(t('Esta cópia foi feita numa versão mais recente da Sweatbook. Atualiza a app e tenta outra vez; nada foi alterado.'));
       else setError(t('Não conseguimos ler este ficheiro. Escolhe o CSV exportado pela outra app (ou um .json do Sweatbook).'));
     } finally {

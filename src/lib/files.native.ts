@@ -6,6 +6,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { decodeText } from '@/import/decode';
+import { MAX_FILE_BYTES } from '@/lib/file-limits';
 
 export async function saveTextFile(name: string, text: string, mime: string): Promise<void> {
   const f = new File(Paths.cache, name);
@@ -16,14 +17,12 @@ export async function saveTextFile(name: string, text: string, mime: string): Pr
   await Sharing.shareAsync(f.uri, { mimeType: mime, dialogTitle: name, UTI: mime === 'text/csv' ? 'public.comma-separated-values-text' : mime === 'text/plain' ? 'public.plain-text' : 'public.json' });
 }
 
-// Read whole into memory: a video picked by mistake would close the app. No export or backup comes near this.
-const MAX_TEXT_BYTES = 20 * 1024 * 1024;
 
 /** null when the user cancels. */
 export async function pickTextFile(): Promise<string | null> {
   const r = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true });
   if (r.canceled || !r.assets?.[0]) return null;
-  if ((r.assets[0].size ?? 0) > MAX_TEXT_BYTES) throw new Error('too_big');
+  if ((r.assets[0].size ?? 0) > MAX_FILE_BYTES) throw new Error('too_big');
   return new File(r.assets[0].uri).text();
 }
 
@@ -34,10 +33,10 @@ export async function pickTextFileWithName(): Promise<{ text: string; name: stri
   const a = r.assets[0];
   // An .xlsx or a PDF isn't text: keep the file anyway, so it can go to support as it is.
   // Read as bytes: Excel's CSV is often Windows-1252 or UTF-16, which text() would garble.
-  if ((a.size ?? 0) > MAX_TEXT_BYTES) throw new Error('too_big');
+  if ((a.size ?? 0) > MAX_FILE_BYTES) throw new Error('too_big');
   const b = await new File(a.uri).bytes().catch(() => null);
   // Some pickers don't give a size: check what was read, so a huge file can't go on to the parser.
-  if (b && b.length > MAX_TEXT_BYTES) throw new Error('too_big');
+  if (b && b.length > MAX_FILE_BYTES) throw new Error('too_big');
   const text = b ? decodeText(b).text : '';
   return { text, name: a.name, uri: a.uri };
 }

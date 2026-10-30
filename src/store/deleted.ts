@@ -3,12 +3,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { parseOrQuarantine } from './boot';
-import { cleanDeleted, joinDeleted, keyOf, swapMarks, type Deleted, type DeletedList } from './deleted-math';
+import { DELETED_KEY, cleanDeleted, joinDeleted, keyOf, swapMarks, type Deleted, type DeletedList } from './deleted-math';
 import type { KV } from './persist';
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
-const KEY = 'rl.deleted.v1';
+const KEY = DELETED_KEY;
 
 let map: Deleted = {};
 let loaded: Promise<void> | null = null;

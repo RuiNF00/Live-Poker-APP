@@ -12,6 +12,7 @@
 import type { Hand } from '@/poker/types';
 
 import type { BackedPlayer, Backer, BackerPayment, Bankroll, PlayerNote, Session, Settings, StakePackage, Transfer, Trip } from './types';
+import { alive, cleanDeleted, DELETED_KEY, type Deleted } from './deleted-math';
 import { loadCollection, type CollectionSpec, type KV, type Loaded } from './persist';
 import { fixBacked, fixHand, fixItem, fixPlayer, fixSession, fixSettings, fixTrip } from './validate';
 
@@ -141,6 +142,58 @@ async function recover(kv: KV, entries: [string, string][], lists: Lists): Promi
   return { left, recovered };
 }
 
+const createdOf = (x: { id: string }) => (x as { createdAt?: number }).createdAt ?? 0;
+const byNewest = (a: { id: string }, b: { id: string }) => createdOf(b) - createdOf(a);
+
+/**
+ * What a write cut short left behind (the app killed, the phone full). A list is written items
+ * first and its id list last, then removals: cut in between, items are on the phone that the id
+ * list doesn't name (a restore half-way, a hand saved as the app died), or a deleted item's value
+ * stays. Each such item is read: one deleted on this phone (rl.deleted.v1) goes for good, any other
+ * joins its list, as the player made it. Items the id list names but this phone deleted (killed
+ * before the new id list was written) go too: the delete was what the player did last. The writer
+ * then writes the id list and removes what went. Bankrolls keep their own rules for deletes
+ * (bankroll-math: what was in a deleted one moves first), so only their leftovers are handled.
+ */
+async function leftovers(kv: KV, lists: Lists, keys: readonly string[], del: Deleted): Promise<{ bad: [string, string][]; gone: string[] }> {
+  const bad: [string, string][] = [];
+  const gone: string[] = [];
+  for (const name of LISTS) {
+    const spec = SPECS[name];
+    const l = lists[name];
+    const have = new Set(l.items.map((x) => x.id));
+    const skipped = new Set(l.bad.map(([k]) => k));
+    const loose = keys.filter((k) => k.startsWith(spec.prefix) && !have.has(k.slice(spec.prefix.length)) && !skipped.has(k));
+    const found: { id: string }[] = [];
+    for (let i = 0; i < loose.length; i += 400) {
+      let rows: readonly (readonly [string, string | null])[];
+      try {
+        rows = await kv.multiGet(loose.slice(i, i + 400));
+      } catch {
+        continue;
+      }
+      for (const [k, raw] of rows) {
+        if (raw == null) continue;
+        let v: unknown;
+        try {
+          v = JSON.parse(raw);
+        } catch {
+          v = undefined;
+        }
+        const x = v === undefined ? null : FIX[name](v);
+        // Unreadable or for another key: to quarantine like any bad value, never deleted unread.
+        if (!x || spec.prefix + x.id !== k) bad.push([k, raw]);
+        else found.push(x);
+      }
+    }
+    const kept = alive(found, name, del);
+    for (const x of found) if (!kept.includes(x)) gone.push(spec.prefix + x.id);
+    const listed = name === 'bankrolls' ? l.items : alive(l.items, name, del);
+    if (kept.length || listed !== l.items) l.items = kept.length ? [...listed, ...kept].sort(byNewest) : listed;
+  }
+  return { bad, gone };
+}
+
 /** A plain value (settings, draft): the parsed value, or `bad` when it isn't JSON. */
 async function readValue(kv: KV, key: string): Promise<{ raw: string | null; value: unknown; bad: boolean; unreadable: boolean }> {
   let raw: string | null;
@@ -208,6 +261,17 @@ export async function loadAll(kv: KV, now = Date.now()): Promise<Boot> {
   ]);
   const lists = [hands, sessions, players, bankrolls, transfers, backers, packages, payments, trips, backing];
   const bad: [string, string][] = lists.flatMap((l) => l.bad);
+
+  // A write the app didn't finish: see leftovers.
+  try {
+    const keys = await kv.getAllKeys();
+    const del = cleanDeleted((await readValue(kv, DELETED_KEY)).value);
+    const left = await leftovers(kv, { hands, sessions, players, bankrolls, transfers, backers, packages, payments, trips, backing } as unknown as Lists, keys, del);
+    bad.push(...left.bad);
+    if (left.gone.length) await kv.multiRemove(left.gone).catch(() => {});
+  } catch {
+    // Keys can't be listed: the lists stay as their id lists say, as before.
+  }
 
   // Settings are written back right after launch, so a bad copy must be kept first.
   const st = fixSettings(rawSettings.value);

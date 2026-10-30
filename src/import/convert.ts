@@ -155,6 +155,9 @@ function timeOf(rest: string): { h: number; mi: number; sec: number; hasTime: bo
 }
 
 /** A cell holding only a clock time → that time on the day of `day`; null when it isn't one, NaN when no clock shows it ("25:00", "13:00 PM"). */
+/** In the hour that happens twice when the clocks go back, as its first time round. */
+const twice = (t: number) => new Date(t + 3600000).getHours() === new Date(t).getHours();
+
 function clockOn(raw: string, day: number): number | null {
   if (!TIME_ONLY.test(raw)) return null;
   const { h, mi, sec } = timeOf(raw);
@@ -596,6 +599,14 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     // A clock time earlier than the start is past midnight.
     if (end < start && start - end < 86400000) end += 86400000;
     if (end < start) end = start;
+    // The night the clocks go back, a clock time in the hour that happens twice reads as the first
+    // one: a session ending in the second came back an hour short. The hours played tell which.
+    if (endP?.hasTime) {
+      const said = parseNum(get(r, 'minutes')) ?? (parseHours(get(r, 'hours')) ?? NaN) * 60;
+      const gap = (end - start) / 60000 - said;
+      if (Math.abs(gap + 60) <= 2 && twice(end)) end += 3600000;
+      else if (Math.abs(gap - 60) <= 2 && twice(start)) start += 3600000;
+    }
     if (end - start > MAX_SPAN) {
       // An end weeks after the start is a typo (a year off): those hours would sink the hourly rate.
       unreadable++;

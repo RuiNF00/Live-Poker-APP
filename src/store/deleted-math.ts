@@ -26,6 +26,9 @@ const KEY_RE = new RegExp(`^(${[...DELETED_LISTS, ...SWAP_DELETED_LISTS].join('|
 
 export const keyOf = (list: DeletedList, id: string) => `${list}:${id}`;
 
+/** Where the deletes are kept on the phone (deleted.ts; read at launch by boot.ts too). */
+export const DELETED_KEY = 'rl.deleted.v1';
+
 /**
  * A bankroll is deleted by id and currency (`bankrolls:<id>@<currency>`): two phones can hold one id in
  * two currencies (bankroll-math.ts), and a delete on one must not reach the other's. The mark covers the

@@ -1821,6 +1821,7 @@ const ptBR: Record<string, string> = {
   'A mão como um cartão de coleção: as tuas cartas em grande e os números em bb.': 'A mão como um card de coleção: suas cartas em destaque e os números em bb.',
   'Póster': 'Pôster',
   'Este ficheiro tem mais de 20 MB. Exporta só as sessões, ou um ano de cada vez, e tenta outra vez.': 'Este arquivo tem mais de 20 MB. Exporte só as sessões, ou um ano de cada vez, e tente de novo.',
+  'Este ficheiro tem mais de {mb} MB, demasiado para abrir no telemóvel. Confirma que escolheste o ficheiro certo.': 'Este arquivo tem mais de {mb} MB, grande demais para abrir no celular. Confira se escolheu o arquivo certo.',
   '1 sessão tem o mesmo dia e resultado de uma que já tens.': '1 sessão tem o mesmo dia e resultado de uma que você já tem.',
   '{n} sessões têm o mesmo dia e resultado de outras que já tens.': '{n} sessões têm o mesmo dia e resultado de outras que você já tem.',
   'Sessão ainda a decorrer: acaba-a na outra app e exporta outra vez': 'Sessão ainda em andamento: termine-a no outro app e exporte de novo',
