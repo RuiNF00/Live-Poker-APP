@@ -8,9 +8,10 @@ import { Alert, Platform, RefreshControl, ScrollView, Share, View } from 'react-
 
 import { CardRow } from '@/components/PlayingCard';
 import { Badge, Button, Card, Empty, ListGroup, ListItem, Pill, Row, T, tap } from '@/components/ui';
-import { locale, t } from '@/i18n';
+import { locale, t, variant } from '@/i18n';
 import { linkStatus, unreadByHand, type CoachLink, type CoachState } from '@/lib/coach-core';
 import { revokeCoachLink, syncCoach, useCoach } from '@/lib/coach-api';
+import { withLang } from '@/lib/link-lang';
 import { notice } from '@/lib/notice';
 import { comboLabel } from '@/poker/cards';
 import type { Hand } from '@/poker/types';
@@ -80,7 +81,7 @@ function LinkCard({ link, coach, hands }: { link: CoachLink; coach: CoachState; 
 
   const share = async () => {
     tap();
-    const msg = t('Podes rever estas {n} mãos? Comenta no próprio replay, sem criar conta: {url}', { n: link.handIds.length, url: link.url });
+    const msg = t('Podes rever estas {n} mãos? Comenta no próprio replay, sem criar conta: {url}', { n: link.handIds.length, url: withLang(link.url, variant) });
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       notice(t('Link copiado'));

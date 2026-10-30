@@ -11,10 +11,11 @@ import { usePro } from '@/billing/pro';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Empty, Field, ListGroup, Row, Section, Segmented, T, tap, ToggleItem } from '@/components/ui';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
 import { canCreateLink, EXPIRY_CHOICES, MAX_COACH_HANDS, type ExpiryChoice } from '@/lib/coach-core';
 import { createCoachLink, freeLinkUsed } from '@/lib/coach-api';
 import { track } from '@/lib/events';
+import { withLang } from '@/lib/link-lang';
 import { isComplete } from '@/poker/engine';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
@@ -73,7 +74,7 @@ export default function NewCoachLink() {
       return;
     }
     track('share_created', { kind: 'coach', hands: send.length, days: days ?? 0 });
-    const msg = t('Podes rever estas {n} mãos? Comenta no próprio replay, sem criar conta: {url}', { n: send.length, url: r.link.url });
+    const msg = t('Podes rever estas {n} mãos? Comenta no próprio replay, sem criar conta: {url}', { n: send.length, url: withLang(r.link.url, variant) });
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(msg);
       note(t('Link copiado'), t('Envia-o ao teu coach.'));
