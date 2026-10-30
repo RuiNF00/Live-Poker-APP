@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { AVATAR_HUES, AVATAR_HUES_LIGHT, DARK, LIGHT, POS_LIGHT, type Palette } from '../theme';
+import { AVATAR_HUES, AVATAR_HUES_LIGHT, DARK, DISABLED_OPACITY, LIGHT, POS_LIGHT, type Palette } from '../theme';
 
 type RGB = [number, number, number];
 
@@ -157,4 +157,14 @@ test('month recap: a result never reads from colour alone', () => {
   assert.match(m, /<Diff\s+trend\s/);
   assert.match(m, /name=\{d > 0 \? 'caret-up' : 'caret-down'\}/);
   assert.match(m, /d > 0 \? t\('melhor'\) : t\('pior'\)/);
+});
+
+test('disabled controls fade to one shared opacity, with a label still at 2.5:1', () => {
+  assert.equal(DISABLED_OPACITY, 0.5);
+  assert.match(src('components/ui.tsx'), /opacity: disabled \? DISABLED_OPACITY :/);
+  assert.doesNotMatch(src('app/hand/[id].tsx'), /\? 0\.35 :/);
+  for (const [P, under] of [[DARK, DARK.bg], [LIGHT, LIGHT.bg]] as const) {
+    const r = faded(P.accentInk, P.accent, DISABLED_OPACITY, under);
+    assert.ok(r >= 2.4, `primary button label when disabled: ${r.toFixed(2)}:1`);
+  }
 });

@@ -52,7 +52,7 @@ import { shareSampleHand } from '@/lib/sample-share';
 import { useUgcTerms } from '@/components/UgcTerms';
 import { handShareText } from '@/share/share-text';
 import { useStore } from '@/store/store';
-import { C, S } from '@/theme';
+import { C, DISABLED_OPACITY, S } from '@/theme';
 import { DEFAULT_TAGS, type Hand, type Street } from '@/poker/types';
 import { reduceMotion } from '@/lib/motion';
 
@@ -683,7 +683,7 @@ function ShareTile({
   disabled?: boolean;
 }) {
   return (
-    <Card onPress={disabled ? undefined : onPress} onLongPress={disabled ? undefined : onLongPress} style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: S.md, paddingHorizontal: S.sm, opacity: disabled ? 0.5 : 1 }} accessibilityLabel={label}>
+    <Card onPress={disabled ? undefined : onPress} onLongPress={disabled ? undefined : onLongPress} style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: S.md, paddingHorizontal: S.sm, opacity: disabled ? DISABLED_OPACITY : 1 }} accessibilityLabel={label}>
       <Ionicons name={icon} size={22} color={C.text} />
       <T v="h3" style={{ fontSize: 14 }}>
         {label}
@@ -747,7 +747,7 @@ function HandNav({ hand, hands }: { hand: Hand; hands: Hand[] }) {
         disabled={!target}
         onPress={() => open(target)}
         hitSlop={6}
-        style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: S.sm, opacity: !target ? 0.35 : pressed ? 0.7 : 1 })}>
+        style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: S.sm, opacity: !target ? DISABLED_OPACITY : pressed ? 0.7 : 1 })}>
         {dir < 0 ? <Ionicons name="chevron-back" size={18} color={C.text} /> : null}
         <T v="small" color={C.text}>
           {dir < 0 ? t('Anterior') : t('Seguinte')}

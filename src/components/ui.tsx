@@ -34,7 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { decimalComma, t } from '@/i18n';
 import { numText, parseNum, syncText, typedText } from '@/lib/num-input';
 import { MASK, moneyMasked } from '@/poker/format';
-import { C, F, R, S, SHADOW, currentScheme, ff, posColor } from '@/theme';
+import { C, DISABLED_OPACITY, F, R, S, SHADOW, currentScheme, ff, posColor } from '@/theme';
 
 import { OfflineBadge, useOffline } from './NetStatus';
 
@@ -721,7 +721,7 @@ export function Button({
           justifyContent: 'center',
           flexDirection: 'row',
           gap: 8,
-          opacity: disabled ? 0.4 : pressed && kind !== 'primary' ? 0.75 : 1,
+          opacity: disabled ? DISABLED_OPACITY : pressed && kind !== 'primary' ? 0.75 : 1,
           // On paper a secondary button's fill matches the footer it sits on: the outline keeps its shape.
           borderWidth: kind === 'ghost' || kind === 'outline' || (kind === 'secondary' && currentScheme() === 'light') ? 1 : 0,
           borderColor: kind === 'outline' ? C.accentLine : C.borderStrong,

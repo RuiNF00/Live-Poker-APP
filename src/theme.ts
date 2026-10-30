@@ -173,6 +173,13 @@ export function applyScheme(next: Scheme) {
   Object.assign(SHADOW, { shadowOpacity: next === 'light' ? 0.1 : 0.28 });
 }
 
+/**
+ * A control that can't be used yet. 0.5 (2.5:1 on its label): at 0.4 the word was hard to read at the
+ * table, at 0.6 it passes for an active secondary button (Design, contraste-1a). The line saying why it is
+ * off keeps its full colour.
+ */
+export const DISABLED_OPACITY = 0.5;
+
 export const R = { xs: 6, sm: 8, md: 12, lg: 16, xl: 22, pill: 999 };
 /** Spacing. `gutter` is the screen side margin on a phone. */
 export const S = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, gutter: 16 };
