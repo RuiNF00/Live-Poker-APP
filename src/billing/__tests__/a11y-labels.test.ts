@@ -43,3 +43,7 @@ test('a switch made in the cancel flow is remembered, so Settings doesn\'t offer
   assert.match(c, /if \(res === 'ok' && what === 'annual' && product && ends\) rememberAnnualSwitch\(\{ product, ends \}\)/);
   assert.match(c, /setEnds\(s\?\.ends \? new Date\(s\.ends\)\.toISOString\(\) : null\)/);
 });
+
+test('Settings reads the remembered switch on every focus, so coming back from the cancel flow hides the row', () => {
+  assert.match(read('app/settings.tsx'), /useFocusEffect\(\s*useCallback\(\(\) => \{\s*void annualSwitched\(\)\.then\(setSwitched\);/);
+});

@@ -3,9 +3,9 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Constants from 'expo-constants';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -113,9 +113,12 @@ export default function SettingsScreen() {
   // A monthly subscriber who means to stay: the yearly plan of the same tier, one tap, without going
   // through «Gerir subscrição» and its reasons for leaving. Same store prices; never during the free days.
   const [switched, setSwitched] = useState<AnnualSwitched | null>(null);
-  useEffect(() => {
-    void annualSwitched().then(setSwitched);
-  }, []);
+  // On every focus: a switch made in the cancel flow (opened from here) hides the row on the way back.
+  useFocusEffect(
+    useCallback(() => {
+      void annualSwitched().then(setSwitched);
+    }, []),
+  );
   const toAnnual = annualSwitch(period, pro.plans, { forGood, os: Platform.OS, switched });
   const [switching, setSwitching] = useState(false);
   const switchToAnnual = async () => {
