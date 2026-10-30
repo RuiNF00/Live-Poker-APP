@@ -124,7 +124,7 @@ function BackerScreen() {
   const togglePaid = (r: BackerLedgerRow) => {
     const s: Session = r.session;
     // Paid: nothing left to pay, re-entries of a festival piece included. Not paid after all: the whole piece.
-    const stakes = (s.stakes ?? []).map((x) => (x === r.stake ? { ...x, unpaid: r.due > 0.005 ? undefined : true, prepaid: undefined } : x));
+    const stakes = (s.stakes ?? []).map((x) => (x === r.stake ? { ...x, unpaid: r.due > 0.005 ? undefined : true, prepaid: undefined, paidCost: undefined } : x));
     saveSession({ ...s, stakes });
     tap('medium');
     setPiece(null);
@@ -177,7 +177,7 @@ function BackerScreen() {
         const next = new Map<string, Session>();
         for (const s of new Set(loose.map((r) => r.session))) {
           const paidNow = new Set(loose.filter((r) => r.session === s).map((r) => r.stake));
-          next.set(s.id, { ...s, stakes: (s.stakes ?? []).map((x) => (paidNow.has(x) ? { ...x, unpaid: undefined, prepaid: undefined } : x)) });
+          next.set(s.id, { ...s, stakes: (s.stakes ?? []).map((x) => (paidNow.has(x) ? { ...x, unpaid: undefined, prepaid: undefined, paidCost: undefined } : x)) });
         }
         const current = () => sessions.map((s) => next.get(s.id) ?? s);
         // Festival pieces paid in full, re-entries included; skipped events with no session stay unpaid for (never refunded).

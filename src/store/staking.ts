@@ -23,7 +23,8 @@ export function stakeCost(s: Session, x: Stake): number {
  */
 export function stakeDue(s: Session, x: Stake): number {
   if (x.unpaid) return stakeCost(s, x);
-  return x.prepaid ? Math.max(0, pieceOf(s, x) * (cost(s) - s.buyIn) * (x.markup || 1)) : 0;
+  // Settled up: what was paid covers the session's cost at the time (paidCost), a re-entry after it is due.
+  return x.prepaid ? Math.max(0, pieceOf(s, x) * (cost(s) - (x.paidCost ?? s.buyIn)) * (x.markup || 1)) : 0;
 }
 
 /** The backer's share of the prize (without the bounties when they stay with you), before any makeup cut. */

@@ -69,6 +69,38 @@ test('settling half-way through the festival pays the re-entries, and they stay 
   assert.equal(backerLedger('ana', [s], packages, []).unpaid, 3120);
 });
 
+test('a re-entry after the settle-up is still the backer\'s to pay, and only that one', () => {
+  const s = event2();
+  const before = offerPackageIds([offer]);
+  // Settled with two entries in: Ana owes nothing, and settling again changes nothing.
+  const [paid] = paidInFull([s], new Set(['pa']));
+  assert.equal(paid.stakes![0].paidCost, 52000);
+  assert.equal(stakeDue(paid, paid.stakes![0]), 0);
+  assert.equal(paidInFull([paid], new Set(['pa'])).length, 0);
+  // The stakes rebuilt after the settle-up keep what was paid.
+  const rebuilt = offerStakeChanges([paid], [offer], F.id, { '2': 's2' }, before)[0] ?? paid;
+  assert.equal(rebuilt.stakes![0].paidCost, 52000);
+  // A third entry after it: Ana's 10% × 26,000 × 1.2 is due again, not all three.
+  const third = { ...rebuilt, entries: 3 };
+  assert.equal(stakeDue(third, third.stakes![0]), 3120);
+  assert.equal(backerLedger('ana', [third], packages, []).unpaid, 3120);
+  // Rebuilding the stakes again doesn't wipe it out.
+  const again = offerStakeChanges([third], [offer], F.id, { '2': 's2' }, before)[0] ?? third;
+  assert.equal(backerLedger('ana', [again], packages, []).unpaid, 3120);
+  // Settling again pays that one, and the paid cost moves up.
+  const [settled] = paidInFull([again], new Set(['pa']));
+  assert.equal(settled.stakes![0].paidCost, 78000);
+  assert.equal(backerLedger('ana', [settled], packages, []).unpaid, 0);
+  // Bruno's piece was never settled: all three entries are still his to pay.
+  assert.equal(backerLedger('bruno', [settled], packages, []).unpaid, 0.05 * 78000 * 1.2);
+});
+
+test('a paidCost that is not a number is dropped from a backup', () => {
+  const s = event2();
+  const bad = fixSession({ ...s, stakes: [{ ...s.stakes![0], paidCost: 'x' as never }, s.stakes![1]] });
+  assert.equal(bad!.stakes![0].paidCost, undefined);
+});
+
 test('a festival session from before re-entries were charged keeps its paid piece', () => {
   const old = event2({ stakes: [{ backerId: 'ana', packageId: 'pa', share: 10, markup: 1.2 }] });
   const next = withOfferStakes(old.stakes, stakesFor([offer], F.id, '2'), offerPackageIds([offer]));

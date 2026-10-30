@@ -14,7 +14,7 @@ import { useSyncExternalStore } from 'react';
 
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { cents, stakeCost, stakeDue, stakePrize } from '@/store/staking';
-import { stakesOf } from '@/store/session-math';
+import { cost, stakesOf } from '@/store/session-math';
 import type { Backer, Session, Stake, StakePackage } from '@/store/types';
 
 export const MARKUPS = [1, 1.05, 1.1, 1.15, 1.2, 1.3];
@@ -465,14 +465,14 @@ export function offerPackageIds(offers: ActionOffer[]): Set<string> {
  */
 export function withOfferStakes(existing: Stake[] | undefined, fromOffer: Stake[], packageIds: Set<string>): Stake[] {
   const had = new Map((existing ?? []).filter((x) => x.packageId).map((x) => [x.packageId, x]));
-  const inFull = (x: Stake) => {
-    const h = x.prepaid && had.get(x.packageId);
-    return !!h && !h.unpaid && !h.prepaid;
-  };
   return [
     ...(existing ?? []).filter((x) => !x.packageId || !packageIds.has(x.packageId)),
     ...fromOffer.map((x) => {
-      if (!inFull(x)) return x;
+      const h = x.prepaid && had.get(x.packageId);
+      if (!h || h.unpaid) return x;
+      // Settled up: keeps what was paid, so a re-entry after it is still due.
+      if (h.prepaid) return h.paidCost === undefined ? x : { ...x, paidCost: h.paidCost };
+      // Paid in full from before re-entries were charged: stays paid.
       const y = { ...x };
       delete y.prepaid;
       return y;
@@ -482,19 +482,20 @@ export function withOfferStakes(existing: Stake[] | undefined, fromOffer: Stake[
 
 /**
  * Festival pieces paid in full with a settlement: their stakes on sessions lose «por pagar» and
- * the re-entries still due, so the line's stakes rebuilt after (offerStakeChanges) stay paid.
+ * record what the session cost (paidCost), so the line's stakes rebuilt after (offerStakeChanges)
+ * stay paid, and a re-entry played after the settle-up is still the backer's to pay.
  */
 export function paidInFull(sessions: Session[], packageIds: Set<string>): Session[] {
   const out: Session[] = [];
+  const settled = (s: Session, x: Stake) => x.prepaid && !x.unpaid && x.paidCost === cost(s);
   for (const s of sessions) {
-    if (!s.stakes?.some((x) => x.packageId && packageIds.has(x.packageId) && (x.unpaid || x.prepaid))) continue;
+    if (!s.stakes?.some((x) => x.packageId && packageIds.has(x.packageId) && !settled(s, x) && (x.unpaid || x.prepaid))) continue;
     out.push({
       ...s,
       stakes: s.stakes.map((x) => {
-        if (!x.packageId || !packageIds.has(x.packageId)) return x;
-        const y = { ...x };
+        if (!x.packageId || !packageIds.has(x.packageId) || !(x.unpaid || x.prepaid)) return x;
+        const y: Stake = { ...x, prepaid: true, paidCost: cost(s) };
         delete y.unpaid;
-        delete y.prepaid;
         return y;
       }),
     });
