@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { intlTag, isPt, LOCALES, numberTag, ogLocale, pageLocale, pickLocale, previewLocale, t, formatMoney, type Locale } from '../src/lib/i18n';
+import { intlTag, isPt, langParam, LOCALES, numberTag, ogLocale, pageLocale, pickLocale, previewLocale, t, formatMoney, type Locale } from '../src/lib/i18n';
 import { previewCopy } from '../src/lib/preview-copy';
 import { packCopy } from '../src/components/pack/copy';
 import { backingCopy } from '../src/components/backing/copy';
@@ -171,5 +171,16 @@ describe('pageLocale', () => {
 describe('landing main button before the stores', () => {
   it.each(LOCALES)('%s promises no download', (l) => {
     expect(landingCopy(l).ctaSoon).not.toMatch(/descarreg|baixar|descarg|download/i);
+  });
+});
+
+describe('langParam', () => {
+  it('reads the language a link names, as the app writes it or short', () => {
+    expect(langParam('pt-PT')).toBe('pt');
+    expect(langParam('pt')).toBe('pt');
+    expect(langParam('pt_BR')).toBe('pt-BR');
+    expect(langParam('es')).toBe('es');
+    expect(langParam('fr')).toBeNull();
+    expect(langParam(undefined)).toBeNull();
   });
 });

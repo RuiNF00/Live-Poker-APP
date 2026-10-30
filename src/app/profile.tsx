@@ -11,7 +11,8 @@ import { ActivityIndicator, Alert, Platform, ScrollView, Share, View } from 'rea
 import { CardRow } from '@/components/PlayingCard';
 import { Button, Card, Field, ListGroup, ListItem, Row, Section, T, tap, ToggleItem } from '@/components/ui';
 import { usePaged } from '@/components/ShowMore';
-import { t } from '@/i18n';
+import { t, variant } from '@/i18n';
+import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
 import { EMPTY_DRAFT, handleLooksValid, MAX_ITEMS, normalizeHandle, profileBody, profileSessions, shareableHands, type ProfileDraft, type ProfileLink } from '@/lib/profile-payload';
 import { checkHandle, createProfile, deleteProfile, loadProfileLink, profileUrl, updateProfile, type HandleCheck, type SaveResult } from '@/lib/public-profile';
@@ -144,7 +145,7 @@ export default function ProfileScreen() {
   const shareLink = async () => {
     if (!link) return;
     tap();
-    const url = profileUrl(link.handle);
+    const url = withLang(profileUrl(link.handle), variant);
     track('link_shared', { channel: 'profile' });
     if (Platform.OS === 'web') {
       await Clipboard.setStringAsync(url);

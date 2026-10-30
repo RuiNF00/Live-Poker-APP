@@ -8,19 +8,21 @@ import { brand } from '@/config/brand';
 import { profileCopy } from '@/components/profile/copy';
 import { ProfileView, type ProfileHand } from '@/components/profile/ProfileView';
 import { resolveHand } from '@/lib/hand';
-import { pickLocale } from '@/lib/i18n';
+import { ogLocale, pickLocale, previewLocale } from '@/lib/i18n';
 import { loadProfile as loadProfileByHandle, profileStore } from '@/lib/profiles';
 import { loadShare } from '@/lib/store';
 import { storeLinks } from '@/lib/storeLinks';
 import { PageFooter } from '@/components/PageFooter';
 
-type Params = { params: Promise<{ handle: string }> };
+type Params = { params: Promise<{ handle: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 const loadProfile = cache(loadProfileByHandle);
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Params): Promise<Metadata> {
   const rec = await loadProfile((await params).handle);
-  const c = profileCopy('pt');
+  // The player's language (the app adds ?lang=), as on every other shared page.
+  const locale = previewLocale((await searchParams).lang, (await headers()).get('accept-language'));
+  const c = profileCopy(locale);
   if (!rec) return { title: c.notFound, robots: { index: false } };
   const name = rec.payload.name || `@${rec.handle}`;
   const title = `${name} (@${rec.handle})`;
@@ -31,7 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description,
     // Opt-in, but still a person: shared by link, never listed by search engines.
     robots: { index: false, follow: false },
-    openGraph: { title, description, type: 'profile', url: `${brand.siteUrl}/u/${rec.handle}`, siteName: brand.name, images: [image] },
+    openGraph: { title, description, type: 'profile', url: `${brand.siteUrl}/u/${rec.handle}`, siteName: brand.name, locale: ogLocale(locale), images: [image] },
     twitter: { card: 'summary_large_image', title, description, images: [image.url] },
   };
 }

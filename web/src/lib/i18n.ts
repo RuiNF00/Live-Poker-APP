@@ -15,12 +15,17 @@ export const isPt = (l: Locale): l is 'pt' | 'pt-BR' => l === 'pt' || l === 'pt-
  * the reader's browser decides, as for the page itself.
  */
 export function previewLocale(lang: unknown, acceptLanguage: string | null | undefined): Locale {
+  return langParam(lang) ?? pickLocale(acceptLanguage);
+}
+
+/** The language a link names (?lang=pt-PT, pt, pt-BR, es, en), or null when it names none of ours. */
+export function langParam(lang: unknown): Locale | null {
   const t = typeof lang === 'string' ? lang.trim().toLowerCase().replace('_', '-') : '';
   if (t === 'pt-br') return 'pt-BR';
   if (t === 'pt-pt' || t === 'pt') return 'pt';
   if (t === 'es') return 'es';
   if (t === 'en') return 'en';
-  return pickLocale(acceptLanguage);
+  return null;
 }
 
 /** og:locale (pt_PT): chat apps use it to pick fonts and text direction. English is the US's. */
