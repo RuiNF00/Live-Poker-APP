@@ -7,7 +7,7 @@ import { t } from '@/i18n';
 import { rawMoney } from '@/poker/format';
 import { YEAR_MIN_SESSIONS } from '@/share/year-review';
 
-import { mainCurrency, playedMs, profit, resultAt } from './session-math';
+import { mainCurrency, playedMs, profit, resultDay } from './session-math';
 import type { Session } from './types';
 
 export const YEAR_RECAP_HOUR = 18;
@@ -32,7 +32,7 @@ export function planYearRecap(now: number, sent: number | undefined, live: boole
 
 /** The year's finished sessions, or null under the minimum. */
 export function yearSessions(sessions: Session[], year: number): Session[] | null {
-  const list = sessions.filter((s) => s.endedAt && new Date(resultAt(s)).getFullYear() === year);
+  const list = sessions.filter((s) => s.endedAt && new Date(resultDay(s)).getFullYear() === year);
   return list.length >= YEAR_MIN_SESSIONS ? list : null;
 }
 

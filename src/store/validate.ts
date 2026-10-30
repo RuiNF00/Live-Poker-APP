@@ -86,6 +86,7 @@ export const fixSession: Fix<Session> = (x) => {
   if (s.breaks === undefined) patch.breaks = [];
   if (s.stackLog === undefined) patch.stackLog = [];
   if (s.roster === undefined) patch.roster = [];
+  if (s.tz !== undefined && !(typeof s.tz === 'string' && s.tz.length <= 64)) patch.tz = undefined;
   // A receipt's file is a bare name inside the documents folder; one from a hand-edited backup
   // that climbs out of it ("../", "..") is dropped, so opening or deleting it can't reach anything else.
   if (Array.isArray(s.docs) && !(s.docs as Obj[]).every((d) => okDocFile(d.file))) patch.docs = (s.docs as Obj[]).filter((d) => okDocFile(d.file));

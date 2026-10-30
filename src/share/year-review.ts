@@ -5,7 +5,7 @@
 
 import type { Hand } from '@/poker/types';
 import { downswings, type Downswing } from '@/store/results-math';
-import { mainCurrency, ownBuyIns, playedMs, profit, timedProfit } from '@/store/session-math';
+import { mainCurrency, ownBuyIns, playedMs, profit, resultDay, timedProfit } from '@/store/session-math';
 import { weekStart, type Pause } from '@/store/streak';
 import type { Session } from '@/store/types';
 
@@ -70,13 +70,13 @@ export const yearOf = (ms: number) => new Date(ms).getFullYear();
 
 /** Years with finished sessions, newest first. */
 export function reviewYears(sessions: Session[]): number[] {
-  return [...new Set(sessions.filter((s) => s.endedAt).map((s) => yearOf(s.startedAt)))].sort((a, b) => b - a);
+  return [...new Set(sessions.filter((s) => s.endedAt).map((s) => yearOf(resultDay(s))))].sort((a, b) => b - a);
 }
 
 /** The year to open on: last year through January (the year just ended), otherwise this one. */
 export function defaultYear(sessions: Session[], now = Date.now()): number | null {
   const d = new Date(now);
-  const enough = (y: number) => sessions.filter((s) => s.endedAt && yearOf(s.startedAt) === y).length >= YEAR_MIN_SESSIONS;
+  const enough = (y: number) => sessions.filter((s) => s.endedAt && yearOf(resultDay(s)) === y).length >= YEAR_MIN_SESSIONS;
   const order = d.getMonth() === 0 ? [d.getFullYear() - 1, d.getFullYear()] : [d.getFullYear(), d.getFullYear() - 1];
   return order.find(enough) ?? null;
 }
@@ -167,7 +167,7 @@ export const handsOfYear = (hands: Hand[], year: number) => hands.filter((h) => 
  * as for the streak on the home tab.
  */
 export function yearReview(year: number, sessions: Session[], hands: Hand[], activity: number[] = [], pauses: Pause[] = [], opts: { pot?: boolean } = {}): YearReview {
-  const done = sessions.filter((s) => s.endedAt && yearOf(s.startedAt) === year);
+  const done = sessions.filter((s) => s.endedAt && yearOf(resultDay(s)) === year);
   const currency = mainCurrency(done);
   const main = done.filter((s) => s.currency === currency);
   const hoursOf = (s: Session) => playedMs(s, s.endedAt) / HOUR;
@@ -225,7 +225,7 @@ export function yearReview(year: number, sessions: Session[], hands: Hand[], act
 
   const months = Array.from({ length: 12 }, (_, month) => ({ month, profit: 0, hours: 0, sessions: 0 }));
   for (const s of main) {
-    const m = months[new Date(s.startedAt).getMonth()];
+    const m = months[new Date(resultDay(s)).getMonth()];
     m.profit += profit(s);
     m.hours += hoursOf(s);
     m.sessions++;

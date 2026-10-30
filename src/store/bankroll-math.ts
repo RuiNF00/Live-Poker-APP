@@ -8,7 +8,7 @@ import { t } from '@/i18n';
 import { decimal, rawMoney } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
 
-import { addDays, byCurrency, profit } from './session-math';
+import { addDays, byCurrency, profit, resultDay } from './session-math';
 import type { Bankroll, GameFormat, Session, Transfer } from './types';
 
 /** Stable id for the bankroll made automatically for a currency, so two phones (or a backup) agree on it. */
@@ -495,7 +495,7 @@ export function applyFilter(list: Session[], f: SessionFilter): Session[] {
       (f.game === 'all' || s.kind === f.game) &&
       (f.format === 'all' || formatOf(s) === f.format) &&
       (!f.stakes.length || f.stakes.includes(stakeKey(s))) &&
-      inRange(s.startedAt, f.range),
+      inRange(resultDay(s), f.range),
   );
 }
 

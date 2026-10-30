@@ -79,6 +79,8 @@ export interface Session {
   bankrollId?: string;
   /** Country it was played in (ISO code, 'US', 'PT'…), for the tax report. */
   country?: string;
+  /** The phone's time zone when the session was first saved (IANA): its day, month and tax year follow where it was played. */
+  tz?: string;
   /** Tax the cashier kept back from the prize, in the session's currency. */
   withheld?: Withholding;
   /** Receipts and tax forms, kept as files next to the app's data. */

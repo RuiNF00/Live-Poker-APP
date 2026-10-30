@@ -5,7 +5,7 @@
 // can be tested.
 
 import { inRange, type DateRange } from '@/store/bankroll-math';
-import { ownBounties, profit, resultAt, soldShare } from '@/store/session-math';
+import { ownBounties, profit, resultDay, soldShare } from '@/store/session-math';
 import { EXPENSE_KINDS, toTripCurrency } from '@/store/trip-math';
 import type { ExpenseKind, Session, Trip } from '@/store/types';
 
@@ -70,7 +70,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /** `trips`: the trips in the range (from the report), for their expenses. */
 export function taxReport(sessions: Session[], range: DateRange, trips: { trip: Pick<Trip, 'currency' | 'fx' | 'expenses'> }[] = []): TaxReport {
-  const list = sessions.filter((s) => s.endedAt && inRange(resultAt(s), range));
+  const list = sessions.filter((s) => s.endedAt && inRange(resultDay(s), range));
   const rows = new Map<string, TaxRow>();
   for (const s of list) {
     const key = `${s.country ?? ''}|${s.currency}`;
@@ -101,7 +101,7 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { trip: 
     // One row per currency and tax year: a loss in one year never offsets wins in another.
     const by = new Map<string, { currency: string; year: number; wins: number; losses: number; allowed: number }>();
     for (const s of list) {
-      const year = new Date(resultAt(s)).getFullYear();
+      const year = new Date(resultDay(s)).getFullYear();
       const key = `${s.currency}|${year}`;
       const x = by.get(key) ?? { currency: s.currency, year, wins: 0, losses: 0, allowed: 0 };
       const g = gamblingResult(s);

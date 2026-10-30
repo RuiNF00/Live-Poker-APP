@@ -9,6 +9,7 @@ import { AppState } from 'react-native';
 import { useLockScreenUp } from '@/components/AppLock';
 import { t } from '@/i18n';
 import type { Statement } from '@/lib/backing-link';
+import { phoneZone, zoneToKeep } from '@/lib/time-zone';
 import { useRates } from '@/lib/fx';
 import { queueBackerPageDelete } from '@/lib/backer-page';
 import { queueLiveDelete } from '@/lib/live-cleanup';
@@ -412,7 +413,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (s: Session) =>
       setSessions((l) => {
         const now = Date.now();
-        return upsert(l, { ...withLevelClock(l.find((x) => x.id === s.id), bare(s), now), updatedAt: now });
+        const prev = l.find((x) => x.id === s.id);
+        // The zone it was played in, set once when it is new (time-zone.ts).
+        const tz = zoneToKeep(s, prev, phoneZone());
+        return upsert(l, { ...withLevelClock(prev, bare(s), now), ...(tz ? { tz } : {}), updatedAt: now });
       }),
     [],
   );

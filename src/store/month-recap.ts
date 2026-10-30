@@ -5,7 +5,7 @@
 import { locale, t } from '@/i18n';
 import { rawMoney } from '@/poker/format';
 
-import { mainCurrency, playedMs, profit, resultAt, timedProfit } from './session-math';
+import { mainCurrency, playedMs, profit, resultDay, timedProfit } from './session-math';
 import type { Session } from './types';
 
 const H = 3600000;
@@ -60,7 +60,7 @@ export interface MonthRecap {
 
 /** Finished sessions that started in the month. */
 export function inMonth(sessions: Session[], key: string): Session[] {
-  return sessions.filter((s) => s.endedAt && monthKey(resultAt(s)) === key);
+  return sessions.filter((s) => s.endedAt && monthKey(resultDay(s)) === key);
 }
 
 /** The month in one currency (default: the one most of its sessions use). */
@@ -95,7 +95,7 @@ export function monthRecap(sessions: Session[], key: string, currency?: string):
 
 /** Months with finished sessions, newest first. */
 export function recapMonths(sessions: Session[]): string[] {
-  return [...new Set(sessions.filter((s) => s.endedAt).map((s) => monthKey(resultAt(s))))].sort().reverse();
+  return [...new Set(sessions.filter((s) => s.endedAt).map((s) => monthKey(resultDay(s))))].sort().reverse();
 }
 
 /** The month to open by default: the last finished month with sessions, else the latest. */

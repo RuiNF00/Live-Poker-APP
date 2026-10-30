@@ -1,3 +1,4 @@
+import { playedClock } from '../lib/time-zone';
 import type { Session, Stake } from './types';
 
 /**
@@ -430,4 +431,12 @@ export function endCashOut(f: EndForm, s: Pick<Session, 'kind' | 'stack' | 'tour
  */
 export function resultAt(s: Pick<Session, 'startedAt' | 'endedAt' | 'day' | 'bag'>): number {
   return (s.day ?? 1) > 1 && s.endedAt && !s.bag ? s.endedAt : s.startedAt;
+}
+
+/**
+ * resultAt on the calendar of the place it was played (time-zone.ts): use it to put a session in a day, month or
+ * year (tax, PDF, recaps, the period filter), never to show a time. Sessions without a zone count as before.
+ */
+export function resultDay(s: Pick<Session, 'startedAt' | 'endedAt' | 'day' | 'bag' | 'tz'>): number {
+  return playedClock(resultAt(s), s.tz);
 }
