@@ -743,6 +743,7 @@ const ptBR: Record<string, string> = {
   'O organizador não publicou o fecho do late reg (no Main Event as inscrições ficam abertas até ao Dia 2): confirma no balcão do torneio.': 'O organizador não publicou o fim do late reg (no Main Event as inscrições ficam abertas até o Dia 2): confirme no balcão do torneio.',
   'Sem rede: copia quando voltar': 'Sem conexão: copia quando voltar',
   'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Volta e continua; se voltar a acontecer, fecha e abre a app.': 'A mão que você estava registrando e a sessão ao vivo ficaram salvas. Volte e continue; se acontecer de novo, feche e abra o app.',
+  'A mão que estavas a registar e a sessão ao vivo ficaram guardadas. Podes continuar; se voltar a acontecer, fecha e abre a app.': 'A mão que você estava registrando e a sessão ao vivo ficaram salvas. Pode continuar; se acontecer de novo, feche e abra o app.',
   'Nada foi apagado deste telemóvel. Tenta outra vez; sem rede, liga-te primeiro.': 'Nada foi apagado deste celular. Tente de novo; sem conexão, conecte-se primeiro.',
   'Sem rede': 'Sem conexão',
   'Swap cheio': 'Swap cheio',
@@ -2190,6 +2191,12 @@ const ptBR: Record<string, string> = {
   'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1.º prémio.': 'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1º prêmio.',
   'Mais rápida com anos de mãos': 'Mais rápido com anos de mãos',
   'O Resumo, a lista de Mãos e a pesquisa respondem logo, mesmo com milhares de mãos.': 'O Resumo, a lista de Mãos e a busca respondem na hora, mesmo com milhares de mãos.',
+  // Quando algo corre mal
+  'O teu voto não foi enviado': 'Seu voto não foi enviado',
+  'Sem ligação: não deu para carregar os comentários.': 'Sem conexão: não foi possível carregar os comentários.',
+  'Não deu para enviar as contas': 'Não foi possível enviar as contas',
+  'Tenta outra vez daqui a pouco.': 'Tente de novo daqui a pouco.',
+  'Não deu para criar o link agora. Tenta outra vez daqui a pouco.': 'Não foi possível criar o link agora. Tente de novo daqui a pouco.',
 };
 
 export default ptBR;

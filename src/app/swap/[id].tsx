@@ -32,6 +32,9 @@ export default function SwapScreen() {
   const { swaps, ready } = useSwaps();
   const own = swaps.find((s) => s.id === id);
   const [remote, setRemote] = useState<RemoteSwap | null | undefined>(undefined);
+  // No signal is not a deleted swap: that one gets a retry, not «não encontrado».
+  const [offline, setOffline] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -51,17 +54,26 @@ export default function SwapScreen() {
         if (x && token && x.you) saveSwap(fromRemote(x, token, x.you));
         else setRemote(x);
       })
-      .catch(() => alive && setRemote(null));
+      .catch(() => alive && setOffline(true));
     return () => {
       alive = false;
     };
-  }, [ready, own, id, k]);
+  }, [ready, own, id, k, attempt]);
 
   if (own) return <OwnSwap s={own} pay={pay === '1'} />;
   return (
     <>
       <Stack.Screen options={{ title: 'Swap', headerBackTitle: t('Voltar') }} />
-      {remote === undefined ? (
+      {offline ? (
+        <Screen>
+          <Empty
+            icon="cloud-offline-outline"
+            title={t('Sem ligação')}
+            body={t('Tenta outra vez quando tiveres rede.')}
+            action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setOffline(false), setAttempt((n) => n + 1))} />}
+          />
+        </Screen>
+      ) : remote === undefined ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={C.muted} />
         </View>

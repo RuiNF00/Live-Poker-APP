@@ -15,6 +15,7 @@ import type { Hand } from '@/poker/types';
 import { commentPushReady } from './comment-push-ready';
 import { notifications } from './lock-screen/reminder';
 import { API } from './share-api';
+import { cancelCommentPushOff, queueCommentPushOff } from './share-queue';
 
 // Shared hands this phone asked notices for, so opening one only tells the server when it matters.
 const KEY = 'rl.commentPush.v1';
@@ -58,12 +59,14 @@ async function pushToken(): Promise<string | null> {
   }
 }
 
+const bodyOf = (pushToken: string | null) => JSON.stringify({ pushToken, lang: variant, tz: getCalendars()[0]?.timeZone ?? 'UTC' });
+
 async function send(h: Owned, pushToken: string | null): Promise<boolean> {
   if (!h.shareId || !h.shareToken) return false;
   const res = await fetch(`${API}/api/hands/${encodeURIComponent(h.shareId)}/push`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-edit-token': h.shareToken },
-    body: JSON.stringify({ pushToken, lang: variant, tz: getCalendars()[0]?.timeZone ?? 'UTC' }),
+    body: bodyOf(pushToken),
   });
   return res.ok;
 }
@@ -72,15 +75,23 @@ async function send(h: Owned, pushToken: string | null): Promise<boolean> {
 export async function turnOnCommentPush(h: Owned): Promise<boolean> {
   const token = await pushToken();
   if (!token || !h.shareId) return false;
+  await cancelCommentPushOff(h.shareId);
   const ok = await send(h, token).catch(() => false);
   if (ok) await remember(h.shareId, true);
   return ok;
 }
 
-/** The switch in Settings went off: the server forgets this phone for every hand. */
+/**
+ * The switch in Settings went off: the server forgets this phone for every hand. Through the
+ * outbox, so no signal or a server error never leaves notices coming (share-queue).
+ */
 export async function turnOffCommentPush(hands: Owned[]): Promise<void> {
   const ids = new Set(await registered());
-  await Promise.all(hands.filter((h) => h.shareId && ids.has(h.shareId)).map((h) => send(h, null).then(() => remember(h.shareId!, false)).catch(() => {})));
+  for (const h of hands) {
+    if (!h.shareId || !h.shareToken || !ids.has(h.shareId)) continue;
+    queueCommentPushOff(h.shareId, h.shareToken, bodyOf(null));
+    await remember(h.shareId, false);
+  }
 }
 
 const REFRESH_KEY = 'rl.commentPush.at.v1';

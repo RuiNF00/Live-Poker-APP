@@ -10,7 +10,7 @@ import type { Hand } from '@/poker/types';
 
 import { onEraseAll } from './erase-hooks';
 import { goneShares, linksToCheck } from './gone-shares';
-import { API, deleteMyComments, deleteShare, forgetAuthorId, storedAuthorId, uploadHand } from './share-api';
+import { API, deleteMyComments, deleteShare, forgetAuthorId, reportComment, reportHand, storedAuthorId, uploadHand } from './share-api';
 import { takeSlot, type Slot } from './share-slot';
 import { outcomeOf, queue, queued, registerSender, unqueue } from './sync';
 
@@ -217,3 +217,57 @@ export function useQueuedShare(hand: Hand | undefined, save: (h: Hand) => void):
   }, [id, has]);
   return waiting;
 }
+
+// Reports (moderation): sent now or when the signal is back, never lost to a dropped line or a
+// server hiccup while the screen already says «Obrigado».
+const reportOutcome = (e: unknown) => {
+  const m = /^report (\d+)$/.exec((e as Error)?.message ?? '');
+  return m ? outcomeOf(Number(m[1])) : 'retry';
+};
+
+export function queueHandReport(id: string, reporterId: string) {
+  queue('hand-report', { id, reporterId }, id);
+}
+
+registerSender('hand-report', async (p) => {
+  const { id, reporterId } = p as { id: string; reporterId: string };
+  try {
+    await reportHand(id, reporterId);
+    return 'done';
+  } catch (e) {
+    return reportOutcome(e);
+  }
+});
+
+export function queueCommentReport(shareId: string, commentId: string) {
+  queue('comment-report', { shareId, commentId }, `${shareId}/${commentId}`);
+}
+
+registerSender('comment-report', async (p) => {
+  const { shareId, commentId } = p as { shareId: string; commentId: string };
+  try {
+    await reportComment(shareId, commentId);
+    return 'done';
+  } catch (e) {
+    return reportOutcome(e);
+  }
+});
+
+// Comment notices switched off (Definições): the server forgets this phone's token for the hand, now
+// or when the signal is back. Kept until it answers, like a delete: the switch already shows off.
+export function queueCommentPushOff(shareId: string, token: string, body: string) {
+  queue('comment-push-off', { id: shareId, token, body }, shareId);
+}
+
+/** Switched on again before the off went out: the off must not undo it. */
+export const cancelCommentPushOff = (shareId: string) => unqueue('comment-push-off', shareId);
+
+registerSender('comment-push-off', async (p) => {
+  const { id, token, body } = p as { id: string; token: string; body: string };
+  try {
+    const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/push`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-edit-token': token }, body });
+    return outcomeOf(res.status);
+  } catch {
+    return 'retry';
+  }
+});

@@ -148,17 +148,20 @@ export async function deleteShare(id: string, token: string): Promise<void> {
   if (!res.ok && res.status !== 404) throw new Error('delete ' + res.status);
 }
 
+/** Throws `report <status>` when the server didn't take it (share-queue retries it). */
 export async function reportHand(id: string, reporterId: string, reason?: string): Promise<void> {
-  await fetch(`${API}/api/hands/${encodeURIComponent(id)}/report`, {
+  const res = await fetch(`${API}/api/hands/${encodeURIComponent(id)}/report`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ reporterId, reason }),
   });
+  if (!res.ok) throw new Error('report ' + res.status);
 }
 
 /** Flags one comment for review, like the site's "Denunciar" under each comment (3 reporters hide it). */
 export async function reportComment(shareId: string, commentId: string): Promise<void> {
-  await fetch(`${API}/api/hands/${encodeURIComponent(shareId)}/comments/${encodeURIComponent(commentId)}/report`, { method: 'POST' });
+  const res = await fetch(`${API}/api/hands/${encodeURIComponent(shareId)}/comments/${encodeURIComponent(commentId)}/report`, { method: 'POST' });
+  if (!res.ok) throw new Error('report ' + res.status);
 }
 
 /**

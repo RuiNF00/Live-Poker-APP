@@ -122,12 +122,13 @@ function NewGroupSwap() {
     const rc = await appUserId();
     // The link's id comes from the draft's key: the same link with or without signal.
     const id = await swapIdFor(key.current.token);
+    let made: Pick<Awaited<ReturnType<typeof createGroup>>, 'group' | 'invite'> | undefined;
     try {
       const { group, token, invite } = await createGroup(terms, names, rc, key.current, id);
       saveGroup({ ...groupFromRemote(group, token, 0, invite), ownerRc: rc });
       forgetSwapCreate(key.current.token);
       if (!settings.nickname) setSettings({ nickname: me.trim() });
-      await send(group.id, invite, group.terms, false);
+      made = { group, invite };
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
       if (code === 'offline') {
@@ -145,6 +146,8 @@ function NewGroupSwap() {
       );
       setBusy(false);
     }
+    // Sent after the try: a share sheet that fails is not «no signal» (that would queue a create of a group that exists).
+    if (made) await send(made.group.id, made.invite, made.group.terms, false).catch(() => {});
   }
 
   async function linkFor(id: string, invite: string, terms: GroupTerms): Promise<SwapLink> {

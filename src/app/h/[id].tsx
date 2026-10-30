@@ -12,10 +12,13 @@ import { Button, confirmAction, Empty, IconButton, Row, T, Wordmark } from '@/co
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
 import { track } from '@/lib/events';
+import { isRateLimited } from '@/lib/net';
+import { notice } from '@/lib/notice';
 import { handLoadError, streetOfNew } from '@/lib/friend-hands-core';
 import { blockCommenter, forgetFriendHand, hideFriendHand, markCommentsSeen, rememberFriendHand, useBlocked, useSharedHands } from '@/lib/friend-hands';
 import { claimInvite } from '@/lib/referrals';
-import { anonId, fetchComments, fetchHand, postComment, reportHand, type Comment } from '@/lib/share-api';
+import { anonId, fetchComments, fetchHand, postComment, type Comment } from '@/lib/share-api';
+import { queueHandReport } from '@/lib/share-queue';
 import { comboLabel } from '@/poker/cards';
 import { replay } from '@/poker/engine';
 import { blindsLabel } from '@/poker/format';
@@ -44,6 +47,9 @@ export default function SharedHand() {
   const [err, setErr] = useState<'gone' | 'offline' | 'rate_limited' | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [comments, setComments] = useState<Comment[] | null>(null);
+  // Comments that didn't load are not «no comments yet»: said, with a retry.
+  const [commentsFailed, setCommentsFailed] = useState(false);
+  const [commentsAttempt, setCommentsAttempt] = useState(0);
   const [reported, setReported] = useState(false);
   const { hands, settings, setSettings } = useStore();
   const mine = !!id && hands.some((h) => h.shareId === id);
@@ -55,8 +61,13 @@ export default function SharedHand() {
     if (!id) return;
     // No signal is not a deleted hand: that one gets a retry, not «já não existe».
     fetchHand(id).then(setHand).catch((e) => setErr(handLoadError(e)));
-    fetchComments(id).then(setComments).catch(() => setComments([]));
   }, [id, attempt]);
+  useEffect(() => {
+    if (!id) return;
+    fetchComments(id)
+      .then((c) => (setComments(c), setCommentsFailed(false)))
+      .catch(() => (setComments((x) => x ?? []), setCommentsFailed(true)));
+  }, [id, attempt, commentsAttempt]);
   // Opened from a link, the app has no header here: a way out on the phone (the web page is the whole site).
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   // A friend's hand goes on "Mãos partilhadas", to come back to the conversation; yours is there already.
@@ -134,7 +145,7 @@ export default function SharedHand() {
               onVote={(choice) =>
                 postComment(id!, { name: 'Voto', text: `🗳️ ${choice}` })
                   .then((c) => setComments((x) => [...(x ?? []), c]))
-                  .catch(() => {})
+                  .catch((e: unknown) => notice(isRateLimited(e) ? t('Demasiados pedidos. Tenta daqui a pouco.') : t('O teu voto não foi enviado'), isRateLimited(e) ? undefined : t('Tenta outra vez quando tiveres rede.')))
               }
             />
           </React.Suspense>
@@ -151,6 +162,12 @@ export default function SharedHand() {
           </View>
           )}
           <T v="h2">{t('Comentários')}</T>
+          {commentsFailed ? (
+            <Row style={{ alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <T v="small" style={{ flex: 1 }}>{t('Sem ligação: não deu para carregar os comentários.')}</T>
+              <Button kind="ghost" size="sm" icon="refresh" title={t('Tentar outra vez')} onPress={() => setCommentsAttempt((n) => n + 1)} />
+            </Row>
+          ) : null}
           <React.Suspense fallback={null}>
           <CommentsList shareId={id!} defaultName={settings.nickname} comments={visible} onPosted={(c) => setComments((x) => [...(x ?? []), c])} onBlock={mine ? undefined : block}
             streets={streets}
@@ -164,7 +181,7 @@ export default function SharedHand() {
             style={{ alignSelf: 'center', paddingTop: 8 }}
             onPress={() => {
               setReported(true);
-              reportHand(id!, anonId()).catch(() => {});
+              queueHandReport(id!, anonId());
               if (!mine) hideFriendHand(id!);
             }}>
             <T v="tiny">{reported ? t('Obrigado, vamos rever esta mão.') : t('Denunciar esta mão')}</T>

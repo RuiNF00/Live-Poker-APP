@@ -27,6 +27,7 @@ import { t } from '@/i18n';
 import { track, watchResume } from '@/lib/events';
 import { useReduceMotion } from '@/lib/motion';
 import { reportCaught, startCrashReports } from '@/lib/crash-report';
+import { installErrorGuard } from '@/lib/error-guard';
 import { installFetchTimeout } from '@/lib/net';
 import { startSync } from '@/lib/sync';
 import { startCoachSync } from '@/lib/coach-api';
@@ -61,6 +62,8 @@ const theme = {
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 installFetchTimeout();
+// Before crash reports: Sentry wraps it, reports first, then hands the error to it.
+installErrorGuard();
 startCrashReports();
 startSync();
 startCoachSync();

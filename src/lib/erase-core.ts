@@ -56,6 +56,7 @@ export const DELETE_KINDS = [
   'swap-leave',
   'swap-group-leave',
   'invite-erase',
+  'comment-push-off',
 ];
 
 /**

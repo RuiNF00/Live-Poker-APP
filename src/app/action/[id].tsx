@@ -254,7 +254,13 @@ export default function ActionPackageScreen() {
     try {
       const body = agreement(f, o, l, settings.nickname, nameOf(l), title);
       let remote = l.remote;
-      if (remote) await updateAgreement(remote, body);
+      if (remote) {
+        // The link already works: without signal the new terms follow it, as with changeTerms.
+        await updateAgreement(remote, body).catch((e: unknown) => {
+          if (!(e instanceof OfferFailure) || e.reason !== 'network') throw e;
+          queueAgreementUpdate(remote!, body);
+        });
+      }
       else {
         remote = await publishAgreement(body);
         updateLine(o.id, l.id, (x) => ({ ...x, remote, confirmedAt: null }));

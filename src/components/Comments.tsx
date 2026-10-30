@@ -6,7 +6,8 @@ import { AccessibilityInfo, Platform, Pressable, TextInput, View } from 'react-n
 
 import { t } from '@/i18n';
 import { isRateLimited } from '@/lib/net';
-import { postComment, reportComment, type Comment } from '@/lib/share-api';
+import { postComment, type Comment } from '@/lib/share-api';
+import { queueCommentReport } from '@/lib/share-queue';
 import { useUgcTerms } from '@/components/UgcTerms';
 import { shortDate, timeOf } from '@/poker/format';
 import type { Street } from '@/poker/types';
@@ -96,7 +97,7 @@ export function CommentsList({
   const [reported, setReported] = useState<Set<string>>(() => new Set());
   const report = (id: string) => {
     setReported((r) => new Set(r).add(id));
-    reportComment(shareId, id).catch(() => {});
+    queueCommentReport(shareId, id);
   };
   const grouped = !!streets && streets.length > 0;
   const about = grouped && onStreet && street ? street : undefined;

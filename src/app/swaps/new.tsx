@@ -123,13 +123,13 @@ function NewSwap() {
     const rc = await appUserId();
     // The link's id comes from the draft's key: the same link with or without signal.
     const id = await swapIdFor(key.current);
+    let made: Awaited<ReturnType<typeof createSwap>>['swap'] | undefined;
     try {
       const { swap, token } = await createSwap(terms, rc, key.current, id);
       saveSwap({ ...fromRemote(swap, token, 'a'), ownerRc: rc });
       forgetSwapCreate(key.current);
       if (!settings.nickname) setSettings({ nickname: me.trim() });
-      // The server's terms: the copy sent while offline may have gone first.
-      await send(swap.id, swap.terms, false);
+      made = swap;
     } catch (e) {
       const code = e instanceof SwapError ? e.code : 'offline';
       if (code === 'offline') {
@@ -147,6 +147,9 @@ function NewSwap() {
       );
       setBusy(false);
     }
+    // The server's terms: the copy sent while offline may have gone first. Sent after the try: a share
+    // sheet that fails is not «no signal» (that would queue a create of a swap that exists).
+    if (made) await send(made.id, made.terms, false).catch(() => {});
   }
 
   async function linkFor(id: string, terms: SwapTerms): Promise<SwapLink> {

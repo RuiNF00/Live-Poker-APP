@@ -75,6 +75,8 @@ function BackerScreen() {
   const [year, setYear] = useState<number | null>(null);
   // «Enviar contas» one at a time: on one bar of signal the page can take a while, and a second tap would open a second share.
   const sending = useRef(false);
+  // On a weak line the link takes a while: the button says so instead of ignoring the next taps.
+  const [preparing, setPreparing] = useState<'statement' | 'year' | null>(null);
   // After Pro ended: everything shows, and each change goes through "Ver com Pro".
   const { readOnly, gate } = useProReadOnly('staking');
   const backer = backers.find((b) => b.id === id);
@@ -220,10 +222,14 @@ function BackerScreen() {
         ? tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('O BCE não publica {list}. Escreve o teu câmbio e envia outra vez.', { list: typedApart.map(curName).join(', ') }), { label: t('Escrever o câmbio'), ask: t('Escrever o câmbio?'), run: gate(() => setTyping(true)) })
         : tell(t('Falta o câmbio de {list}', { list: apart.map(curName).join(', ') }), t('Sem ele, as contas que o backer recebe ficavam incompletas. Com rede, ou com o câmbio escrito no Bankroll, envia outra vez.'));
     sending.current = true;
+    setPreparing(withYear ? 'year' : 'statement');
     try {
       await sendSummary(withYear);
+    } catch {
+      notice(t('Não deu para enviar as contas'), t('Tenta outra vez daqui a pouco.'));
     } finally {
       sending.current = false;
+      setPreparing(null);
     }
   };
   const sendSummary = async (withYear: boolean) => {
@@ -348,14 +354,14 @@ function BackerScreen() {
           {square && !apartDue.length ? (
             // Stacked too: side by side, «Enviar contas» is cut at 320 points and with large text (Design P3).
             <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
-              <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
+              <Button size="md" kind="secondary" icon="share-outline" title={preparing === 'statement' ? t('A preparar…') : t('Enviar contas')} disabled={!!preparing} onPress={() => void shareSummary()} />
               <Button size="md" kind="secondary" icon="cash-outline" title={t('Pagamento')} onPress={gate(() => setPaying(true))} />
             </View>
           ) : (
             // Stacked: "Marcar como pago" (and "Marcar como pagado" in es) doesn't fit half the width of an iPhone.
             <View style={{ alignSelf: 'stretch', gap: S.sm, marginTop: S.xs }}>
               <Button size="md" icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={gate(square ? settleApart : markPaid)} />
-              <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar contas')} onPress={() => void shareSummary()} />
+              <Button size="md" kind="secondary" icon="share-outline" title={preparing === 'statement' ? t('A preparar…') : t('Enviar contas')} disabled={!!preparing} onPress={() => void shareSummary()} />
             </View>
           )}
           {square && !apartDue.length ? null : <Button size="sm" kind="ghost" title={t('Pagamento de outro valor')} onPress={gate(() => setPaying(true))} />}
@@ -482,7 +488,7 @@ function BackerScreen() {
               <Stat label={t('Prémios')} value={money(yr.prizes, cur)} />
               <Stat label={t('Resultado')} value={money(yr.net, cur)} tone={yr.net > 0 ? 'good' : yr.net < 0 ? 'bad' : undefined} />
             </StatGrid>
-            <Button size="md" kind="secondary" icon="share-outline" title={t('Enviar o resumo de {year}', { year: yr.year })} onPress={() => void shareSummary(true)} />
+            <Button size="md" kind="secondary" icon="share-outline" title={preparing === 'year' ? t('A preparar…') : t('Enviar o resumo de {year}', { year: yr.year })} disabled={!!preparing} onPress={() => void shareSummary(true)} />
           </Section>
         ) : null}
 

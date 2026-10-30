@@ -15,6 +15,7 @@ import { queueBackerPageDelete } from '@/lib/backer-page';
 import { queueLiveDelete } from '@/lib/live-cleanup';
 import { withLevelClock } from '@/lib/lock-screen/live-state';
 import { notice } from '@/lib/notice';
+import { errorGuardReady, onErrorFlush } from '@/lib/error-guard';
 import { unshared } from '@/lib/gone-shares';
 import { forgetHandShare, restoredGoneShares } from '@/lib/share-queue';
 import type { Festival } from '@/poker/festivals';
@@ -333,9 +334,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Writes are coalesced (one per burst of edits); going to the background
   // writes immediately so a killed app doesn't lose the last hand.
+  // Same when a tap or a timer throws (lib/error-guard): what is waiting is written before anything else.
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active') return;
+    const flushAll = () => {
       if (draftTimer.current) flushDraft(); // only an unsaved change
       if (!writers.current) return;
       const w = writers.current;
@@ -349,9 +350,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       w.payments.flush();
       w.trips.flush();
       w.backing.flush();
+    };
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') flushAll();
     });
-    return () => sub.remove();
+    const off = onErrorFlush(flushAll);
+    return () => {
+      sub.remove();
+      off();
+    };
   }, [flushDraft]);
+  useEffect(() => {
+    errorGuardReady(ready);
+    return () => errorGuardReady(false);
+  }, [ready]);
 
   useEffect(() => {
     if (loaded.current) writers.current?.hands.schedule(hands);

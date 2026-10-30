@@ -53,6 +53,7 @@ export function BackerLiveCard({ s }: { s: Session }) {
   const create = async () => {
     tap('medium');
     setBusy(true);
+    let id: string;
     try {
       const n = hands.filter((h) => h.sessionId === s.id).length;
       // Same token until it works: a tap after a timeout gets the link the first tap made.
@@ -60,13 +61,18 @@ export function BackerLiveCard({ s }: { s: Session }) {
       const live = await createLive(liveSnapshot(s, settings.nickname, n), await createKey(scope));
       saveSession({ ...latest.current, live });
       await forgetCreateKey(scope);
-      await shareLink(s, live.id);
+      id = live.id;
     } catch (e) {
       if (isRateLimited(e)) note(t('Demasiados pedidos. Tenta daqui a pouco.'));
+      // The server answered no: signal is not the problem.
+      else if (/^live \d+$/.test((e as Error)?.message ?? '')) note(t('Não deu para criar o link'), t('Tenta outra vez daqui a pouco.'));
       else note(t('Sem ligação'), t('Não deu para criar o link. Tenta outra vez quando tiveres rede.'));
+      return;
     } finally {
       setBusy(false);
     }
+    // Made and saved: a share sheet that fails never says the link wasn't created.
+    await shareLink(s, id).catch(() => {});
   };
 
   const remove = () => {

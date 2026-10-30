@@ -42,6 +42,7 @@ import {
   type FaceClip,
 } from '@/lib/instagram-story';
 import { shareLink } from '@/lib/share-api';
+import { isNetworkError, queueShare, takeDirectShare } from '@/lib/share-queue';
 import { shareOptions } from '@/lib/share-options';
 import { publicHand } from '@/poker/privacy';
 import { sampleHand } from '@/poker/sample';
@@ -140,6 +141,30 @@ export default function StoryScreen() {
   if (!hand || !shown || !moment) return <Empty title={t('Mão não encontrada')} />;
   // A link made from here carries the question too, like one made from the Partilhar sheet.
   const linked = !hand.shareId && !hand.ask && asked?.trim() ? { ...hand, ask: asked.trim().slice(0, 140) } : hand;
+  // One public copy per hand, as on the hand screen: a link made offline is reused, one being sent is
+  // waited for, and without signal the link is queued instead of asking to try again forever.
+  const linkId = async (): Promise<string> => {
+    if (hand.shareId) return hand.shareId;
+    const slot = await takeDirectShare(hand.id);
+    if (slot.kind === 'ready') {
+      saveHand({ ...hand, ...slot.link });
+      return slot.link.shareId;
+    }
+    if (slot.kind === 'busy') throw new Error('link_busy');
+    try {
+      return await ensureShareId(linked, saveHand, shareOptions(settings));
+    } catch (e) {
+      if (isNetworkError(e) && !isRateLimited(e)) queueShare(linked, shareOptions(settings));
+      throw e;
+    }
+  };
+  const linkFailed = (e: unknown) => {
+    if ((e as Error)?.message === 'link_busy') notice(t('Link quase pronto'), t('Estamos a criar o link agora. Toca outra vez em Partilhar daqui a um instante.'));
+    else if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
+    else if ((e as Error)?.message === 'upload 422') notice(t('Não deu para criar o link'), t('Esta mão tem dados que a página não aceita. Encurta nomes ou notas e tenta outra vez.'));
+    else if (isNetworkError(e)) notice(t('Sem rede'), t('O link fica pronto quando houver sinal. Depois é só tocar outra vez em Partilhar.'));
+    else notice(t('Sem ligação'), t('Não deu para criar o link agora. Tenta outra vez daqui a pouco.'));
+  };
 
   // Preview fits the screen; the captured view inside stays 360×640.
   const scale = Math.min((width - 64) / STORY_W, (height * 0.56) / STORY_H, 1);
@@ -165,7 +190,7 @@ export default function StoryScreen() {
     try {
       // The link is made on the server while the frames are captured, not before.
       let idErr: unknown;
-      const idP = ensureShareId(linked, saveHand, shareOptions(settings)).then(
+      const idP = linkId().then(
         (id) => id,
         (e: unknown) => ((idErr = e), null),
       );
@@ -187,8 +212,7 @@ export default function StoryScreen() {
       setFaceView('preview');
       const shareId = await idP;
       if (!shareId) {
-        if (isRateLimited(idErr)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
-        else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        linkFailed(idErr);
         return;
       }
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
@@ -234,10 +258,9 @@ export default function StoryScreen() {
     try {
       let shareId: string;
       try {
-        shareId = await ensureShareId(linked, saveHand, shareOptions(settings));
+        shareId = await linkId();
       } catch (e) {
-        if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
-        else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+        linkFailed(e);
         return;
       }
       if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });
@@ -290,10 +313,9 @@ export default function StoryScreen() {
     if (isNew && !(await acceptUgcTerms())) return null;
     let shareId: string;
     try {
-      shareId = await ensureShareId(linked, saveHand, shareOptions(settings));
+      shareId = await linkId();
     } catch (e) {
-      if (isRateLimited(e)) notice(t('Demasiados pedidos. Tenta daqui a pouco.'));
-      else notice(t('Sem ligação'), t('Precisamos de internet para criar o link da mão. Tenta outra vez daqui a pouco.'));
+      linkFailed(e);
       return null;
     }
     if (isNew) pro.record('share', { after: shareDelay(Date.now() - hand.createdAt) });

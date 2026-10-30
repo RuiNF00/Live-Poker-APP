@@ -38,6 +38,9 @@ export default function GroupSwapScreen() {
   const { groups, ready } = useGroups();
   const own = groups.find((g) => g.id === id);
   const [remote, setRemote] = useState<RemoteGroup | null | undefined>(undefined);
+  // No signal is not a deleted swap: that one gets a retry, not «não encontrado».
+  const [offline, setOffline] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const invite = typeof i === 'string' && HEX.test(i) ? i : undefined;
 
   useEffect(() => {
@@ -56,17 +59,26 @@ export default function GroupSwapScreen() {
         if (x && token && x.you !== null) saveGroup(groupFromRemote(x, token, x.you));
         else setRemote(x);
       })
-      .catch(() => alive && setRemote(null));
+      .catch(() => alive && setOffline(true));
     return () => {
       alive = false;
     };
-  }, [ready, own, id, k]);
+  }, [ready, own, id, k, attempt]);
 
   if (own) return <OwnGroup g={own} pay={params.pay === '1'} />;
   return (
     <>
       <Stack.Screen options={{ title: t('Swap de grupo'), headerBackTitle: t('Voltar') }} />
-      {remote === undefined ? (
+      {offline ? (
+        <Screen>
+          <Empty
+            icon="cloud-offline-outline"
+            title={t('Sem ligação')}
+            body={t('Tenta outra vez quando tiveres rede.')}
+            action={<Button kind="secondary" size="md" icon="refresh" title={t('Tentar outra vez')} onPress={() => (setOffline(false), setAttempt((n) => n + 1))} />}
+          />
+        </Screen>
+      ) : remote === undefined ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator color={C.muted} />
         </View>
