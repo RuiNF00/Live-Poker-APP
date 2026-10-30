@@ -52,7 +52,7 @@ test('levelAfter walks the blinds ladder and keeps the ante type', () => {
   assert.deepEqual(levelAfter(mk(), 1), { sb: 500, bb: 1000, ante: 1000, level: 7 });
   assert.deepEqual(levelAfter(mk(), -1), { sb: 300, bb: 600, ante: 600, level: 5 });
   assert.deepEqual(levelAfter(mk({ sb: 100, bb: 200, level: 1 }), -1), { sb: 100, bb: 200, ante: 200, level: 1 });
-  assert.deepEqual(levelAfter(mk({ kind: 'cash', sb: 1, bb: 2, anteType: 'none', level: undefined }), 1), { sb: 1, bb: 3, ante: 0, level: 2 });
+  assert.deepEqual(levelAfter(mk({ kind: 'cash', sb: 1, bb: 2, anteType: 'none', level: undefined }), 1), { sb: 1, bb: 3, ante: 0, level: undefined });
 });
 
 test('lock-screen props: clock without breaks, stack in bb, level and next blinds', () => {

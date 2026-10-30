@@ -77,9 +77,14 @@ export function liveResult(s: Session): number {
   return s.kind === 'cash' ? s.stack - cost(s) - (s.expenses || 0) - (s.tips || 0) : 0;
 }
 
-function startOfDay(ts: number): number {
+/** Hour a live player's day turns over: a night that runs past midnight is still that evening's day. */
+const DAY_TURNS_AT = 6;
+
+/** Start of the poker day `ts` falls in: from 06:00, so 02:00 belongs to the evening before. */
+function startOfPokerDay(ts: number): number {
   const d = new Date(ts);
-  d.setHours(0, 0, 0, 0);
+  if (d.getHours() < DAY_TURNS_AT) d.setDate(d.getDate() - 1);
+  d.setHours(DAY_TURNS_AT, 0, 0, 0);
   return d.getTime();
 }
 
@@ -112,7 +117,8 @@ export function stopLoss(
     if (!live) return null;
     net = liveResult(live);
   } else {
-    const from = startOfDay(now);
+    // The day of the session being played (a long night stays one day), else today's: midnight resets nothing.
+    const from = startOfPokerDay(live && !live.endedAt ? Math.min(live.startedAt, now) : now);
     for (const s of sessions) if (s.endedAt && s.startedAt >= from && s.id !== live?.id) net += result(s);
     if (live) net += liveResult(live);
   }

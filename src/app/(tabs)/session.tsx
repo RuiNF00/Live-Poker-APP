@@ -35,7 +35,7 @@ import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/fo
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
-import { cost, endCashOut, isPaused, playedMs, profit, type EndForm } from '@/store/session-math';
+import { cost, endCashOut, isPaused, playedMs, profit, rebuyPatch, type EndForm } from '@/store/session-math';
 import { endPreview } from '@/store/staking';
 import { useRates } from '@/lib/fx';
 import { eventDay } from '@/poker/festivals';
@@ -355,7 +355,7 @@ function Live({ s }: { s: Session }) {
   const { saveSession, hands, settings, sessions, packages, backers } = useStore();
   // The makeup of a package with sessions in two currencies, as the store will work it out once saved.
   const rates = useRates(null);
-  const [pad, setPad] = useState<null | 'stack' | 'addon' | 'bag'>(null);
+  const [pad, setPad] = useState<null | 'stack' | 'addon' | 'bag' | 'rebuy'>(null);
   const [ending, setEnding] = useState(false);
   // Android back while closing the session works like «Voltar»: the form closes, the session stays.
   useFocusEffect(
@@ -497,13 +497,11 @@ function Live({ s }: { s: Session }) {
     AccessibilityInfo.announceForAccessibility(t('{what}. Podes anular.', { what: title }));
   };
   // The new chips go on the stack too (cash: the buy-in; tournament: a fresh starting stack), so nobody has to type it.
-  const rebuy = () => {
-    const stack = mtt ? s.tourney?.startStack || first : s.stack + s.buyIn;
-    undoable(`${mtt ? 'Re-entry' : 'Rebuy'} · ${money(s.buyIn, s.currency)}`, {
-      entries: s.entries + 1,
-      stack,
-      stackLog: [...s.stackLog, { t: Date.now(), stack, level: s.level }],
-    });
+  const rebuyNow = () => undoable(`${mtt ? 'Re-entry' : 'Rebuy'} · ${money(s.buyIn, s.currency)}`, rebuyPatch(s, s.buyIn, Date.now(), s.tourney?.startStack || first));
+  // Cash rebuys come in any size (a 200 top-up at 1/2, 500 after moving to 2/5): the pad starts at the buy-in.
+  const rebuy = () => (mtt ? rebuyNow() : setPad('rebuy'));
+  const rebuyOf = (v: number) => {
+    if (v > 0) undoable(`Rebuy · ${money(v, s.currency)}`, rebuyPatch(s, v));
   };
 
   // Pause, resume, a rebuy or "end" (opens the end form) tapped on the lock screen (Live Activity, widget): done here with the
@@ -515,7 +513,7 @@ function Live({ s }: { s: Session }) {
     if (!params.do || lockUp) return;
     router.setParams({ do: undefined, id: undefined });
     if (fromLock === 'end') startEnding();
-    else if (fromLock === 'rebuy') rebuy();
+    else if (fromLock === 'rebuy') rebuyNow();
     else if (fromLock) togglePause();
     // Only a new link or the lock opening runs it; the session changing under it doesn't.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -784,6 +782,18 @@ function Live({ s }: { s: Session }) {
           onDone={(v) => {
             setPad(null);
             if (v > 0) undoable(`Add-on · ${money(v, s.currency)}`, { addOn: (s.addOn || 0) + v });
+          }}
+        />
+        <AmountPad
+          visible={pad === 'rebuy'}
+          title={t('Rebuy ({currency})', { currency: s.currency })}
+          bb={s.bb}
+          plain
+          initial={s.buyIn}
+          onClose={() => setPad(null)}
+          onDone={(v) => {
+            setPad(null);
+            rebuyOf(v);
           }}
         />
         <AmountPad

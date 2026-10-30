@@ -416,6 +416,22 @@ export function rescaleStackLog(log: Session['stackLog'], from: { start: number;
   });
 }
 
+/**
+ * A rebuy of `amount` on a live session. The usual buy-in is one more entry; a cash rebuy of
+ * another size (a 200 top-up at 1/2, 500 after moving up to 2/5) adds to the top-ups instead.
+ * Cash chips go on the stack; a tournament re-entry starts again from `freshStack`.
+ */
+export function rebuyPatch(s: Session, amount: number, now = Date.now(), freshStack = s.stack): Partial<Session> {
+  const mtt = s.kind === 'mtt';
+  const usual = mtt || amount === s.buyIn;
+  const stack = mtt ? freshStack : s.stack + amount;
+  return {
+    ...(usual ? { entries: s.entries + 1 } : { addOn: (s.addOn || 0) + amount }),
+    stack,
+    stackLog: [...s.stackLog, { t: now, stack, level: s.level }],
+  };
+}
+
 /** The end form. `cashOut` null: not typed, so it follows what the session knows. */
 export type EndForm = { cashOut: number | null; bounties: number; place: number; field: number; tips: number; handsDealt: number };
 

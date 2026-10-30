@@ -74,10 +74,13 @@ export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 
   }
   const levels = s.kind === 'mtt' ? MTT_LEVELS : CASH_LEVELS;
   const i = levels.findIndex(([sb, bb]) => sb === s.sb && bb === s.bb);
-  const j = Math.max(0, Math.min(levels.length - 1, (i < 0 ? 0 : i) + dir));
+  // Blinds off the ladder (2/4, 150/300): up is the next bigger big blind, down the next smaller one.
+  const off = dir > 0 ? levels.findIndex(([, bb]) => bb > s.bb) : levels.findLastIndex(([, bb]) => bb < s.bb);
+  const j = i >= 0 ? Math.max(0, Math.min(levels.length - 1, i + dir)) : off >= 0 ? off : dir > 0 ? levels.length - 1 : 0;
   const [sb, bb] = levels[j];
   const ante = s.anteType === 'bb' ? bb : s.anteType === 'all' ? Math.round(bb / 8) : 0;
-  return { sb, bb, ante, level };
+  // Cash has stakes, not levels: moving up from 1/2 to 2/5 is no «Nível 2».
+  return { sb, bb, ante, level: s.kind === 'mtt' ? level : undefined };
 }
 
 /**
@@ -277,12 +280,16 @@ export function levelUpMessage(s: Session, now = Date.now()): { title: string; b
   if (b && b.afterLevel === (s.level ?? 1)) {
     return {
       title: t('Intervalo de {n} min', { n: b.minutes }),
-      body: t('Põe a sessão em pausa. Depois do intervalo, nível {n}: blinds {blinds}.', { n: after.level, blinds: `${chips(after.sb)}/${chips(after.bb)}` }),
+      body: t('Põe a sessão em pausa. Depois do intervalo, nível {n}: blinds {blinds}.', { n: after.level ?? (s.level ?? 1) + 1, blinds: `${chips(after.sb)}/${chips(after.bb)}` }),
     };
   }
   return {
     title: t('Subida de nível'),
-    body: t('Nível {n}: blinds {blinds}. Toca para atualizar a sessão.', { n: after.level, blinds: `${chips(after.sb)}/${chips(after.bb)}` }),
+    // Cash has no level number: just the blinds.
+    body:
+      after.level === undefined
+        ? t('Blinds {blinds}. Toca para atualizar a sessão.', { blinds: `${chips(after.sb)}/${chips(after.bb)}` })
+        : t('Nível {n}: blinds {blinds}. Toca para atualizar a sessão.', { n: after.level, blinds: `${chips(after.sb)}/${chips(after.bb)}` }),
   };
 }
 
