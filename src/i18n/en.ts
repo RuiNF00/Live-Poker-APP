@@ -877,6 +877,7 @@ const en: Record<string, string> = {
   'Ainda sem sessões': 'No sessions yet',
   'Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o resultado por hora e o ROI aparecem aqui.': 'Finish a live session or add one you\'ve already played. Profit, hourly and ROI show up here.',
   'Juntar sessão passada': 'Add a past session',
+  '{h} h, cash e torneios': '{h} h, cash and tournaments',
   '{h} h a jogar': '{h} h played',
   'Procurar': 'Search',
   'Sessão em curso · {time}': 'Session running · {time}',

@@ -489,12 +489,15 @@ function TotalTile({ sessions }: { sessions: Session[] }) {
 function RateTile({ sessions }: { sessions: Session[] }) {
   const tot = useMemo(() => totals(sessions), [sessions]);
   const shown = rateShown(tot.hours);
+  const hours = tot.hours.toLocaleString(locale, { maximumFractionDigits: 0 });
+  const mixed = sessions.some((x) => x.endedAt && x.kind === 'mtt') && sessions.some((x) => x.endedAt && x.kind === 'cash');
   return (
     <Tile
       icon="time-outline"
       label={t('Por hora')}
       value={shown ? <Amount value={tot.hourly} text={t('{amount}/h', { amount: money(Math.round(tot.hourly), tot.currency) })} v="monoL" fit /> : '—'}
-      sub={t('{h} h a jogar', { h: tot.hours.toLocaleString(locale, { maximumFractionDigits: 0 }) })}
+      // Cash and tournaments together: said, so it isn't read as the cash win rate shown above it.
+      sub={mixed ? t('{h} h, cash e torneios', { h: hours }) : t('{h} h a jogar', { h: hours })}
       onPress={() => router.navigate('/bankroll')}
     />
   );

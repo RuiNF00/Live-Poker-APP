@@ -400,6 +400,8 @@ const ptBR: Record<string, string> = {
   'Anular': 'Desfazer',
   'Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o resultado por hora e o ROI aparecem aqui.': 'Termine uma sessão ao vivo ou adicione uma que você já jogou. O lucro, o resultado por hora e o ROI aparecem aqui.',
   'Juntar sessão passada': 'Adicionar sessão passada',
+  '{h} h, cash e torneios': '{h} h, cash e torneios',
+  'Mais moedas': 'Mais moedas',
   '{h} h a jogar': '{h} h jogando',
   'Sessão em curso · {time}': 'Sessão em andamento · {time}',
   'Mão a meio': 'Mão incompleta',

@@ -35,6 +35,9 @@ import { DataRecovery } from '@/components/DataRecovery';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { CrashReportsToggle } from '@/components/CrashReportsToggle';
 
+/** Shown before «Mais moedas»: the five the first currency chips always were. */
+const COMMON_CURRENCIES = ['€', '$', '£', 'R$', 'CHF'];
+
 // Every use of CloudBackup.tsx is lazy, so it stays one chunk off the first frame.
 const CloudBackup = React.lazy(() => import('@/components/CloudBackup').then((m) => ({ default: m.CloudBackup })));
 
@@ -88,6 +91,8 @@ export default function SettingsScreen() {
   const store = useStore();
   const shared = useSharedHands();
   const { settings, setSettings, hands, sessions, players } = store;
+  const [allCurrencies, setAllCurrencies] = useState(false);
+  const shownCurrencies = allCurrencies ? CURRENCIES : CURRENCIES.filter((c) => COMMON_CURRENCIES.includes(c) || c === settings.currency || sessions.some((x) => x.currency === c));
   const pro = usePro();
   // Renewal date, or the end of the paid period once cancelled, so nobody wonders whether the cancel worked. Lifetime has no date.
   const [period, setPeriod] = useState<{ date: string; renews: boolean; trial?: boolean } | null>(null);
@@ -174,9 +179,11 @@ export default function SettingsScreen() {
               <T v="label">{t('Moeda')}</T>
               {/* Wraps instead of scrolling sideways: at large text a scroller hides the last ones. */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
-                {CURRENCIES.map((c) => (
+                {shownCurrencies.map((c) => (
                   <Chip key={c} label={c} active={settings.currency === c} onPress={() => setSettings({ currency: c })} style={{ minWidth: 48 }} />
                 ))}
+                {/* 32 currencies took a whole screen: the usual ones show, the rest one tap away. */}
+                {allCurrencies ? null : <Chip label={t('Mais moedas')} icon="chevron-down" onPress={() => setAllCurrencies(true)} />}
               </View>
             </View>
             <View style={{ gap: S.sm }}>
