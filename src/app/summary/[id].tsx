@@ -8,7 +8,7 @@ import { Pressable, View } from 'react-native';
 import { softAskState, useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { NextPlayCard } from '@/components/NextPlayCard';
 import { CardRow } from '@/components/PlayingCard';
-import { SessionEndPro } from '@/components/SessionEndPro';
+import { SessionEndPro, useSessionEndCard } from '@/components/SessionEndPro';
 import { TellByVoice } from '@/components/entry/TellByVoice';
 import { Banner, Button, Card, Empty, Pill, Row, Screen, T, ToggleItem } from '@/components/ui';
 import { weekNotice } from '@/billing/nudges';
@@ -16,6 +16,7 @@ import { usePro } from '@/billing/pro';
 import { deferState, sessionStartOffer } from '@/billing/trial-moments';
 import { t } from '@/i18n';
 import { askOnSummary, kindOn } from '@/lib/notify-policy';
+import { summaryPrompts } from '@/lib/summary-prompts';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, replay } from '@/poker/engine';
 import { bbs, duration, money, plus } from '@/poker/format';
@@ -58,6 +59,11 @@ export default function SessionSummary() {
   // Off when screenshotting at the table: no money on screen.
   const [hideMoney, setHideMoney] = useState(false);
   const [openedAt] = useState(() => Date.now());
+  const pro = useSessionEndCard({ sessionId: id, profit: s ? profit(s) : 0, hours: s ? playedMs(s) / 3_600_000 : 0, game: s?.kind ?? 'cash' });
+  // Only for the session that just ended, and only when reminders are on.
+  const nextPlay = !!s?.endedAt && openedAt - s.endedAt < 12 * 3_600_000 && kindOn(settings, 'tips') && !sessions.some((x) => x.startedAt > s.startedAt);
+  // At most two asks at once; while the Pro card is still reading, its place is kept.
+  const shown = summaryPrompts({ review: toReview.length > 0, unfinished: left.length > 0, pro: pro !== null, nextPlay });
 
   // Right after a session, with the result seen: the moment the Sunday notice makes sense.
   const endedAt = s?.endedAt;
@@ -127,7 +133,7 @@ export default function SessionSummary() {
       </Row>
 
       {/* The marked hands come before the Pro teaser: reviewing them is what the session asks for now (Design). */}
-      {toReview.length > 0 ? (
+      {shown.has('review') ? (
         <Banner
           icon="school-outline"
           title={toReview.length === 1 ? t('Marcaste 1 mão. Rever agora?') : t('Marcaste {n} mãos. Rever agora?', { n: toReview.length })}
@@ -137,7 +143,7 @@ export default function SessionSummary() {
         />
       ) : null}
 
-      <SessionEndPro sessionId={s.id} profit={p} hours={playedMs(s) / 3_600_000} game={s.kind} currency={s.currency} hideMoney={hideMoney} />
+      {shown.has('pro') && pro ? <SessionEndPro card={pro} profit={p} hours={playedMs(s) / 3_600_000} currency={s.currency} hideMoney={hideMoney} /> : null}
 
       {best ? (
         <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/hand/[id]', params: { id: best.hand.id } })}>
@@ -163,7 +169,7 @@ export default function SessionSummary() {
       ) : null}
 
       {/* Hands saved with "Guardar já": one tap opens the oldest where it stopped. */}
-      {left.length > 0 ? (
+      {shown.has('unfinished') ? (
         <Banner
           tone="warn"
           icon="create-outline"
@@ -173,10 +179,9 @@ export default function SessionSummary() {
         />
       ) : null}
       {/* The session is over: the oldest half-saved hand can be told now, with its voice note. */}
-      {left.length > 0 ? <TellByVoice handId={left[0].id} first={left.length > 1} /> : null}
+      {shown.has('unfinished') ? <TellByVoice handId={left[0].id} first={left.length > 1} /> : null}
 
-      {/* Only for the session that just ended, and only when reminders are on. */}
-      {s.endedAt && openedAt - s.endedAt < 12 * 3_600_000 && kindOn(settings, 'tips') && !sessions.some((x) => x.startedAt > s.startedAt) ? <NextPlayCard sessions={sessions} ask={askNotify} /> : null}
+      {shown.has('nextPlay') ? <NextPlayCard sessions={sessions} ask={askNotify} /> : null}
 
       <Card padded={false}>
         <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Para mostrar ou tirar print sem dinheiro à vista')} value={hideMoney} onChange={setHideMoney} />

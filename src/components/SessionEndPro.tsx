@@ -14,8 +14,11 @@ import { money } from '@/poker/format';
 import { useStore } from '@/store/store';
 import { C, R, S } from '@/theme';
 
-export function SessionEndPro({ sessionId, profit, hours, game, currency, hideMoney }: { sessionId: string; profit: number; hours: number; game: 'mtt' | 'cash'; currency: string; hideMoney: boolean }) {
-  const { isPlus, paywall } = usePro();
+type EndCard = NonNullable<ReturnType<typeof sessionEndCard>>;
+
+/** The card for this session, null when there is none, undefined while reading. */
+export function useSessionEndCard({ sessionId, profit, hours, game }: { sessionId: string; profit: number; hours: number; game: 'mtt' | 'cash' }): EndCard | null | undefined {
+  const { isPlus } = usePro();
   const { hands } = useStore();
   const [blocked, setBlocked] = useState<number | null>(null);
   useEffect(() => {
@@ -26,9 +29,12 @@ export function SessionEndPro({ sessionId, profit, hours, game, currency, hideMo
       live = false;
     };
   }, [sessionId, hands]);
-  if (blocked === null) return null;
-  const card = sessionEndCard({ isPro: isPlus, profit, blocked, hours, game });
-  if (!card) return null;
+  if (blocked === null) return undefined;
+  return sessionEndCard({ isPro: isPlus, profit, blocked, hours, game });
+}
+
+export function SessionEndPro({ card, profit, hours, currency, hideMoney }: { card: EndCard; profit: number; hours: number; currency: string; hideMoney: boolean }) {
+  const { paywall } = usePro();
 
   const rate = hideMoney ? '•••' : money(profit / hours, currency);
   const title = card.kind === 'blocked' ? (card.n === 1 ? t('1 mão desta sessão ficou por guardar') : t('{n} mãos desta sessão ficaram por guardar', { n: card.n })) : t('Esta sessão: {rate}/h', { rate });
