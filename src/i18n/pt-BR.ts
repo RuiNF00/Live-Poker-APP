@@ -402,6 +402,8 @@ const ptBR: Record<string, string> = {
   'Juntar sessão passada': 'Adicionar sessão passada',
   '{h} h, cash e torneios': '{h} h, cash e torneios',
   'Mais moedas': 'Mais moedas',
+  'Olá outra vez': 'Que bom te ver de novo',
+  'Se jogaste entretanto, regista essas sessões: leva 20 segundos cada.': 'Se você jogou nesse meio-tempo, registre essas sessões: leva 20 segundos cada.',
   '{h} h a jogar': '{h} h jogando',
   'Sessão em curso · {time}': 'Sessão em andamento · {time}',
   'Mão a meio': 'Mão incompleta',

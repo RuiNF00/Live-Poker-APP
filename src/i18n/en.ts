@@ -878,6 +878,8 @@ const en: Record<string, string> = {
   'Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o resultado por hora e o ROI aparecem aqui.': 'Finish a live session or add one you\'ve already played. Profit, hourly and ROI show up here.',
   'Juntar sessão passada': 'Add a past session',
   '{h} h, cash e torneios': '{h} h, cash and tournaments',
+  'Olá outra vez': 'Welcome back',
+  'Se jogaste entretanto, regista essas sessões: leva 20 segundos cada.': 'If you played meanwhile, log those sessions: 20 seconds each.',
   '{h} h a jogar': '{h} h played',
   'Procurar': 'Search',
   'Sessão em curso · {time}': 'Session running · {time}',

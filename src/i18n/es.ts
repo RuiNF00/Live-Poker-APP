@@ -810,6 +810,8 @@ const es: Record<string, string> = {
   'Termina uma sessão ao vivo ou junta uma que já jogaste. O lucro, o resultado por hora e o ROI aparecem aqui.': 'Termina una sesión en vivo o añade una que ya jugaste. La ganancia, el resultado por hora y el ROI aparecen aquí.',
   'Juntar sessão passada': 'Añadir sesión pasada',
   '{h} h, cash e torneios': '{h} h, cash y torneos',
+  'Olá outra vez': 'Hola de nuevo',
+  'Se jogaste entretanto, regista essas sessões: leva 20 segundos cada.': 'Si jugaste mientras tanto, registra esas sesiones: 20 segundos cada una.',
   '{h} h a jogar': '{h} h jugando',
   'Procurar': 'Buscar',
   'Sessão em curso · {time}': 'Sesión en curso · {time}',

@@ -31,6 +31,7 @@ import { drillQueue } from '@/poker/drill';
 import { duration, money, plus } from '@/poker/format';
 import { useReduceMotion } from '@/lib/motion';
 import { needsReview } from '@/poker/review';
+import { lastActivity, useWelcomeBack } from '@/lib/welcome-back';
 import type { Hand } from '@/poker/types';
 import { useDrill } from '@/store/drill-store';
 import { monthKey, monthName, monthRecap, prevKey } from '@/store/month-recap';
@@ -68,6 +69,9 @@ export default function HomeScreen() {
   const coach = useCoach();
   const [now] = useState(() => Date.now());
   const lastEnd = useMemo(() => Math.max(0, ...sessions.map((x) => x.endedAt ?? 0)), [sessions]);
+  // Back after 30 days or more: one card about the sessions played meanwhile (lib/welcome-back).
+  const lastLogged = useMemo(() => lastActivity(sessions, hands), [sessions, hands]);
+  const back = useWelcomeBack(lastLogged, now);
   // Once there's something to lose: the first saved hand or closed session.
   const suggest = useBackupSuggestion(hands.length > 0 || lastEnd > 0);
   // Discarding a draft is one tap, so keep it for a few seconds behind an undo.
@@ -98,8 +102,8 @@ export default function HomeScreen() {
 
   // At most one card: the next thing to do (a live session shows above it). At the table only what's
   // about the play (a hand to finish, a charge coming): the rest waits until the session ends. Away from
-  // the table: money to settle, comments, hands to review, then the first-week steps and news. Never a
-  // nudge to go and play.
+  // the table: money to settle, comments, «Olá outra vez» after a long pause, hands to review, then the
+  // first-week steps and news. Never a nudge to go and play.
   // `Começar sessão · Já joguei` under it is always the last next step.
   const card = hasDraft ? (
     <Banner
@@ -135,6 +139,18 @@ export default function HomeScreen() {
     <SwapSettleCard {...settle} />
   ) : shared.newTotal > 0 ? (
     <SharedHandsCard n={shared.newTotal} fresh={shared.fresh} mine={shared.mine} />
+  ) : back.show ? (
+    <Banner
+      icon="time-outline"
+      title={t('Olá outra vez')}
+      body={t('Se jogaste entretanto, regista essas sessões: leva 20 segundos cada.')}
+      action={t('Registar')}
+      onPress={() => {
+        back.dismiss();
+        router.navigate({ pathname: '/bankroll', params: { add: 'session' } });
+      }}
+      onDismiss={back.dismiss}
+    />
   ) : toReview ? (
     <Banner
       icon="school-outline"
