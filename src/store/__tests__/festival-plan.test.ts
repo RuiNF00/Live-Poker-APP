@@ -8,7 +8,8 @@ import { eventDay, festivalSpan, venueTime } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
 import { nextLevelAt } from '../../lib/lock-screen/live-state';
 import { bagDay, resumeDay } from '../multi-day';
-import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, stampPlan, togglePicked, withPlanEvents } from '../festival-plan';
+import type { Session } from '../types';
+import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, festivalResult, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, stampPlan, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -542,4 +543,13 @@ test('the shipped festivals: Bahamas first, unique ids, November to January incl
   assert.equal(FESTIVALS[0], F);
   assert.equal(new Set(FESTIVALS.map((f) => f.id)).size, FESTIVALS.length);
   assert.ok(FESTIVALS.includes(SAO_PAULO_NOV_2026));
+});
+
+test('the festival result counts the ended sessions started from its schedule, in its currency', () => {
+  const ses = (id: string, cashOut: number, net: number, over = { endedAt: 2, currency: F.currency }) => ({ id, cashOut, net, startedAt: 1, ...over }) as unknown as Session;
+  const net = (s: Session) => (s as unknown as { net: number }).net;
+  const plan = { ...EMPTY_PLAN, sessions: { a: 's1', b: 's2', c: 's3', d: 's4' } };
+  assert.equal(festivalResult(F, EMPTY_PLAN, [ses('s1', 0, -100)], net), null, 'nothing played from the schedule yet');
+  const list = [ses('s1', 0, -100), ses('s2', 900, 750), ses('s3', 0, 0, { endedAt: undefined, currency: F.currency } as never), ses('s4', 500, 300, { endedAt: 2, currency: 'XYZ' }), ses('other', 0, -50)];
+  assert.deepEqual(festivalResult(F, plan, list, net), { played: 2, cashed: 1, net: 650 });
 });

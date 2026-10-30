@@ -22,11 +22,12 @@ import { locale, t } from '@/i18n';
 import { syncFestivalReminders } from '@/lib/festival-reminders';
 import { kindOn } from '@/lib/notify-policy';
 import { eventDay, eventTitle, venueClock, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
-import { chips, money, rawCompactMoney } from '@/poker/format';
+import { chips, money, plus, rawCompactMoney } from '@/poker/format';
 import { getOffers } from '@/store/action-offer';
 import { balanceOf } from '@/store/bankroll-math';
-import { bankrollShare, buyInCaps, buyInsLeft, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
+import { bankrollShare, buyInCaps, buyInsLeft, festivalResult, clashes, entryBuyIn, eventAction, isKind, type EventKind, LATE_REMIND_BEFORE_MIN, lateRegOf, planTotals, REMIND_BEFORE_MIN, removeOwnEvent, togglePicked, updatePlan, useFestivalPlan, type EventAction, type FestivalPlan, withPlanEvents } from '@/store/festival-plan';
 import { dayOf } from '@/store/multi-day';
+import { profit } from '@/store/session-math';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
@@ -75,6 +76,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
   // What is still to pay: a buy-in already played is out of the balance.
   const share = sameCurrency ? bankrollShare(buyInsLeft(f, plan, sessions), balance) : null;
 
+  // Sessions started from this schedule that have ended: what the festival has given so far.
+  const result = useMemo(() => festivalResult(f, plan, sessions, profit), [f, plan, sessions]);
   const remindersOn = kindOn(settings, 'festival');
   useEffect(() => {
     void syncFestivalReminders(f, plan, remindersOn);
@@ -160,10 +163,12 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
               {[f.own ? f.venue : t(f.venue), f.city && t(f.city), f.dates ? `${spanLabel(f.dates.from, f.dates.to)} ${f.dates.to.slice(0, 4)}` : t('Datas a confirmar')].filter(Boolean).join(' · ')}
             </T>
           )}
-          {f.events.length ? <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T> : null}
+          {/* The reminders are promised only while they are on (Definições → Avisos). */}
+          {f.events.length ? <T v="small">{remindersOn ? t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.') : t('Marca os eventos que vais jogar.')}</T> : null}
         </View>
 
         {/* Nothing marked yet: no card of zeros between the name and the schedule; it comes with the first event. */}
+        {result ? <FestivalResult f={f} r={result} hidden={!!settings.hideAmounts} /> : null}
         {tot.events ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
         {f.events.length || f.dates ? <TripLink f={f} plan={plan} /> : null}
         {tot.events ? <SharePlan f={f} plan={plan} /> : null}
@@ -292,6 +297,19 @@ function TripLink({ f, plan }: { f: Festival; plan: FestivalPlan }) {
   );
 }
 
+/** «O teu festival»: tournaments played from the plan, cashes and the result, before the budget. */
+function FestivalResult({ f, r, hidden }: { f: Festival; r: NonNullable<ReturnType<typeof festivalResult>>; hidden: boolean }) {
+  return (
+    <Card tone="raised" style={{ gap: 2 }}>
+      <T v="label">{t('O teu festival')}</T>
+      <T v="monoL" color={hidden ? C.text : r.net > 0 ? C.good : r.net < 0 ? C.bad : C.text}>
+        {hidden ? '•••' : plus(r.net) + money(r.net, f.currency)}
+      </T>
+      <T v="small">{[r.played === 1 ? t('1 torneio') : t('{n} torneios', { n: r.played }), r.cashed === 1 ? t('1 cash') : t('{n} cashes', { n: r.cashed })].join(' · ')}</T>
+    </Card>
+  );
+}
+
 function Summary({
   f,
   tot,
@@ -379,7 +397,7 @@ function EventRow({
   const start = venueTime(f, e.start);
   const lateLabel = late
     ? t('Late reg até {time}', { time: hm(new Date(start + late * 60_000), f) })
-    : t('Hora do late reg');
+    : t('Quando fecha o late reg?');
   return (
     <Card tone={on ? 'accent' : 'default'} padded={false}>
       {/* The row opens the tournament in full; the circle alone adds it to the plan. */}

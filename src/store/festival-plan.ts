@@ -169,6 +169,18 @@ export function buyInsLeft(f: Festival, plan: FestivalPlan, sessions: Session[])
     .reduce((a, e) => a + e.buyIn, 0);
 }
 
+/**
+ * What the festival has given so far: the sessions started from its schedule that have ended, in the
+ * festival's currency (a session in another one is left out of the sum, not converted). Null before
+ * the first one ends. `net` is the session result (session-math profit).
+ */
+export function festivalResult(f: Festival, plan: FestivalPlan, sessions: Session[], net: (s: Session) => number): { played: number; cashed: number; net: number } | null {
+  const ids = new Set(Object.values(plan.sessions));
+  const done = sessions.filter((s) => ids.has(s.id) && s.endedAt && s.currency === f.currency);
+  if (!done.length) return null;
+  return { played: done.length, cashed: done.filter((s) => s.cashOut > 0).length, net: done.reduce((a, s) => a + net(s), 0) };
+}
+
 /** Planned buy-ins as a share of the bankroll: null with no (or a negative) bankroll. */
 export function bankrollShare(buyIns: number, balance: number): number | null {
   return balance > 0 ? buyIns / balance : null;
