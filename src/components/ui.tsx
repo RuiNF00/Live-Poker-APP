@@ -10,6 +10,7 @@ import {
   Alert,
   InputAccessoryView,
   Keyboard,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -228,7 +229,7 @@ export function Screen({
         {children}
       </View>
     );
-  return (
+  const list = (
     <ScrollView
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: C.bg }}
@@ -241,6 +242,15 @@ export function Screen({
       {title !== undefined ? <ScreenHeader title={title} eyebrow={eyebrow} right={right} /> : null}
       {children}
     </ScrollView>
+  );
+  // Android: edge-to-edge no longer shrinks the window for the keyboard, and the inset above is iOS only,
+  // so the session's cash-out went under the keyboard. The scroll view shrinks instead, and Android
+  // scrolls the focused field into what is left (0 if the window did shrink).
+  if (Platform.OS !== 'android') return list;
+  return (
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: C.bg }}>
+      {list}
+    </KeyboardAvoidingView>
   );
 }
 

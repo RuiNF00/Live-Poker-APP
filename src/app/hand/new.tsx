@@ -103,6 +103,26 @@ export default function NewHand() {
   const [inBB, setInBB] = useState(settings.inBB);
   // undefined: the picker opens by itself for the only opponent left; null: closed.
   const [area, setArea] = useState({ w: 0, h: 0 });
+  // The dock wanted more than the screen had (large text on a short phone: at 200% on a 360 dp Android,
+  // Fold and the last suit fell off the bottom). From then on the felt may go lower, the tips are dropped
+  // and the voice button goes up as a chip, as on an iPhone SE. Once set it stays, or the tips would come
+  // back and push the dock out again.
+  const [cramped, setCramped] = useState(false);
+  // Read once the layout settles: a taller dock reports its content before its frame has grown to it.
+  const dockFit = useRef({ frame: 0, content: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined });
+  const fitDock = (frame?: number, content?: number) => {
+    const d = dockFit.current;
+    if (frame !== undefined) d.frame = frame;
+    if (content !== undefined) d.content = content;
+    if (cramped) return;
+    clearTimeout(d.timer);
+    d.timer = setTimeout(() => {
+      if (d.frame > 0 && d.content > d.frame + 1) setCramped(true);
+    }, 250);
+  };
+  useEffect(() => () => clearTimeout(dockFit.current.timer), []);
+  const compact = shortScreen || cramped;
+  const feltMin = cramped ? 120 : 160;
   const [showdownFor, setShowdownFor] = useState<number | null | undefined>(undefined);
   // Facing a bet that a call would close, the next card replaces the raise sizes; «Raise» brings them back for that spot.
   const [raiseAt, setRaiseAt] = useState<string | null>(null);
@@ -628,7 +648,7 @@ export default function NewHand() {
       {phase !== 'hero' && <StreetDots street={s.street} done={phase === 'showdown' || phase === 'done'} />}
 
       {/* the felt takes whatever the dock leaves */}
-      <View style={{ flex: 1, minHeight: 160, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }} onLayout={(e) => {
+      <View style={{ flex: 1, minHeight: feltMin, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }} onLayout={(e) => {
           const w = e.nativeEvent.layout.width - 16;
           const h = e.nativeEvent.layout.height;
           // Sub-pixel changes are ignored: the showdown dock sizes itself from this, and the two chased each other every frame.
@@ -652,7 +672,15 @@ export default function NewHand() {
       </View>
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
-      <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10 }]}>
+      <View style={[SHADOW, { flexShrink: 1, backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10 }]}>
+        {/* Whatever still doesn't fit scrolls (the largest text sizes, the keyboard over the notes), so nothing is out of reach. */}
+        <ScrollView
+          style={{ flexGrow: 0 }}
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          onLayout={(e) => fitDock(e.nativeEvent.layout.height)}
+          onContentSizeChange={(_, h) => fitDock(undefined, h)}>
         <Animated.View style={{ gap: 10, opacity: dockFade }}>
         {heldBackText ? (
           <T v="small" color={C.warn} accessibilityLiveRegion="polite">
@@ -671,8 +699,8 @@ export default function NewHand() {
               <T v="label">{!draft.posChosen ? t('A tua posição') : heroCards.length < holes ? t('As tuas cartas') : ''}</T>
               <Row gap={10} style={{ flexWrap: 'wrap', rowGap: S.sm, flexShrink: 1, justifyContent: 'flex-end', marginLeft: 'auto' }}>
                 {/* Live cash: a straddle is one tap here instead of three in the context sheet. */}
-                {/* A short phone (iPhone SE) has no room for the voice button under the cards: it is a chip here. */}
-                {shortScreen && !hand.actions.length ? (
+                {/* A short phone (iPhone SE), or large text, has no room for the voice button under the cards: it is a chip here. */}
+                {compact && !hand.actions.length ? (
                   <Chip label={voiceLocked(pro) ? `${t('Voz')} · ${voicePlanName()}` : t('Voz')} icon={voiceLocked(pro) ? 'lock-closed' : 'mic'} onPress={openVoice} />
                 ) : null}
                 {hand.game.kind === 'cash' && !hand.game.bombPot ? <Chip label="Straddle" active={!!hand.game.straddles} onPress={toggleStraddle} /> : null}
@@ -710,7 +738,8 @@ export default function NewHand() {
                       borderColor: on ? col : C.border,
                       opacity: pressed ? 0.75 : 1,
                     })}>
-                    <T v="body" color={on ? C.bgDeep : col} style={{ fontWeight: '800', fontFamily: ff(800) }}>
+                    {/* Capped as button text is (1.6): at 200% the three rows of seats pushed the clubs off a 360 dp screen. */}
+                    <T v="body" maxFontSizeMultiplier={1.6} color={on ? C.bgDeep : col} style={{ fontWeight: '800', fontFamily: ff(800) }}>
                       {label}
                     </T>
                   </Pressable>
@@ -718,7 +747,7 @@ export default function NewHand() {
               })}
             </View>
             <CardPicker used={usedCards(hand, heroCards)} selected={heroCards} onPick={pickHeroCard} />
-            {!hand.actions.length && !shortScreen && (
+            {!hand.actions.length && !compact && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={voiceLocked(pro) ? `${t('Contar a mão por voz')}, ${voicePlanName()}` : t('Contar a mão por voz')}
@@ -731,7 +760,7 @@ export default function NewHand() {
                 {voiceLocked(pro) ? <Ionicons name="lock-closed" size={13} color={C.accent} /> : null}
               </Pressable>
             )}
-            {!settings.onboarded && !isEdit ? (
+            {!settings.onboarded && !isEdit && !cramped ? (
               <T v="tiny" style={{ textAlign: 'center' }}>
                 {t('Posição e duas cartas. Os folds até ti são automáticos.')}
               </T>
@@ -786,7 +815,7 @@ export default function NewHand() {
                 ))}
               </ChipRow>
             )}
-            {firstHint ? (
+            {firstHint && !cramped ? (
               <T v="tiny" color={C.accent} numberOfLines={2}>
                 {firstHint}
               </T>
@@ -921,7 +950,7 @@ export default function NewHand() {
 
         {!capturing && (phase === 'showdown' || phase === 'done') && (
           <>
-            <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
+            <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
               {phase === 'showdown' && (
                 <View style={{ gap: 8 }}>
                   <T v="h2" accessibilityLiveRegion="polite">Showdown</T>
@@ -1012,6 +1041,7 @@ export default function NewHand() {
           </>
         )}
         </Animated.View>
+        </ScrollView>
       </View>
 
       {toldOpened ? (
