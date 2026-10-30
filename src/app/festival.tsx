@@ -168,7 +168,6 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
           {f.events.length ? <T v="small">{remindersOn ? t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.') : t('Marca os eventos que vais jogar.')}</T> : null}
         </View>
 
-        {/* Nothing marked yet: no card of zeros between the name and the schedule; it comes with the first event. */}
         {result ? <FestivalResult f={f} r={result} hidden={!!settings.hideAmounts} /> : null}
         {/* Nothing marked yet: no «0 € · 0% da banca»; the line above says what to do. */}
         {f.events.length && tot.events ? <Summary f={f} tot={tot} balance={balance} share={share} partial={left < tot.buyIns} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
