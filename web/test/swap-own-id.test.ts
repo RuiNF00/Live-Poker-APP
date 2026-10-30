@@ -4,6 +4,8 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
+// The routes purge old swaps 2% of the time with after(), which needs a request scope that tests don't have.
+vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/server')>()), after: () => {} }));
 // The file-backed stores, in a scratch folder: no database in tests.
 process.chdir(mkdtempSync(path.join(tmpdir(), 'swaps-own-id-')));
 delete process.env.SUPABASE_URL;
