@@ -609,9 +609,10 @@ export function Stat({
 
 /** Lays stats out in rows of `cols`, all the same width. */
 export function StatGrid({ children, cols: want = 3 }: { children: React.ReactNode; cols?: number }) {
-  // With very large system text three tiles a row cut "RESULTADO" to "RESULT…": go to two.
-  const { fontScale } = useWindowDimensions();
-  const cols = fontScale >= 1.6 && want > 2 ? 2 : want;
+  // Larger system text cuts "RESULTADO" to "RESULT…" or breaks a word letter by letter three a row: go
+  // to two. A tile needs about 74 pt at 1× for the longest one-word label, the paddings about 150 pt.
+  const { fontScale, width } = useWindowDimensions();
+  const cols = want > 2 && (fontScale >= 1.6 || width < 150 + 222 * fontScale) ? 2 : want;
   const items = React.Children.toArray(children).filter(Boolean);
   const rows: React.ReactNode[][] = [];
   for (let i = 0; i < items.length; i += cols) rows.push(items.slice(i, i + cols));

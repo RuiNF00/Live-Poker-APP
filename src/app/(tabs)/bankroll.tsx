@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Pressable, View } from 'react-native';
+import { AppState, Pressable, useWindowDimensions, View } from 'react-native';
 
 import { firstKind, ONBOARDING_KEY } from '@/billing/onboarding';
 import { FREE } from '@/billing/plans';
@@ -83,6 +83,10 @@ const UNDO_MS = 6000;
 
 function BankrollTab() {
   const fmt = useFmt();
+  const win = useWindowDimensions();
+  const stackBtns = win.width / win.fontScale < 300;
+  // Hours under 10 with one decimal: a 3-minute session is «0,1 h», as on the Resumo, never «0 h».
+  const hrs = (h: number) => (h < 10 ? Math.round(h * 10) / 10 : Math.round(h)).toLocaleString(locale);
   const { sessions: stored, transfers, bankrolls, defaultBankroll, saveSession, deleteSession, saveBankroll, deleteBankroll, saveTransfer, deleteTransfer, settings, setSettings } = useStore();
   const { isPro, paywall } = usePro();
   const insightsLocked = useLocked('insights');
@@ -278,7 +282,7 @@ function BankrollTab() {
             // A row the size of a finger, the amount in its result's colour (orange read as a loss next to green).
             <Pressable
               accessibilityRole="link"
-              accessibilityLabel={t('{month} até agora: {amount} em {h} h', { month: monthName(thisMonth.key), amount: signedMoney(thisMonth.profit), h: Math.round(thisMonth.hours) })}
+              accessibilityLabel={t('{month} até agora: {amount} em {h} h', { month: monthName(thisMonth.key), amount: signedMoney(thisMonth.profit), h: hrs(thisMonth.hours) })}
               onPress={() => router.push({ pathname: '/month', params: { m: thisMonth.key, c: cur } })}
               style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}>
               {/* One line of text, so large type wraps between words and never inside the amount. */}
@@ -287,7 +291,7 @@ function BankrollTab() {
                 <T v="small" color={hidden ? C.textDim : thisMonth.profit > 0 ? C.good : thisMonth.profit < 0 ? C.bad : C.textDim} style={{ fontFamily: ff(700) }}>
                   {signedMoney(thisMonth.profit).replace(/ /g, '\u00a0')}
                 </T>{' '}
-                {t('em {h} h', { h: Math.round(thisMonth.hours) }).replace(/ h$/, '\u00a0h')}
+                {t('em {h} h', { h: hrs(thisMonth.hours) }).replace(/ h$/, '\u00a0h')}
               </T>
               <Ionicons name="chevron-forward" size={14} color={C.accent} style={{ marginLeft: 'auto' }} />
             </Pressable>
@@ -304,9 +308,10 @@ function BankrollTab() {
               </T>
             </Pressable>
           ) : (
-            <Row gap={S.sm} style={{ marginTop: S.xs }}>
-              <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-down" title={t('Depositar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'deposit'), isNew: true })} />
-              <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => withdraw()} />
+            // At 1.3× and up on a 375-pt phone, side by side broke «Depositar» letter by letter: one under the other.
+            <Row gap={S.sm} style={{ marginTop: S.xs, flexDirection: stackBtns ? 'column' : 'row' }}>
+              <Button style={stackBtns ? undefined : { flex: 1 }} size="sm" kind="secondary" icon="arrow-down" title={t('Depositar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'deposit'), isNew: true })} />
+              <Button style={stackBtns ? undefined : { flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => withdraw()} />
             </Row>
           )}
         </Card>
@@ -467,7 +472,7 @@ function BankrollTab() {
                     icon="calendar-outline"
                     iconColor={C.accent}
                     title={t('Resumo do mês')}
-                    subtitle={t('{month}: {amount} em {h} h', { month: monthName(lastMonth.key), amount: signedMoney(lastMonth.profit), h: Math.round(lastMonth.hours) })}
+                    subtitle={t('{month}: {amount} em {h} h', { month: monthName(lastMonth.key), amount: signedMoney(lastMonth.profit), h: hrs(lastMonth.hours) })}
                     onPress={() => router.push({ pathname: '/month', params: { m: lastMonth.key, c: cur } })}
                   />
                 ) : null}

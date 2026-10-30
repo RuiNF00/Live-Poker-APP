@@ -36,7 +36,10 @@ export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   // Next to a full board only two tags fit on the line at 390 pt.
   // A 360-wide phone fits a full board and one tag (plus the +n) on the line; so does big system text.
-  const bigText = useWindowDimensions().fontScale >= 1.4;
+  const win = useWindowDimensions();
+  const bigText = win.fontScale >= 1.4;
+  // At 1.3× and up on a 375-pt phone the drawn cards left «AKo» a letter wide: the combo says them.
+  const noArt = win.width / win.fontScale < 300;
   const maxTags = Math.max(1, (hand.board.length > 3 || !done ? 2 : 3) - (NARROW || bigText ? 1 : 0));
   const hero = hand.players[hand.hero];
   return (
@@ -53,7 +56,7 @@ export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false
       style={({ pressed }) => (picked ? rowSt.picked : pressed ? rowSt.pressed : rowSt.row)}>
       <Row gap={12}>
         {picking ? <Ionicons name={picked ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={picked ? C.accent : C.muted} /> : null}
-        {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="sm" gap={2} /> : <View style={rowSt.noCards} />}
+        {noArt ? null : hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="sm" gap={2} /> : <View style={rowSt.noCards} />}
         <View style={rowSt.main}>
           <Row gap={6}>
             <T v="h3" numberOfLines={1} style={rowSt.combo}>
