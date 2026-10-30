@@ -279,14 +279,13 @@ function BankrollTab() {
               accessibilityLabel={t('{month} até agora: {amount} em {h} h', { month: monthName(thisMonth.key), amount: signedMoney(thisMonth.profit), h: Math.round(thisMonth.hours) })}
               onPress={() => router.push({ pathname: '/month', params: { m: thisMonth.key, c: cur } })}
               style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}>
+              {/* One line of text, so large type wraps between words and never inside the amount. */}
               <T v="small" style={{ flexShrink: 1 }}>
-                {t('{month} até agora', { month: monthName(thisMonth.key) })}
-              </T>
-              <T v="small" color={hidden ? C.textDim : thisMonth.profit > 0 ? C.good : thisMonth.profit < 0 ? C.bad : C.textDim} style={{ fontFamily: ff(700) }}>
-                {signedMoney(thisMonth.profit)}
-              </T>
-              <T v="small" style={{ flexShrink: 1 }}>
-                {t('em {h} h', { h: Math.round(thisMonth.hours) })}
+                {t('{month} até agora', { month: monthName(thisMonth.key) })}{' '}
+                <T v="small" color={hidden ? C.textDim : thisMonth.profit > 0 ? C.good : thisMonth.profit < 0 ? C.bad : C.textDim} style={{ fontFamily: ff(700) }}>
+                  {signedMoney(thisMonth.profit).replace(/ /g, '\u00a0')}
+                </T>{' '}
+                {t('em {h} h', { h: Math.round(thisMonth.hours) }).replace(/ h$/, '\u00a0h')}
               </T>
               <Ionicons name="chevron-forward" size={14} color={C.accent} style={{ marginLeft: 'auto' }} />
             </Pressable>

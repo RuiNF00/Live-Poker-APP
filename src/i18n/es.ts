@@ -3884,7 +3884,7 @@ const es: Record<string, string> = {
   'O teu foco antes de jogar mexe no teu resultado.': 'Tu foco antes de jugar cambia tu resultado.',
   // «Quando voltas a jogar?» on the session summary and its two notices.
   'Chegaste à mesa?': '¿Ya estás en la mesa?',
-  'Abre a sessão com um toque: o jogo e as blinds já vêm preenchidos.': 'Abre la sesión con un toque: el juego y las ciegas ya vienen rellenados.',
+  'Abre a sessão com um toque: o jogo e as blinds já vêm preenchidos.': 'Abre la sesión con un toque: el juego y las ciegas ya están puestos.',
   'Jogaste ontem?': '¿Jugaste ayer?',
   'Regista a sessão em 20 segundos, enquanto te lembras de tudo.': 'Registra la sesión en 20 segundos, mientras aún lo recuerdas todo.',
   'Amanhã': 'Mañana',

@@ -3,7 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { PixelRatio, Pressable, View } from 'react-native';
 
 import { softAskState, useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { NextPlayCard } from '@/components/NextPlayCard';
@@ -126,7 +126,7 @@ export default function SessionSummary() {
         ) : null}
       </Card>
 
-      <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+      <Row gap={S.sm} style={{ alignItems: 'stretch', flexWrap: 'wrap' }}>
         <Tile label={t('Horas')} value={duration(playedMs(s))} />
         <Tile label={s.handsDealt ? t('Mãos jogadas') : t('Mãos guardadas')} value={String(s.handsDealt ?? mine.length)} />
         <Tile label={t('Maior pote')} value={biggest ? bbs(biggest.bb, 1) : '—'} />
@@ -200,9 +200,13 @@ export default function SessionSummary() {
   );
 }
 
+const longestWord = (s: string) => Math.max(...s.split(/\s+/).map((w) => w.length));
+
 function Tile({ label, value }: { label: string; value: string }) {
   return (
-    <Card style={{ flex: 1, gap: 4 }}>
+    // Never narrower than the label's longest word, so «Manos guardadas» breaks between words; when
+    // the three don't fit (320 pt, large text) the last one goes to its own row.
+    <Card style={{ flex: 1, minWidth: longestWord(label) * 9 * PixelRatio.getFontScale() + 2 * S.lg + 2, gap: 4 }}>
       <T v="label">{label}</T>
       <T v="mono" numberOfLines={1} adjustsFontSizeToFit>
         {value}
