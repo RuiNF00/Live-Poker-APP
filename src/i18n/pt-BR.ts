@@ -2180,6 +2180,9 @@ const ptBR: Record<string, string> = {
   'Toca para a abrir': 'Toque para abrir',
   'O teu amigo recebe {pct}% no primeiro mês do Pro': 'Seu amigo recebe {pct}% no primeiro mês do Pro',
   '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios deste tamanho (o teu ainda não apanhou uma mesa final).': '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios desse tamanho (o seu ainda não pegou uma mesa final).',
+  // Screen readers: a hand or session just saved, and time played (lib/spoken.ts).
+  'Mão guardada': 'Mão salva',
+  'Sessão guardada': 'Sessão salva',
 };
 
 export default ptBR;

@@ -9,6 +9,7 @@ import { CoachThread } from '@/components/CoachThread';
 import { VoiceNotePlayer } from '@/components/audio';
 import { notice } from '@/lib/notice';
 import { isComplete, replay } from '@/poker/engine';
+import { amount } from '@/poker/format';
 import { sameTable } from '@/poker/factory';
 import { drillQueue, DRILL_MAX, isDue } from '@/poker/drill';
 import { markReviewed, reviewQueue } from '@/poker/review';
@@ -30,6 +31,8 @@ import { shareDelay } from '@/lib/friction';
 import { markShared, readyRef } from '@/lib/referrals';
 import { lastShare, rememberShare } from '@/lib/share-last';
 import { isRateLimited } from '@/lib/net';
+import { savedMessage } from '@/lib/spoken';
+import { announceAfterChange } from '@/lib/screen-reader';
 import { isNetworkError, ownGoneShares, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { commentPushAvailable, openedOwnHand, turnOnCommentPush } from '@/lib/comment-push';
 import { commentPushReady } from '@/lib/comment-push-ready';
@@ -73,7 +76,7 @@ export default function HandScreen() {
   // `f`: this hand was just finished in the editor; the next unfinished one is offered.
   // `q`: opened from a review queue (a session id, "all", or "train" for «Treino da semana» with `k`
   // hands still to go); once reviewed, the next one is offered.
-  const { id, c: fresh, f: justFinished, q: queueOf, k: trainLeft } = useLocalSearchParams<{ id: string; c?: string; f?: string; q?: string; k?: string }>();
+  const { id, c: fresh, f: justFinished, q: queueOf, k: trainLeft, g: justSaved } = useLocalSearchParams<{ id: string; c?: string; f?: string; q?: string; k?: string; g?: string }>();
   const { hands, saveHand, dropGoneLinks, deleteHand, settings, setSettings, activeSession } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
@@ -104,6 +107,16 @@ export default function HandScreen() {
   const quiz = !!hand && quizFor === hand.id;
   // Until answered, the header keeps hero's result to itself.
   const [quizDone, setQuizDone] = useState(false);
+  // `g`: just saved from the entry screen (often by its last tap, with no «Guardar»): VoiceOver and
+  // TalkBack say it was saved and how it went, once.
+  const savedSaid = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (!justSaved || !hand || savedSaid.current) return;
+    const res = replay(hand).result;
+    const net = res?.resolved ? res.net[hand.hero] : undefined;
+    savedSaid.current = announceAfterChange(savedMessage('hand', net === undefined ? undefined : (net > 0 ? '+' : '') + amount(net, hand, settings.inBB)));
+  }, [justSaved, hand, settings.inBB]);
+  useEffect(() => () => savedSaid.current?.(), []);
   const trainBudget = Math.max(0, Number(trainLeft ?? DRILL_MAX) - 1);
   const reviewNext = useMemo(() => {
     if (!queueOf) return null;

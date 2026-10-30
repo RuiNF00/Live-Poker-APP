@@ -16,7 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Animated, findNodeHandle, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View, type Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
@@ -33,6 +33,7 @@ import { VoiceCapture, VoiceNotePlayer } from '@/components/audio';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { useFadeOnChange } from '@/lib/motion';
+import { useScreenReader } from '@/lib/screen-reader';
 import { Button, Chip, ChipRow, confirmAction, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { entrySeconds } from '@/lib/friction';
@@ -421,7 +422,8 @@ export default function NewHand() {
       pro.record('hand', { touches: touches.current, secs: entrySeconds(openedAt, Date.now()), first: hands.length === 0, ...(toldRef.current ? { voice: true } : {}) });
     }
     // Finishing a half-saved hand: the detail screen offers the next one.
-    const to = { pathname: '/hand/[id]' as const, params: justFinished ? { id: final.id, f: '1' } : { id: final.id } };
+    // `g`: a new hand, so the detail screen tells VoiceOver and TalkBack it was saved.
+    const to = { pathname: '/hand/[id]' as const, params: { id: final.id, ...(justFinished ? { f: '1' } : null), ...(asNew ? { g: '1' } : null) } };
     // An edit opened from the hand goes back to it, so Back doesn't show the same hand twice.
     if (isEdit) router.dismissTo(to);
     else router.replace(to);
@@ -542,9 +544,31 @@ export default function NewHand() {
         : phase === 'showdown'
           ? 'Showdown'
           : '';
+  // A new part of the hand (the action, a board card, the showdown) replaces the buttons VoiceOver or
+  // TalkBack was on, and the focus fell back to «Fechar», some twenty stops from the action. It goes to
+  // the new part's heading instead, which says what the announcement would, so that isn't said too.
+  const reader = useScreenReader();
+  const phaseHead = useRef<React.ComponentRef<typeof Text>>(null);
+  const shownPhase = useRef(phase);
+  const focus = useRef<{ timer?: ReturnType<typeof setTimeout>; at: number }>({ at: 0 });
   useEffect(() => {
+    const moved = shownPhase.current !== phase;
+    shownPhase.current = phase;
+    const f = focus.current;
+    if (moved && reader && phase !== 'hero' && phase !== 'done') {
+      f.at = Date.now();
+      clearTimeout(f.timer);
+      f.timer = setTimeout(() => {
+        const node = findNodeHandle(phaseHead.current);
+        if (node) AccessibilityInfo.setAccessibilityFocus(node);
+      }, 350);
+      return;
+    }
+    // The folds made right after (the same heading reads them) aren't said over the focus move.
+    if (reader && Date.now() - f.at < 1000) return;
     if (spoken && Platform.OS !== 'android') AccessibilityInfo.announceForAccessibility(spoken);
-  }, [spoken]);
+  }, [spoken, phase, reader]);
+  useEffect(() => () => clearTimeout(focus.current.timer), []);
   const heldBackText =
     heldBack && !pro.isPlus
       ? t('Mão guardada como rascunho. Mãos grátis hoje: {left} de {n}.', { left: pro.handsLeft ?? 0, n: FREE.handsPerDay ?? 0 })
@@ -795,8 +819,9 @@ export default function NewHand() {
         {!capturing && phase === 'action' && l && (
           <>
             {/* At large text Voz / Guardar já go under the street and player, or "Hero" was cut ("Pré-flop …"). */}
+            {/* VoiceOver lands here when the action starts and hears the folds made for you too (TalkBack hears them from the row below). */}
             <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <T v="h2" numberOfLines={2} accessibilityLiveRegion="polite" style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
+              <T v="h2" ref={phaseHead} numberOfLines={2} accessibilityLiveRegion="polite" accessibilityLabel={Platform.OS === 'ios' && spoken ? spoken : undefined} style={{ flexGrow: 1, flexShrink: 1, flexBasis: 130 }}>
                 {STREET_PT[s.street]} · <T v="h2" color={C.warn}>{displayName(hand, l.p, pos)}</T>
                 {l.p === hand.hero || !hand.players[l.p].name ? '' : ` (${pos[l.p]})`}
               </T>
@@ -920,7 +945,7 @@ export default function NewHand() {
         {!capturing && phase === 'board' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2" accessibilityLiveRegion="polite">
+              <T v="h2" ref={phaseHead} accessibilityLiveRegion="polite">
                 {STREET_PT[s.street]} · {boardNeeded - hand.board.length === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: boardNeeded - hand.board.length })}
                 {s.bettingDone ? <T v="small" color={C.allin}>  all-in</T> : null}
               </T>
@@ -939,7 +964,7 @@ export default function NewHand() {
         {!capturing && phase === 'board2' && (
           <>
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="h2">
+              <T v="h2" ref={phaseHead}>
                 {t('2.ª vez')} · {board2Left === 1 ? t('escolhe 1 carta') : t('escolhe {n} cartas', { n: board2Left })}
               </T>
               {twiceChip}
@@ -953,7 +978,7 @@ export default function NewHand() {
             <ScrollView style={{ maxHeight: area.h ? Math.max(220, (area.h + 300) * 0.55) : 360 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
               {phase === 'showdown' && (
                 <View style={{ gap: 8 }}>
-                  <T v="h2" accessibilityLiveRegion="polite">Showdown</T>
+                  <T v="h2" ref={phaseHead} accessibilityLiveRegion="polite">Showdown</T>
                   {/* Who won comes first: it is the one answer the hand needs. Cards shown are optional. */}
                   {r.boards.length === 2 &&
                     r.boards.map((b, run) => (
@@ -1203,6 +1228,9 @@ const STREET_ORDER = ['preflop', 'flop', 'turn', 'river'] as const;
 function StreetDots({ street, done }: { street: (typeof STREET_ORDER)[number]; done: boolean }) {
   const at = STREET_ORDER.indexOf(street);
   return (
+    // Drawing only for VoiceOver and TalkBack: the heading under the felt says the street, and four
+    // stops here came before the seats and the action every time.
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     <Row gap={6} style={{ justifyContent: 'center', paddingVertical: 2 }}>
       {STREET_ORDER.map((st, i) => {
         const now = i === at && !done;
@@ -1218,5 +1246,6 @@ function StreetDots({ street, done }: { street: (typeof STREET_ORDER)[number]; d
         );
       })}
     </Row>
+    </View>
   );
 }

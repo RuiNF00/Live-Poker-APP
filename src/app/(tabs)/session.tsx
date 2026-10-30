@@ -55,6 +55,7 @@ import { C, R, S } from '@/theme';
 import { reduceMotion, useSheetAnimation, useTween } from '@/lib/motion';
 import { crashProbe } from '@/lib/crash-probe';
 import { useScreenReader } from '@/lib/screen-reader';
+import { spokenPlayed } from '@/lib/spoken';
 
 // Only when the check-in shows (it can be turned off): off the first frame. A chunk that fails to load leaves it out.
 const MindBefore = React.lazy(() => import('@/components/MindCheckIn').then((m) => ({ default: m.MindBefore }), () => ({ default: (() => null) as never })));
@@ -70,6 +71,21 @@ function PlayClock({ s, paused }: { s: Session; paused: boolean }) {
     <T v="monoXL" style={{ fontSize: 52, lineHeight: 58 }} color={paused ? C.warn : C.text}>
       {clock(playedMs(s, now))}
     </T>
+  );
+}
+
+// VoiceOver and TalkBack read the card as one stop, with the time played in minutes; the clock itself
+// still ticks every second for the eye.
+function PlayCard({ s, paused, nHands }: { s: Session; paused: boolean; nHands: number }) {
+  const now = useNow(30000);
+  const started = t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) });
+  const state = paused ? t('Em pausa') : t('A jogar');
+  return (
+    <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }} accessibilityLabel={[state, spokenPlayed(playedMs(s, now)), ...started.split(' · ')].join(', ')}>
+      <Pill label={state} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
+      <PlayClock s={s} paused={paused} />
+      <T v="small">{started}</T>
+    </Card>
   );
 }
 
@@ -526,11 +542,7 @@ function Live({ s }: { s: Session }) {
       {softAsk}
       <Screen scrollRef={scrollRef} title={s.name || t('Sessão')} eyebrow={(mtt ? t('Torneio') : 'Cash') + (s.day ? ' · ' + t('Dia {n}', { n: s.day }) : '') + (s.venue ? ' · ' + s.venue : '')} right={ending ? null : <Button size="sm" kind="secondary" icon="flag-outline" title={t('Terminar')} onPress={startEnding} />}
         contentStyle={{ gap: S.lg, paddingBottom: bar + S.lg }}>
-        <Card tone="raised" style={{ alignItems: 'center', gap: S.md, paddingVertical: S.xl }}>
-          <Pill label={paused ? t('Em pausa') : t('A jogar')} color={paused ? C.warn : C.good} icon={paused ? 'pause' : 'ellipse'} />
-          <PlayClock s={s} paused={paused} />
-          <T v="small">{t('Começou às {time} · {n}', { time: timeOf(s.startedAt), n: nHands === 1 ? t('1 mão') : t('{n} mãos', { n: nHands }) })}</T>
-        </Card>
+        <PlayCard s={s} paused={paused} nHands={nHands} />
 
         <StopLossBanner s={s} />
         <RegularsHere s={s} />

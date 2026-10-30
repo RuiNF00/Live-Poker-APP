@@ -123,7 +123,7 @@ function useWebFit(on: boolean, min: number) {
 }
 
 /** Text that may shrink to one line on web too; same props as RN Text. */
-export function FitText({ style, onLayout, ...rest }: TextProps) {
+export function FitText({ style, onLayout, ...rest }: TextProps & { ref?: React.Ref<React.ComponentRef<typeof RNText>> }) {
   const fits = WEB && !!rest.adjustsFontSizeToFit && rest.numberOfLines === 1;
   const { ref, scale, fit } = useWebFit(fits, rest.minimumFontScale || 0.5);
   // Only text that fits listens to layout: on web every onLayout is a forced
@@ -146,7 +146,8 @@ export function FitText({ style, onLayout, ...rest }: TextProps) {
 // Titles are headers so VoiceOver's rotor and TalkBack can jump between sections.
 const HEADER: Partial<Record<TV, true>> = { title: true, h1: true, h2: true };
 
-export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; color?: string }) {
+// `ref` reaches the native text (React 19: a plain prop), so a screen can move VoiceOver's focus to a heading.
+export function T({ v = 'body', style, color, ...rest }: TextProps & { v?: TV; color?: string; ref?: React.Ref<React.ComponentRef<typeof RNText>> }) {
   return <FitText maxFontSizeMultiplier={MAX_SCALE[v]} accessibilityRole={HEADER[v] ? 'header' : undefined} {...rest} style={[ts[v], color ? { color } : null, style]} />;
 }
 

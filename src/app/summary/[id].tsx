@@ -16,6 +16,8 @@ import { usePro } from '@/billing/pro';
 import { deferState, sessionStartOffer } from '@/billing/trial-moments';
 import { t } from '@/i18n';
 import { askOnSummary, kindOn } from '@/lib/notify-policy';
+import { savedMessage } from '@/lib/spoken';
+import { announceAfterChange } from '@/lib/screen-reader';
 import { summaryPrompts } from '@/lib/summary-prompts';
 import { comboLabel } from '@/poker/cards';
 import { isComplete, replay } from '@/poker/engine';
@@ -67,6 +69,15 @@ export default function SessionSummary() {
 
   // Right after a session, with the result seen: the moment the Sunday notice makes sense.
   const endedAt = s?.endedAt;
+  // The session that «Guardar» just closed: VoiceOver and TalkBack say it was saved and the result,
+  // once (the screen opens on the result, but nothing said the session was closed).
+  useEffect(() => {
+    if (!s?.endedAt || openedAt - s.endedAt > 10_000) return;
+    const p = profit(s);
+    return announceAfterChange(savedMessage('session', plus(p) + money(p, s.currency)));
+    // Once, on opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     if (!endedAt) return;
     let off = false;

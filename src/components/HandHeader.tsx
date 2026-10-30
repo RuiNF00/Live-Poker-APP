@@ -47,7 +47,7 @@ export function HandHeader({ hand, quiz, inBB = false }: { hand: Hand; quiz?: bo
           <View style={{ alignItems: 'flex-end', gap: 6 }}>
             {hero.cards?.length === 2 ? <CardRow cards={hero.cards} size="md" gap={3} /> : null}
             {net !== undefined ? (
-              <T v="monoL" color={net > 0 ? C.good : net < 0 ? C.bad : C.textDim} accessibilityLabel={t('Resultado')}>
+              <T v="monoL" color={net > 0 ? C.good : net < 0 ? C.bad : C.textDim} accessibilityLabel={`${t('Resultado')}: ${(net > 0 ? '+' : '') + amount(net, hand, inBB)}`}>
                 {(net > 0 ? '+' : '') + amount(net, hand, inBB)}
               </T>
             ) : null}

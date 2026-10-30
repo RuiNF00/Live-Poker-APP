@@ -135,8 +135,10 @@ export function Table({
           <View style={[styles.felt, { borderRadius: w }]}>
             <View style={[styles.feltLine, { borderRadius: w }]} />
           </View>
+          {/* VoiceOver and TalkBack read the seats (position, stack, chips in front, action) and the pot;
+              the brand, the street over the board, the chips' numbers and the «D» are drawing only. */}
           {watermark ? (
-            <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.watermark, { top: h * 0.235, fontSize: 13 * scale }]}>{watermark.toUpperCase()}</Text>
+            <Text accessibilityElementsHidden importantForAccessibility="no-hide-descendants" maxFontSizeMultiplier={TABLE_SCALE} style={[styles.watermark, { top: h * 0.235, fontSize: 13 * scale }]}>{watermark.toUpperCase()}</Text>
           ) : null}
 
           {/* board */}
@@ -149,7 +151,7 @@ export function Table({
           </View>
           {pot ? (
             <View style={[styles.potWrap, { top: h * 0.43 + 64 * scale }]}>
-              <View style={[styles.pot, { transform: [{ scale }] }]}>
+              <View style={[styles.pot, { transform: [{ scale }] }]} accessible accessibilityLabel={`${t('Pote')} ${pot}`}>
                 <View style={styles.potChip} />
                 <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.potText}>{pot}</Text>
               </View>
@@ -157,7 +159,7 @@ export function Table({
           ) : null}
           {narration ? (
             <View style={[styles.potWrap, { top: h * 0.43 - 60 * scale }]}>
-              <Text maxFontSizeMultiplier={TABLE_SCALE} style={[styles.narration, { fontSize: 12 * scale }]} numberOfLines={1}>
+              <Text accessibilityElementsHidden importantForAccessibility="no-hide-descendants" maxFontSizeMultiplier={TABLE_SCALE} style={[styles.narration, { fontSize: 12 * scale }]} numberOfLines={1}>
                 {narration}
               </Text>
             </View>
@@ -171,13 +173,14 @@ export function Table({
             return (
               <React.Fragment key={'b' + i}>
                 {s.bet && !s.folded ? (
-                  <View style={[styles.bet, { left: (b.x / 100) * w, top: (b.y / 100) * h, transform: [{ translateX: -26 }, { translateY: -10 }, { scale }] }]}>
+                  <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.bet, { left: (b.x / 100) * w, top: (b.y / 100) * h, transform: [{ translateX: -26 }, { translateY: -10 }, { scale }] }]}>
                     <View style={styles.betChip} />
                     <Text maxFontSizeMultiplier={TABLE_SCALE} style={styles.betText}>{s.bet}</Text>
                   </View>
                 ) : null}
                 {isBtn ? (
                   <View
+                    accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
                     style={[
                       styles.dealer,
                       {

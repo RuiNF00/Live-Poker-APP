@@ -7,7 +7,7 @@ import { Dimensions, Pressable, StyleSheet, View, useWindowDimensions } from 're
 import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Badge, Pill, Row, T } from '@/components/ui';
 import { t } from '@/i18n';
-import { comboLabel } from '@/poker/cards';
+import { cardName, comboLabel } from '@/poker/cards';
 import { isComplete, positions, replay } from '@/poker/engine';
 import { amount, blindsLabel, timeOf } from '@/poker/format';
 import type { Hand } from '@/poker/types';
@@ -42,9 +42,26 @@ export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false
   const noArt = win.width / win.fontScale < 300;
   const maxTags = Math.max(1, (hand.board.length > 3 || !done ? 2 : 3) - (NARROW || bigText ? 1 : 0));
   const hero = hand.players[hand.hero];
+  // Read as one line: the cards by name (not the drawing and then «AKo» again), where, the result and
+  // what the pills say, instead of each piece of the row in turn.
+  const label = [
+    hero.cards?.length ? hero.cards.map(cardName).join(', ') : t('Sem cartas'),
+    heroPos,
+    hand.game.name || hand.game.venue || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash'),
+    blindsLabel(hand),
+    net !== undefined ? `${t('Resultado')}: ${(net > 0 ? '+' : '') + amount(net, hand, inBB)}` : '',
+    timeOf(hand.createdAt),
+    hand.board.length ? `${t('Mesa')}: ${hand.board.map(cardName).join(', ')}` : '',
+    coach ? (coach === 1 ? t('1 comentário do coach') : t('{n} comentários do coach', { n: coach })) : '',
+    !done ? t('Por completar') : '',
+    ...hand.tags.map((x) => t(x)),
+    hand.shareId ? t('Partilhada') : '',
+    snippet ?? '',
+  ].filter(Boolean).join(', ');
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={picking ? { selected: picked } : undefined}
       // An unfinished hand opens where it stopped: finishing it is why it's tapped.
       onPress={() => (picking && onPick ? onPick(hand.id) : done ? router.push({ pathname: '/hand/[id]', params: queue ? { id: hand.id, q: 'all' } : { id: hand.id } }) : router.push({ pathname: '/hand/new', params: { edit: hand.id } }))}

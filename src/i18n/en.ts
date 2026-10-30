@@ -4001,6 +4001,11 @@ const en: Record<string, string> = {
   'Amanhã às {time}': 'Tomorrow at {time}',
   '{day} às {time}': '{day} at {time}',
   'O teu amigo recebe {pct}% no primeiro mês do Pro': 'Your friend gets {pct}% off their first month of Pro',
+  // Screen readers: a hand or session just saved, and time played (lib/spoken.ts).
+  'Mão guardada': 'Hand saved',
+  'Sessão guardada': 'Session saved',
+  '{h} h {m} min': '{h} h {m} min',
+  '{m} min': '{m} min',
 };
 
 export default en;

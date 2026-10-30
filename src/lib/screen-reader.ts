@@ -21,3 +21,16 @@ export function useScreenReader(): boolean {
   }, []);
   return on;
 }
+
+/**
+ * Said once the new screen has settled. VoiceOver reads the new screen first and drops an
+ * announcement made during the change, so it waits and joins the queue. Returns the cancel.
+ */
+export function announceAfterChange(message: string): () => void {
+  if (Platform.OS === 'web') return () => {};
+  const id = setTimeout(() => {
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
+    else AccessibilityInfo.announceForAccessibility(message);
+  }, 700);
+  return () => clearTimeout(id);
+}
