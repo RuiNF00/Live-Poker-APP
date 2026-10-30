@@ -35,6 +35,7 @@ import { ASPECT, Table } from '@/components/Table';
 import { Button, Chip, ChipRow, confirmAction, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { entrySeconds } from '@/lib/friction';
+import { endsNow } from '@/lib/ends-now';
 import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
@@ -434,11 +435,16 @@ export default function NewHand() {
   // or a hand told in words waits for «Guardar», so what came in can be checked first. Tags and notes
   // are on the saved hand.
   const autoSaved = useRef(new Set<string>());
+  // Over before this change (null until the screen opened): a draft reopened already over doesn't save on its first tap.
+  const wasOver = useRef<boolean | null>(null);
   useEffect(() => {
     // A showdown ends the same way once every cards shown are in and the pot has its winner (one board).
     const shownDown = phase === 'showdown' && r.boards.length < 2 && !!r.result?.resolved && liveVillains.length > 0 && liveVillains.every((i) => hand.players[i].cards?.length === holeCount(hand.game));
     // Hero's fold ends the hand for hero (isComplete says so too): nobody types what the others did next.
     const over = (phase === 'done' && s.foldWin) || shownDown || heroFolded(hand, r);
+    const ended = endsNow(wasOver.current, over);
+    wasOver.current = over;
+    if (!ended) return;
     if (isEdit || toldRef.current || saved.current || !over || !history.length || capturing) return;
     if (autoSaved.current.has(autoKey)) return;
     autoSaved.current.add(autoKey);
