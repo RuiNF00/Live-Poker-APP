@@ -27,7 +27,7 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, paidInFull, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
+import { getOffers, inFestivalPackage, linesSettledWith, markPiece, offerPackageIds, offerStakeChanges, paidInFull, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
 import { currentDeleted } from '@/store/deleted';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals, loadShippedFestivals } from '@/store/my-festivals';
@@ -123,8 +123,9 @@ function BackerScreen() {
 
   const togglePaid = (r: BackerLedgerRow) => {
     const s: Session = r.session;
-    // Paid: nothing left to pay, re-entries of a festival piece included. Not paid after all: the whole piece.
-    const stakes = (s.stakes ?? []).map((x) => (x === r.stake ? { ...x, unpaid: r.due > 0.005 ? undefined : true, prepaid: undefined, paidCost: undefined } : x));
+    // Paid: nothing left to pay, re-entries of a festival piece included (and one played later is due). Not paid after all: the whole piece.
+    const festival = !!r.stake.packageId && offerPackageIds(getOffers()).has(r.stake.packageId);
+    const stakes = (s.stakes ?? []).map((x) => (x === r.stake ? markPiece(s, x, r.due > 0.005, festival) : x));
     saveSession({ ...s, stakes });
     tap('medium');
     setPiece(null);

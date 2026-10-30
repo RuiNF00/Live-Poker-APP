@@ -503,6 +503,22 @@ export function paidInFull(sessions: Session[], packageIds: Set<string>): Sessio
   return out;
 }
 
+/**
+ * One piece marked paid or not paid by hand on the backer's screen. A festival piece marked paid
+ * records the session's cost, as a settle-up does (paidInFull): taking off `prepaid` made it paid in
+ * full for good, so a re-entry played after the tap was free for the backer. Any other piece, and
+ * «not paid after all» (the whole piece), as before.
+ */
+export function markPiece(s: Session, x: Stake, paid: boolean, festival: boolean): Stake {
+  if (!paid) return { ...x, unpaid: true, prepaid: undefined, paidCost: undefined };
+  if (festival) {
+    const y: Stake = { ...x, prepaid: true, paidCost: cost(s) };
+    delete y.unpaid;
+    return y;
+  }
+  return { ...x, unpaid: undefined, prepaid: undefined, paidCost: undefined };
+}
+
 // ─── Persistence ─────────────────────────────────────────────────────────────
 
 const KEY = 'rl.actionOffers.v2';
