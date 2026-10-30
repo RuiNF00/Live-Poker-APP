@@ -132,7 +132,7 @@ export function RangeSheet({
             <T v="tiny" color={C.muted}>
               {t('A TUA EQUITY')}
             </T>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: eq == null ? C.muted : C.good, fontFamily: F.mono, fontSize: 28, fontVariant: ['tabular-nums'] }}>{eq == null ? '–' : pct(eq)}</Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: eq == null ? C.muted : eq >= 0.5 ? C.good : C.text, fontFamily: F.mono, fontSize: 28, fontVariant: ['tabular-nums'] }}>{eq == null ? '–' : pct(eq)}</Text>
           </View>
         </Row>
         <Row gap={6}>
@@ -148,6 +148,9 @@ export function RangeSheet({
             </T>
           </Pressable>
         </Row>
+        <T v="tiny" color={C.muted}>
+          {t('Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que ele tem.')}
+        </T>
         <View ref={grid} {...pan.panHandlers} style={{ gap: GAP, alignSelf: 'center' }}>
           {[...GRID_RANKS].map((_, i) => (
             <View key={i} style={{ flexDirection: 'row', gap: GAP }}>

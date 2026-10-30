@@ -13,6 +13,7 @@ import { linkStatus, unreadByHand, type CoachLink, type CoachState } from '@/lib
 import { revokeCoachLink, syncCoach, useCoach } from '@/lib/coach-api';
 import { withLang } from '@/lib/link-lang';
 import { notice } from '@/lib/notice';
+import { isOnline } from '@/lib/online';
 import { comboLabel } from '@/poker/cards';
 import type { Hand } from '@/poker/types';
 import { useStore } from '@/store/store';
@@ -88,7 +89,10 @@ function LinkCard({ link, coach, hands }: { link: CoachLink; coach: CoachState; 
     } else await Share.share({ message: msg }).catch(() => {});
   };
   const revoke = async () => {
-    if (await confirm(t('Desligar o link?'), t('O coach deixa de abrir as mãos. Os comentários que já fez ficam aqui.'), t('Desligar'))) revokeCoachLink(link.token);
+    if (!(await confirm(t('Desligar o link?'), t('O coach deixa de abrir as mãos. Os comentários que já fez ficam aqui.'), t('Desligar')))) return;
+    await revokeCoachLink(link.token);
+    // Off here at once; on the server only with signal, and until then the coach can still open it.
+    if (!isOnline()) notice(t('Desligado neste telemóvel'), t('Sem rede agora: o link só deixa de abrir para o coach quando houver sinal.'));
   };
 
   const statusText =

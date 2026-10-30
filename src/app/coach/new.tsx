@@ -130,7 +130,7 @@ export default function NewCoachLink() {
       </Section>
 
       <ListGroup>
-        <ToggleItem icon="document-text-outline" title={t('Incluir as minhas notas')} subtitle={t('Ajudam o coach a perceber o que viste na mesa.')} value={notes} onChange={setNotes} />
+        <ToggleItem icon="document-text-outline" title={t('Incluir as minhas notas')} subtitle={notes ? t('Vão tal como as escreveste. Revê se têm algo que não queres mostrar.') : t('Ajudam o coach a perceber o que viste na mesa.')} value={notes} onChange={setNotes} />
       </ListGroup>
 
       <Card tone="inset" style={{ gap: 8 }}>
