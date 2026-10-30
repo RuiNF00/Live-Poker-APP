@@ -69,7 +69,7 @@ export function useStartEvent() {
       a.kind === 'resume'
         ? resumeDay(a.session, now, venueTime(f, e.start))
         : a.kind === 'reenter'
-          ? reenterFlight(a.session, sessionName(e))
+          ? reenterFlight(a.session, sessionName(e), now, { levelStartedAt: levelStart(f, e, now, lateRegOf(plan, e)), stack: e.stack, levelMinutes: e.levelMinutes })
           : sessionFromEvent(f, e, settings.defaultTableSize, bankroll.currency === f.currency ? bankroll.id : undefined);
     saveSession(s);
     // Played after the trip's dates: the festival's trip grows to take it. Today, not the

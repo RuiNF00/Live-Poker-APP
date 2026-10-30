@@ -221,6 +221,7 @@ export function totals(list: Session[], currency?: string): Totals {
   const inv = done.reduce((a, s) => a + ownBuyIns(s), 0);
   const hours = done.reduce((a, s) => a + playedMs(s), 0) / 3600000;
   const mtts = done.filter((s) => s.kind === 'mtt');
+  const over = mtts.filter((s) => !(s.bag && s.endedAt));
   const mttInv = mtts.reduce((a, s) => a + ownBuyIns(s), 0);
   const mttProfit = mtts.reduce((a, s) => a + profit(s), 0);
   const bounties = mtts.reduce((a, s) => a + ownBounties(s), 0);
@@ -238,7 +239,8 @@ export function totals(list: Session[], currency?: string): Totals {
     roi: mttInv > 0 ? (mttProfit / mttInv) * 100 : null,
     bounties,
     roiNoBounties: mttInv > 0 && bounties > 0 ? ((mttProfit - bounties) / mttInv) * 100 : null,
-    itm: mtts.length ? (mtts.filter((s) => s.cashOut - bountiesOf(s) > 0).length / mtts.length) * 100 : null,
+    // A day bagged and waiting hasn't cashed or missed yet: ITM counts the tournaments that are over.
+    itm: over.length ? (over.filter((s) => s.cashOut - bountiesOf(s) > 0).length / over.length) * 100 : null,
     best: profits.length ? Math.max(...profits) : 0,
     worst: profits.length ? Math.min(...profits) : 0,
     tips: done.reduce((a, s) => a + (s.tips || 0), 0),

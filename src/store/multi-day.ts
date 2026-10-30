@@ -9,6 +9,9 @@
 // While bagged the session reads as a loss of its buy-in, which is the money
 // actually out; it settles when the last day ends.
 
+import { MTT_LEVELS } from '@/poker/factory';
+import { syncTo } from '@/poker/tourney';
+
 import type { Session } from './types';
 
 export function isBagged(s: Session): boolean {
@@ -48,23 +51,40 @@ export function resumeDay(s: Session, now = Date.now(), levelFrom = now): Sessio
   };
 }
 
-/** Busted earlier: enter a later flight of the same event on the same session. */
-export function reenterFlight(s: Session, name: string, now = Date.now()): Session {
-  const startStack = s.stackLog[0]?.stack ?? s.stack;
+/** The new flight's published start, when the festival knows it: level 1 runs from there, with its stack. */
+export type FlightStart = { levelStartedAt?: number; stack?: number; levelMinutes?: number };
+
+/**
+ * Busted earlier: enter a later flight of the same event on the same session. The new flight
+ * starts again at level 1 with a starting stack; bounties already won stay won.
+ */
+export function reenterFlight(s: Session, name: string, now = Date.now(), start: FlightStart = {}): Session {
+  const startStack = start.stack ?? s.tourney?.startStack ?? s.stackLog[0]?.stack ?? s.stack;
   const out = s.endedAt ?? now;
+  const levelMinutes = start.levelMinutes ?? s.levelMinutes;
+  // Level 1 of the structure when there is one, else the app's first level, as a new session starts.
+  const [sb, bb] = MTT_LEVELS[0];
+  const level1 = s.tourney?.structure?.length
+    ? syncTo(s.tourney.structure, 1, undefined, now)
+    : { sb, bb, ante: s.anteType === 'none' ? 0 : bb, level: 1, levelMinutes, levelStartedAt: levelMinutes ? now : undefined };
   return {
     ...s,
+    ...level1,
+    ...(start.levelStartedAt !== undefined && level1.levelMinutes ? { levelStartedAt: start.levelStartedAt } : null),
+    stage: 'early',
     name,
     endedAt: undefined,
     bag: undefined,
     day: undefined,
     entries: s.entries + 1,
-    cashOut: 0,
+    // A PKO flight busted with bounties: that money was paid out, it stays in the prize.
+    cashOut: s.kind === 'mtt' ? Math.max(0, s.bounties ?? s.tourney?.bounties ?? 0) : 0,
     finish: undefined,
     field: undefined,
     stack: startStack,
-    stackLog: [...s.stackLog, { t: now, stack: startStack }],
+    stackLog: [...s.stackLog, { t: now, stack: startStack, level: 1 }],
     breaks: [...(s.breaks ?? []), { start: out, end: now }],
-    levelStartedAt: undefined,
+    // Players left was the busted flight's count.
+    ...(s.tourney ? { tourney: { ...s.tourney, left: undefined } } : null),
   };
 }

@@ -11,6 +11,7 @@ import { eventDay, eventTitle, venueClock, venueTime, type Festival, type Festiv
 import { parseOrQuarantine, quarantine } from './boot';
 import type { KV } from './persist';
 import { isBagged } from './multi-day';
+import { bountiesOf } from './session-math';
 import type { Session } from './types';
 
 export interface FestivalPlan {
@@ -231,7 +232,8 @@ export function eventAction(f: Festival, plan: FestivalPlan, sessions: Session[]
   if (venueClock(f, now).toISOString().slice(0, 10) < eventDay(e)) return null;
   if (e.day2) return linked && isBagged(linked) && day2Takes(f, plan, e, linked) ? { kind: 'resume', session: linked } : null;
   if (own) return null;
-  if (linked && !isBagged(linked) && !linked.cashOut) return { kind: 'reenter', session: linked };
+  // Busted without a prize (bounties won on the way out don't count): a later flight is a re-entry.
+  if (linked && !isBagged(linked) && (linked.cashOut || 0) - bountiesOf(linked) <= 0) return { kind: 'reenter', session: linked };
   return linked && isBagged(linked) ? null : { kind: 'start' };
 }
 
