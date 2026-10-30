@@ -278,6 +278,23 @@ function BankrollTab() {
               .filter(Boolean)
               .join(' · ')}
           </T>
+          {/* Never said what they started with: the balance is only results, and a first losing night reads as debt. */}
+          {!bal.deposits && !bal.withdrawals && bal.results < 0 ? (
+            <T
+              v="small"
+              color={C.accent}
+              accessibilityRole="button"
+              onPress={() =>
+                setSheet({
+                  type: 'transfer',
+                  // Dated before the first session, so the history reads in order.
+                  x: { ...blankTransfer(pastBankroll.id, 'deposit'), at: Math.min(Date.now(), ...sessions.map((x) => x.startedAt - 60000)), note: t('Saldo inicial') },
+                  isNew: true,
+                })
+              }>
+              {t('Com quanto começaste? Junta o saldo inicial e o saldo passa a bater certo.')} ›
+            </T>
+          ) : null}
           {thisMonth.sessions ? (
             // A row the size of a finger, the amount in its result's colour (orange read as a loss next to green).
             <Pressable

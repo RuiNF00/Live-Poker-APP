@@ -350,7 +350,7 @@ const lockScreenAsked = new Set<string>();
 function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
-  const { saveSession, hands, settings, sessions, packages } = useStore();
+  const { saveSession, hands, settings, sessions, packages, backers } = useStore();
   // The makeup of a package with sessions in two currencies, as the store will work it out once saved.
   const rates = useRates(null);
   const [pad, setPad] = useState<null | 'stack' | 'addon' | 'bag'>(null);
@@ -590,9 +590,12 @@ function Live({ s }: { s: Session }) {
               <IconButton name="remove" size={32} label={t('Descer nível')} onPress={() => bumpLevel(-1)} />
               <IconButton name="add" size={32} label={t('Subir nível')} onPress={() => bumpLevel(1)} color={C.accent} />
             </Row>
-            <Pressable onPress={cycleLevelLength} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={s.levelMinutes ? `${t('Duração do nível')}: ${s.levelMinutes} min` : `${t('Duração do nível')}: ${t('Desligado')}`}>
-              <LevelAlarm s={s} onDue={levelUp} />
-            </Pressable>
+            {/* Cash blinds don't go up on a clock: the level alarm only when it was set. */}
+            {mtt || s.levelMinutes ? (
+              <Pressable onPress={cycleLevelLength} hitSlop={{ top: 13, bottom: 13, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={s.levelMinutes ? `${t('Duração do nível')}: ${s.levelMinutes} min` : `${t('Duração do nível')}: ${t('Desligado')}`}>
+                <LevelAlarm s={s} onDue={levelUp} />
+              </Pressable>
+            ) : null}
           </Card>
         </Row>
 
@@ -647,7 +650,8 @@ function Live({ s }: { s: Session }) {
           </Section>
 
           <Section title="Staking" action={t('Backers')} onAction={() => router.push('/staking')}>
-            <BackerLiveCard s={s} />
+            {/* The live link is for backers: shown once there are some, or this session has a link or a stake already. */}
+            {s.live || s.stakes?.length || backers.length ? <BackerLiveCard s={s} /> : null}
             <StakeFields s={s} onChange={save} expenses={false} />
           </Section>
 
