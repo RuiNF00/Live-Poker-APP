@@ -12,7 +12,7 @@ import { Line, Path, Svg } from '@/components/svg';
 import { Amount, Button, Card, Empty, IconButton, Pill, Row, Stat, StatGrid, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { track } from '@/lib/events';
-import { fetchLive, type LiveSnapshot } from '@/lib/live-link';
+import { fetchLive, liveStatus, type LiveSnapshot } from '@/lib/live-link';
 import { isRateLimited } from '@/lib/net';
 import { claimInvite } from '@/lib/referrals';
 import { chips, duration, money, timeOf } from '@/poker/format';
@@ -103,10 +103,10 @@ export default function BackerLive() {
 
 function LiveBody({ s, updatedAt, now, insetBottom }: { s: LiveSnapshot; updatedAt: number; now: number; insetBottom: number }) {
   const mtt = s.kind === 'mtt';
-  const ended = !!s.endedAt;
-  const stale = !ended && now - updatedAt > STALE_MS;
+  const status = liveStatus(s, updatedAt, now, STALE_MS);
+  const ended = status === 'ended';
   // The app sends the time played when it last saved; the clock keeps running here.
-  const played = s.playedMs + (ended || s.paused || stale ? 0 : Math.max(0, now - s.updatedAt));
+  const played = s.playedMs + (status === 'live' ? Math.max(0, now - s.updatedAt) : 0);
   const first = s.stackLog[0]?.stack ?? s.stack;
   // Cash: against what went in, so a rebuy doesn't read as a win.
   const delta = mtt ? s.stack - first : s.stack - s.invested;
@@ -114,13 +114,13 @@ function LiveBody({ s, updatedAt, now, insetBottom }: { s: LiveSnapshot; updated
   const result = s.cashOut - s.invested;
   const m = (n: number) => money(n, s.currency);
   const kind = mtt ? t('Torneio') : t('Cash game');
-  const state = ended
-    ? { label: t('Terminada'), color: C.muted }
-    : stale
-      ? { label: t('Sem atualizações'), color: C.warn }
-      : s.paused
-        ? { label: t('Em pausa'), color: C.warn }
-        : { label: t('Em direto'), color: C.good };
+  const state = {
+    ended: { label: t('Terminada'), color: C.muted },
+    bagged: { label: t('Ensacado'), color: C.info },
+    stale: { label: t('Sem atualizações'), color: C.warn },
+    paused: { label: t('Em pausa'), color: C.warn },
+    live: { label: t('Em direto'), color: C.good },
+  }[status];
   const agoMin = Math.max(0, Math.round((now - updatedAt) / 60000));
   const ago = agoMin < 1 ? t('agora mesmo') : agoMin < 60 ? t('há {n} min', { n: agoMin }) : t('há {n} h', { n: Math.round(agoMin / 60) });
   const stage = s.stage ? STAGES.find((x) => x.id === s.stage)?.label ?? s.stage : null;
@@ -150,7 +150,7 @@ function LiveBody({ s, updatedAt, now, insetBottom }: { s: LiveSnapshot; updated
         </Card>
       ) : (
         <Card style={{ gap: S.xs }}>
-          <T v="label">Stack</T>
+          <T v="label">{status === 'bagged' ? t('Fichas no saco') : 'Stack'}</T>
           <T v="monoXL">{chips(s.stack)}</T>
           <Row gap={S.md}>
             {bb !== null ? <T v="mono" color={C.textDim}>{`${bb} BB`}</T> : null}

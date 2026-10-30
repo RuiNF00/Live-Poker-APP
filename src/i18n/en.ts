@@ -1937,6 +1937,7 @@ const en: Record<string, string> = {
   'Gorjetas {amount}': 'Tips {amount}',
   '{n} mãos jogadas': '{n} hands played',
   'Add-ons ({currency})': 'Add-ons ({currency})',
+  'Add-on ({currency})': 'Add-on ({currency})',
   'Top-ups ({currency})': 'Top-ups ({currency})',
   'Gorjetas ({currency})': 'Tips ({currency})',
   'Mãos jogadas (opcional)': 'Hands played (optional)',

@@ -388,3 +388,25 @@ export function lastPlayed(currency: string, sessions: Session[], kind?: Session
 export function countedSessions(sessions: Session[], countCashLists: boolean): Session[] {
   return countCashLists || !sessions.some((s) => s.cashList) ? sessions : sessions.filter((s) => !s.cashList);
 }
+
+/**
+ * The stack log of a finished session whose date, start or length was edited: each point keeps its place in the
+ * session, stretched onto the new start and end, so the stack chart isn't lost.
+ */
+export function rescaleStackLog(log: Session['stackLog'], from: { start: number; end: number }, to: { start: number; end: number }): Session['stackLog'] {
+  const span = from.end - from.start;
+  return log.map((p) => {
+    const f = span > 0 ? Math.min(1, Math.max(0, (p.t - from.start) / span)) : 0;
+    return { ...p, t: Math.round(to.start + f * (to.end - to.start)) };
+  });
+}
+
+/** The end form. `cashOut` null: not typed, so it follows what the session knows. */
+export type EndForm = { cashOut: number | null; bounties: number; place: number; field: number; tips: number; handsDealt: number };
+
+/** The cash-out or prize the end form saves: what was typed, or else the live stack (cash) or the payout for the place (tournament). */
+export function endCashOut(f: EndForm, s: Pick<Session, 'kind' | 'stack' | 'tourney'>): number {
+  if (f.cashOut !== null) return f.cashOut;
+  if (s.kind === 'mtt') return (f.place > 0 && s.tourney?.payouts?.[f.place - 1]) || 0;
+  return s.stack;
+}

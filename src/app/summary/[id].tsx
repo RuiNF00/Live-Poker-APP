@@ -116,7 +116,7 @@ export default function SessionSummary() {
         <T v="monoXL" color={hideMoney ? C.text : col} accessibilityLabel={hideMoney ? t('Resultado escondido') : undefined}>
           {hideMoney ? '•••' : plus(p) + money(p, s.currency)}
         </T>
-        <T v="small">{[s.venue, s.finish ? t('{place}.º de {field}', { place: s.finish, field: s.field || '?' }) : ''].filter(Boolean).join(' · ') || ' '}</T>
+        <T v="small">{[s.venue, s.finish ? (s.field ? t('{place}.º de {field}', { place: s.finish, field: s.field }) : t('{n}.º lugar', { n: s.finish })) : ''].filter(Boolean).join(' · ') || ' '}</T>
         {s.tags?.length ? (
           <Row gap={6} style={{ flexWrap: 'wrap', justifyContent: 'center', marginTop: S.xs }}>
             {s.tags.map((tg) => (

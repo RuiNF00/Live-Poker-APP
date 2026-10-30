@@ -156,3 +156,10 @@ export async function fetchLive(id: string): Promise<{ snapshot: LiveSnapshot; u
   const j = (await res.json()) as { snapshot: LiveSnapshot; updatedAt: string };
   return { snapshot: j.snapshot, updatedAt: Date.parse(j.updatedAt) };
 }
+
+/** What a backer's page says about the session: a bagged day is a pause until the next day, not a bust. */
+export function liveStatus(s: Pick<LiveSnapshot, 'endedAt' | 'bagged' | 'paused'>, updatedAt: number, now: number, staleMs: number): 'ended' | 'bagged' | 'stale' | 'paused' | 'live' {
+  if (s.endedAt) return s.bagged ? 'bagged' : 'ended';
+  if (now - updatedAt > staleMs) return 'stale';
+  return s.paused ? 'paused' : 'live';
+}

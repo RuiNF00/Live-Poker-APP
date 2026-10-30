@@ -34,12 +34,13 @@ import { bbs, chips, duration, money, plus, shortDate, timeOf } from '@/poker/fo
 import { STAGES } from '@/poker/types';
 import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
-import { cost, isPaused, playedMs, profit } from '@/store/session-math';
+import { cost, endCashOut, isPaused, playedMs, profit, type EndForm } from '@/store/session-math';
 import { endPreview } from '@/store/staking';
 import { eventDay } from '@/poker/festivals';
 import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
 import { track } from '@/lib/events';
+import { claimOnce } from '@/lib/once';
 import { usePro } from '@/billing/pro';
 import { voiceLocked as lockedForVoice } from '@/billing/voice-access';
 import { ONBOARDING_KEY } from '@/billing/onboarding';
@@ -349,7 +350,7 @@ function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
   const { saveSession, hands, settings, sessions, packages } = useStore();
-  const [pad, setPad] = useState<null | 'stack' | 'cashout' | 'bag'>(null);
+  const [pad, setPad] = useState<null | 'stack' | 'addon' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   // Android back while closing the session works like «Voltar»: the form closes, the session stays.
   useFocusEffect(
@@ -369,8 +370,12 @@ function Live({ s }: { s: Session }) {
   // Mounted on first open, so the parser isn't loaded for players who never use it.
   const [voice, setVoice] = useState<'closed' | 'open' | 'shut'>('closed');
   // MTT: cashOut is the place's prize here, bounties apart; the session keeps their sum as its cashOut.
-  const [finish, setFinish] = useState({ cashOut: 0, bounties: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
-  const total = finish.cashOut + (s.kind === 'mtt' ? finish.bounties : 0);
+  // Until it's typed it follows the session: a rebuy or «Anular» with the form open, or another place, change it too.
+  const [finish, setFinish] = useState<EndForm>({ cashOut: null, bounties: 0, place: 0, field: 0, tips: 0, handsDealt: 0 });
+  const cashOut = endCashOut(finish, s);
+  const total = cashOut + (s.kind === 'mtt' ? finish.bounties : 0);
+  // One close per session, however fast «Guardar» is tapped twice.
+  const closing = useRef<string | null>(null);
   const swapEnd = useSwapEnd(s);
   const [more, setMore] = useState(false);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -380,11 +385,10 @@ function Live({ s }: { s: Session }) {
     if (mtt) {
       const tr = s.tourney;
       const place = tr?.left || 0;
-      const prize = (place && tr?.payouts?.[place - 1]) || 0;
-      setFinish({ cashOut: prize, bounties: s.bounties ?? tr?.bounties ?? 0, place, field: tr?.entries || 0, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 });
+      setFinish({ cashOut: null, bounties: s.bounties ?? tr?.bounties ?? 0, place, field: tr?.entries || 0, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 });
     } else {
       // Cash: the cash-out starts at the live stack, so the result matches what the session showed.
-      setFinish((f) => ({ ...f, cashOut: s.stack, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 }));
+      setFinish((f) => ({ ...f, cashOut: null, tips: s.tips ?? 0, handsDealt: s.handsDealt ?? 0 }));
     }
     setEnding(true);
     // The form opens at the bottom of a long screen: bring it up once it's laid out.
@@ -630,7 +634,8 @@ function Live({ s }: { s: Session }) {
                 subtitle={money(s.buyIn, s.currency)}
                 onPress={rebuy}
               />
-              {mtt ? <ListItem icon="layers-outline" iconColor={C.accent} title="Add-on" subtitle={money(s.buyIn, s.currency)} onPress={() => undoable(`Add-on · ${money(s.buyIn, s.currency)}`, { addOn: (s.addOn || 0) + s.buyIn })} /> : null}
+              {/* The add-on often costs less than the buy-in: the pad starts at the buy-in and Confirmar keeps it. */}
+              {mtt ? <ListItem icon="layers-outline" iconColor={C.accent} title="Add-on" subtitle={s.addOn ? t('Total: {amount}', { amount: money(s.addOn, s.currency) }) : undefined} onPress={() => setPad('addon')} /> : null}
               {mtt ? <ListItem icon="pie-chart-outline" iconColor={C.info} title={t('Calculadora de deal (ICM)')} onPress={() => toChop(s)} /> : null}
               {mtt ? <SwapLiveRow s={s} /> : null}
             </ListGroup>
@@ -660,7 +665,7 @@ function Live({ s }: { s: Session }) {
             <Section title={t('Terminar sessão')}>
               <Card style={{ gap: S.md }}>
                 <Row gap={S.sm}>
-                  <NumField money label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={finish.cashOut} onChange={(cashOut) => setFinish((f) => ({ ...f, cashOut }))} />
+                  <NumField money label={mtt ? t('Prémio ({currency})', { currency: s.currency }) : `Cash-out (${s.currency})`} value={cashOut} onChange={(v) => setFinish((f) => ({ ...f, cashOut: v }))} />
                   {mtt ? <NumField label={t('Lugar')} value={finish.place} onChange={(place) => setFinish((f) => ({ ...f, place }))} /> : null}
                   {mtt ? <NumField label={t('Inscritos')} value={finish.field} onChange={(field) => setFinish((f) => ({ ...f, field }))} /> : null}
                 </Row>
@@ -707,7 +712,7 @@ function Live({ s }: { s: Session }) {
                       rebuy();
                     }}
                     // Saved as it stands, then the next one starts: re-entry on a later flight, or a new session.
-                    onNext={(e) => startEvent(after.f, e, close())}
+                    onNext={(e) => claimOnce(closing, s.id) && startEvent(after.f, e, close())}
                   />
                 ) : null}
                 {mtt ? swapEnd.row : null}
@@ -719,6 +724,7 @@ function Live({ s }: { s: Session }) {
                     style={{ flex: 1 }}
                     haptic={false}
                     onPress={() => {
+                      if (!claimOnce(closing, s.id)) return;
                       close();
                       router.push({ pathname: '/summary/[id]', params: { id: s.id } });
                     }}
@@ -732,6 +738,7 @@ function Live({ s }: { s: Session }) {
                       <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={finish.tips} onChange={(tips) => setFinish((f) => ({ ...f, tips }))} />
                       <NumField label={t('Mãos jogadas')} value={finish.handsDealt} onChange={(handsDealt) => setFinish((f) => ({ ...f, handsDealt }))} />
                     </Row>
+                    {mtt ? <NumField money label={t('Add-ons ({currency})', { currency: s.currency })} value={s.addOn || 0} onChange={(addOn) => save({ addOn })} /> : null}
                     {settings.mindAsk === false ? null : <React.Suspense fallback={null}><MindAfter value={s.mind} onChange={(mind) => save({ mind })} /></React.Suspense>}
                     <StakeFields s={s} onChange={save} />
                   </View>
@@ -754,6 +761,18 @@ function Live({ s }: { s: Session }) {
             setPad(null);
             tap('success');
             saveSession(bagDay(s, v));
+          }}
+        />
+        <AmountPad
+          visible={pad === 'addon'}
+          title={t('Add-on ({currency})', { currency: s.currency })}
+          bb={s.bb}
+          plain
+          initial={s.buyIn}
+          onClose={() => setPad(null)}
+          onDone={(v) => {
+            setPad(null);
+            if (v > 0) undoable(`Add-on · ${money(v, s.currency)}`, { addOn: (s.addOn || 0) + v });
           }}
         />
         <AmountPad

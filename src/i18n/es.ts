@@ -1829,6 +1829,7 @@ const es: Record<string, string> = {
   'Gorjetas {amount}': 'Propinas {amount}',
   '{n} mãos jogadas': '{n} manos jugadas',
   'Add-ons ({currency})': 'Add-ons ({currency})',
+  'Add-on ({currency})': 'Add-on ({currency})',
   'Top-ups ({currency})': 'Top-ups ({currency})',
   'Gorjetas ({currency})': 'Propinas ({currency})',
   'Mãos jogadas (opcional)': 'Manos jugadas (opcional)',

@@ -6,7 +6,7 @@ import { isMtt } from '@/billing/onboarding';
 import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
 import { chips, money } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { addDays, bountiesOf, atClock, lastPlayed, lastTimeAt, nextLive, parseClock, parseDay, parseDuration, playedMs } from '@/store/session-math';
+import { addDays, bountiesOf, atClock, lastPlayed, lastTimeAt, nextLive, parseClock, parseDay, parseDuration, playedMs, rescaleStackLog } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly';
@@ -157,7 +157,10 @@ export function SessionForm({
         const end = day >= dayStart(Date.now()) ? Date.now() : atClock(day, 23 * 60);
         start = end - mins * 60000;
       }
-      onSubmit({ ...s, startedAt: start, endedAt: start + mins * 60000, breaks: [], stackLog: [] });
+      // The length is time played, so breaks go; the stack log is stretched onto the new times.
+      const end = start + mins * 60000;
+      const stackLog = initial.endedAt ? rescaleStackLog(s.stackLog, { start: initial.startedAt, end: initial.endedAt }, { start, end }) : [];
+      onSubmit({ ...s, startedAt: start, endedAt: end, breaks: [], stackLog });
     } else {
       if (weekly && repeat && repeatMin !== null && s.kind === 'mtt' && s.name.trim() && !weeklyMatch(weekly.list, s)) {
         weekly.onSave(s, `${String(Math.floor(repeatMin / 60)).padStart(2, '0')}:${String(repeatMin % 60).padStart(2, '0')}`);
