@@ -2176,8 +2176,6 @@ const ptBR: Record<string, string> = {
   'Vão tal como as escreveste. Revê se têm algo que não queres mostrar.': 'Elas vão do jeito que você escreveu. Confira se não têm algo que você não quer mostrar.',
   'Top %: as mãos mais fortes contra uma mão ao acaso. Toca ou arrasta para pintar a range que achas que o adversário tem.': 'Top %: as mãos mais fortes contra uma mão aleatória. Toque ou arraste para pintar o range que você acha que o adversário tem.',
   'Com quanto começaste? Junta o saldo inicial e o saldo passa a bater certo.': 'Com quanto você começou? Adicione o saldo inicial para o saldo bater.',
-  'Nome, aspeto ou tag': 'Nome, aparência ou tag',
-  'Quem é, como joga. Da próxima vez, já sabes.': 'Quem é, como joga. Da próxima vez, você já vai saber.',
   'Já tens uma nota sobre {name}': 'Você já tem uma nota sobre {name}',
   'Toca para a abrir': 'Toque para abrir',
   'O teu amigo recebe {pct}% no primeiro mês do Pro': 'Seu amigo recebe {pct}% no primeiro mês do Pro',

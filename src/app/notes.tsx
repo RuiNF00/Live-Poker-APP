@@ -170,7 +170,8 @@ export default function NotesScreen() {
           <NoteRow p={item} first={index === 0} last={index === rows.length - 1} hands={counts.get(item.id) ?? 0} seen={seen.get(item.id)} vpip={stats.get(item.id)} onPress={() => setEdit(item)} />
         )}
       />
-      {players.length > 0 ? (
+      {/* Nothing found has its own «Nova nota: nome»: one orange button for it, not two. */}
+      {players.length > 0 && !(q.trim() && !rows.length) ? (
         // Bottom right, where the thumb is (Quo).
         <Pressable
           accessibilityRole="button"

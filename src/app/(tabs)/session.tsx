@@ -51,7 +51,7 @@ import { uid, useStore } from '@/store/store';
 import { tripToCover } from '@/store/trip-math';
 import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
 import type { Session } from '@/store/types';
-import { C, S } from '@/theme';
+import { C, R, S } from '@/theme';
 import { reduceMotion, useSheetAnimation, useTween } from '@/lib/motion';
 import { crashProbe } from '@/lib/crash-probe';
 import { useScreenReader } from '@/lib/screen-reader';
@@ -929,6 +929,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.border,
   },
+  find: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 12, borderRadius: R.md, borderWidth: 1, borderColor: C.fieldBorder, backgroundColor: C.surface },
   thumb: { flex: 1, minHeight: 52, borderRadius: 14, borderWidth: 1, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', gap: 2 },
 });
 
@@ -941,8 +942,24 @@ function TableReads({ roster }: { roster: string[] }) {
   const known = roster
     .map((name, seat) => ({ seat, name: name.trim(), note: players.find((p) => nameKey(p.name) === nameKey(name)) }))
     .filter((x) => x.name && x.name.toLowerCase() !== 'hero' && x.name !== settings.nickname && x.note && (x.note.tags.length || x.note.notes || x.note.look));
+  // One 44 pt line that looks like the search it opens, so «Terminar sessão» stays above the fold.
+  const find = (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        tap();
+        router.push(players.length ? { pathname: '/notes', params: { find: '1' } } : { pathname: '/notes', params: { id: 'new' } });
+      }}
+      style={({ pressed }) => [styles.find, pressed && { backgroundColor: C.surface2 }]}>
+      <Ionicons name={players.length ? 'search' : 'create-outline'} size={17} color={C.muted} />
+      <T v="body" color={C.muted} numberOfLines={1} style={{ flex: 1 }}>
+        {players.length ? (known.length ? t('Procurar outro jogador') : t('Procurar um jogador')) : t('Nota sobre um jogador')}
+      </T>
+    </Pressable>
+  );
+  if (!known.length) return find;
   return (
-    <Section title={t('Na tua mesa')} action={players.length ? t('Notas') : undefined} onAction={() => router.push('/notes')}>
+    <Section title={t('Na tua mesa')} action={t('Notas')} onAction={() => router.push('/notes')}>
       <ListGroup>
         {known.map(({ seat, name, note }) => (
           <ListItem
@@ -960,12 +977,8 @@ function TableReads({ roster }: { roster: string[] }) {
             onPress={() => router.push({ pathname: '/notes', params: { id: note!.id } })}
           />
         ))}
-        {players.length ? (
-          <ListItem icon="search" title={known.length ? t('Procurar outro jogador') : t('Procurar um jogador')} subtitle={t('Nome, aspeto ou tag')} onPress={() => router.push({ pathname: '/notes', params: { find: '1' } })} />
-        ) : (
-          <ListItem icon="create-outline" title={t('Nota sobre um jogador')} subtitle={t('Quem é, como joga. Da próxima vez, já sabes.')} onPress={() => router.push({ pathname: '/notes', params: { id: 'new' } })} />
-        )}
       </ListGroup>
+      {find}
     </Section>
   );
 }
