@@ -5,8 +5,9 @@
 
 import { t } from '@/i18n';
 import { comboLabel } from '@/poker/cards';
-import { positions, replay } from '@/poker/engine';
+import { positions } from '@/poker/engine';
 import type { Hand } from '@/poker/types';
+import { handSummary } from '@/store/hand-summary';
 import { bankrollOf, formatOf, inRange, type DateRange, type Scope, scopeIds } from '@/store/bankroll-math';
 import { breakdown, byCurrency, cost, owedToBackers, playedMs, profit, resultDay, totals, type Breakdown, type Totals } from '@/store/session-math';
 import { tripsIn, tripSummary, type TripSummary } from '@/store/trip-math';
@@ -143,7 +144,8 @@ export function handsCsv(hands: Hand[], sessions: Session[], range: DateRange = 
       const cards = h.players[h.hero]?.cards ?? [];
       let net: number | undefined;
       try {
-        net = replay(h).result?.net[h.hero];
+        // Kept per hand version (store/hand-summary): only hands saved since the last count are replayed.
+        net = handSummary(h).raw;
       } catch {
         net = undefined;
       }

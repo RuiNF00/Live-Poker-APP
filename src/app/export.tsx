@@ -13,6 +13,7 @@ import { csvSep } from '@/export/csv';
 import { buildReport, handsCsv } from '@/export/report';
 import { reportHtml } from '@/export/report-html';
 import { saveTextFile } from '@/lib/files';
+import { persistSummaries, summariesReady } from '@/lib/hand-summaries';
 import { sharePdf } from '@/lib/pdf';
 import { money, plus } from '@/poker/format';
 import { endOfDay, inRange, scopeIds, scopeOptions, sameScope, type DateRange, type Scope } from '@/store/bankroll-math';
@@ -105,7 +106,14 @@ export default function ExportScreen() {
       const spent = trips.flatMap((trip) => trip.expenses.filter((x) => inRange(x.at, range)).map((x) => ({ trip, x })));
       return saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(list, bankrolls, tx, spent, csvSep()), 'text/csv');
     });
-  const handsFile = () => run('hands', true, () => saveTextFile(`sweatbook-maos-${stamp}.csv`, handsCsv(hands, sessions, range, BRAND.webUrl, csvSep()), 'text/csv'));
+  // Each hand's result comes from what the phone kept (lib/hand-summaries): only new hands are replayed.
+  const handsFile = () =>
+    run('hands', true, async () => {
+      await summariesReady();
+      const csv = handsCsv(hands, sessions, range, BRAND.webUrl, csvSep());
+      persistSummaries(hands);
+      return saveTextFile(`sweatbook-maos-${stamp}.csv`, csv, 'text/csv');
+    });
   const backup = () => run('json', false, async () => saveTextFile(`sweatbook-${new Date(now).toISOString().slice(0, 10)}.json`, await exportAll(buildBackup(store)), 'application/json'));
 
   const lock = pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />;

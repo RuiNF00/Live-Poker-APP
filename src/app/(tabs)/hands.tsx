@@ -16,12 +16,14 @@ import { activeFilters, handSearchText, matches, matchesSearch, NO_FILTER, noteS
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
 import { openInGtoWizard } from '@/lib/gto-wizard';
+import { persistSummaries, useSummariesReady } from '@/lib/hand-summaries';
 import { useIdleCount } from '@/lib/idle-count';
 import { saveSolverFile, solverReady } from '@/lib/solver-export';
 import { useStore } from '@/store/store';
 import { C, R, S, SHADOW, ff } from '@/theme';
 
 const DAY = 86400000;
+const NO_HANDS: Hand[] = [];
 const FOLDER = 'folder:';
 
 function dayKey(ts: number) {
@@ -129,8 +131,10 @@ export default function HandsScreen() {
   // While the list is narrowed, nudges about the rest of it get out of the way.
   const narrowed = !!tag || pills.length > 0;
   const shown = useMemo(() => sections.reduce((n, sec) => n + sec.data.length, 0), [sections]);
-  // Replays every hand: counted in slices after the list has drawn (years of hands take a second on a mid-range phone).
-  const incomplete = useIdleCount(hands, isIncomplete) ?? 0;
+  // Every hand's summary: counted in slices after the list has drawn, once what the phone kept is read
+  // (only hands saved since are replayed); then kept again for the next launch.
+  const summariesRead = useSummariesReady();
+  const incomplete = useIdleCount(summariesRead ? hands : NO_HANDS, isIncomplete, summariesRead ? persistSummaries : undefined) ?? 0;
 
   // Long-press a hand to start picking several; tap then adds or removes.
   const [picked, setPicked] = useState<Set<string>>(() => new Set());

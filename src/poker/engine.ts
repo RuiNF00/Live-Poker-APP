@@ -389,6 +389,15 @@ export function legal(s: TableState): Legal | null {
 export function apply(prev: TableState, a: HandAction, hand: Hand): TableState | null {
   if (prev.toAct === null || a.p !== prev.toAct) return null;
   const s = clone(prev);
+  return applyTo(s, a, hand) ? s : null;
+}
+
+/**
+ * apply() on the state itself. Every refusal returns before anything is changed, so a
+ * refused action leaves `s` as it was: what lets replayFinal skip the copies.
+ */
+function applyTo(s: TableState, a: HandAction, hand: Hand): boolean {
+  if (s.toAct === null || a.p !== s.toAct) return false;
   const p = a.p;
   const toCall = Math.max(0, s.currentBet - s.bets[p]);
   let added = 0;
@@ -396,7 +405,7 @@ export function apply(prev: TableState, a: HandAction, hand: Hand): TableState |
   if (kind === 'fold') {
     s.folded[p] = true;
   } else if (kind === 'check') {
-    if (toCall > 0) return null;
+    if (toCall > 0) return false;
   } else if (kind === 'call') {
     if (toCall <= 0) {
       kind = 'check';
@@ -407,7 +416,7 @@ export function apply(prev: TableState, a: HandAction, hand: Hand): TableState |
     const to = Math.min(a.to ?? 0, maxTo);
     if (to <= s.currentBet) {
       // An all-in for less than the bet is a call.
-      if (toCall <= 0) return null;
+      if (toCall <= 0) return false;
       kind = 'call';
       added = put(s, p, toCall);
     } else {
@@ -427,20 +436,25 @@ export function apply(prev: TableState, a: HandAction, hand: Hand): TableState |
   s.last = { p, kind, added, to: s.bets[p], allIn: s.allIn[p] && kind !== 'fold' && kind !== 'check' };
   if (activeCount(s) <= 1) {
     closeStreet(s, hand);
-    return s;
+    return true;
   }
   const nxt = nextFrom(s, p);
   if (nxt === null) closeStreet(s, hand);
   else s.toAct = nxt;
-  return s;
+  return true;
 }
 
 /** Feed newly entered board cards into a state waiting for them. */
 export function dealBoard(prev: TableState, hand: Hand): TableState | null {
-  if (!prev.needsBoard) return null;
-  const want = BOARD_FOR[prev.street];
-  if (hand.board.length < want) return null;
+  if (!prev.needsBoard || hand.board.length < BOARD_FOR[prev.street]) return null;
   const s = clone(prev);
+  dealTo(s, hand);
+  return s;
+}
+
+/** dealBoard() on the state itself, once it is known the cards are there. */
+function dealTo(s: TableState, hand: Hand) {
+  const want = BOARD_FOR[s.street];
   s.boardCount = want;
   s.needsBoard = false;
   s.last = null;
@@ -448,19 +462,33 @@ export function dealBoard(prev: TableState, hand: Hand): TableState | null {
     // All-in run-out: keep dealing without betting.
     const next = NEXT_STREET[s.street];
     if (next) advance(s, next, hand);
-    return s;
+    return;
   }
   s.toAct = nextFrom(s, hand.button);
   if (s.toAct === null) closeStreet(s, hand);
-  return s;
 }
 
 // ─── replay ────────────────────────────────────────────────
 
 export function replay(hand: Hand): Replay {
   const steps: Step[] = [];
+  return { steps, ...play(hand, steps) };
+}
+
+/**
+ * replay() without the steps: the final state, the result and what is still missing, for the
+ * lists and files that only need those (a row's result, «por completar», the CSV). It works on one
+ * state instead of copying it for every action and board, and is the same walk as replay(), so the
+ * answers are the same; a long history is replayed in a fraction of the time.
+ */
+export function replayFinal(hand: Hand): Omit<Replay, 'steps'> {
+  return play(hand, null);
+}
+
+/** The walk behind both: with `steps`, every state is a fresh copy kept there; without, one state changes in place. */
+function play(hand: Hand, steps: Step[] | null): Omit<Replay, 'steps'> {
   let s = initialState(hand);
-  steps.push({ kind: 'start', street: 'preflop', state: s });
+  steps?.push({ kind: 'start', street: 'preflop', state: s });
   let invalidAt: number | null = null;
   let runoutFrom: number | null = null;
   const markRunout = () => {
@@ -471,10 +499,12 @@ export function replay(hand: Hand): Replay {
   const flushBoards = () => {
     while (s.needsBoard) {
       const dealt = s.street;
-      const d = dealBoard(s, hand);
-      if (!d) break;
-      s = d;
-      steps.push({ kind: 'board', street: dealt, state: s });
+      if (hand.board.length < BOARD_FOR[s.street]) break;
+      if (steps) {
+        s = clone(s);
+        dealTo(s, hand);
+        steps.push({ kind: 'board', street: dealt, state: s });
+      } else dealTo(s, hand);
     }
   };
   flushBoards();
@@ -484,14 +514,14 @@ export function replay(hand: Hand): Replay {
       invalidAt = i;
       break;
     }
-    const next = apply(s, hand.actions[i], hand);
+    const actStreet = s.street;
+    const next = steps ? apply(s, hand.actions[i], hand) : applyTo(s, hand.actions[i], hand) ? s : null;
     if (!next) {
       invalidAt = i;
       break;
     }
-    const actStreet = s.street;
     s = next;
-    steps.push({ kind: 'action', street: actStreet, state: s, actionIndex: i, actStreet });
+    steps?.push({ kind: 'action', street: actStreet, state: s, actionIndex: i, actStreet });
     markRunout();
     flushBoards();
   }
@@ -502,9 +532,9 @@ export function replay(hand: Hand): Replay {
   const needsBoard2 = !s.foldWin && ranOut && boards.length === 1 && twice(hand, runoutFrom);
   if (s.foldWin || (ranOut && !needsBoard2)) {
     result = computeResult(hand, s, boards);
-    if (!s.foldWin) steps.push({ kind: 'showdown', street: s.street, state: { ...s, last: null } });
+    if (!s.foldWin) steps?.push({ kind: 'showdown', street: s.street, state: { ...s, last: null } });
   }
-  return { steps, final: s, invalidAt, result, runoutFrom, boards, needsBoard2 };
+  return { final: s, invalidAt, result, runoutFrom, boards, needsBoard2 };
 }
 
 /** Run it twice applies: chosen, and the all-in came before the river was out. */
@@ -664,18 +694,18 @@ export function totalPot(s: TableState): number {
 }
 
 /** False while the hand still waits for an action, a board card or hero's cards. */
-export function isComplete(hand: Hand, r: Replay = replay(hand)): boolean {
+export function isComplete(hand: Hand, r: Omit<Replay, 'steps'> = replayFinal(hand)): boolean {
   // Hero folded: the hand is over for hero, whatever the others did next (nobody types that in).
   return isPlayedOut(hand, r) || heroFolded(hand, r);
 }
 
 /** Every action, card and winner is in: what a solver or the next hand's stacks need. */
-export function isPlayedOut(hand: Hand, r: Replay = replay(hand)): boolean {
+export function isPlayedOut(hand: Hand, r: Omit<Replay, 'steps'> = replayFinal(hand)): boolean {
   const s = r.final;
   return (hand.players[hand.hero].cards?.length ?? 0) === holeCount(hand.game) && !s.needsBoard && !r.needsBoard2 && s.toAct === null && (!r.result || r.result.resolved);
 }
 
 /** Hero has folded with both cards entered. */
-export function heroFolded(hand: Hand, r: Replay = replay(hand)): boolean {
+export function heroFolded(hand: Hand, r: Omit<Replay, 'steps'> = replayFinal(hand)): boolean {
   return (hand.players[hand.hero].cards?.length ?? 0) === holeCount(hand.game) && !!r.final.folded[hand.hero];
 }

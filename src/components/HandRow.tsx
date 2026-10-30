@@ -8,24 +8,18 @@ import { CardRow, PlayingCard } from '@/components/PlayingCard';
 import { Badge, Pill, Row, T } from '@/components/ui';
 import { t } from '@/i18n';
 import { cardName, comboLabel } from '@/poker/cards';
-import { isComplete, positions, replay } from '@/poker/engine';
+import { positions } from '@/poker/engine';
 import { amount, blindsLabel, timeOf } from '@/poker/format';
 import type { Hand } from '@/poker/types';
+import { handSummary } from '@/store/hand-summary';
 import { C, R, SHADOW } from '@/theme';
 
 const NARROW = Dimensions.get('window').width < 380;
 
-// Replaying a hand is the costly part of a row. Keep the result per hand
-// version, so rows scrolling back into view don't replay again.
-const rowCache = new WeakMap<Hand, { net: number | undefined; done: boolean }>();
-export function rowSummary(hand: Hand) {
-  let v = rowCache.get(hand);
-  if (!v) {
-    const r = replay(hand);
-    v = { net: r.result?.resolved ? r.result.net[hand.hero] : undefined, done: isComplete(hand, r) };
-    rowCache.set(hand, v);
-  }
-  return v;
+// Replaying a hand is the costly part of a row: kept per hand version, in memory and on the
+// phone (store/hand-summary), so rows and launches don't replay again.
+export function rowSummary(hand: Hand): { net: number | undefined; done: boolean } {
+  return handSummary(hand);
 }
 
 export const isIncomplete = (h: Hand) => !rowSummary(h).done;

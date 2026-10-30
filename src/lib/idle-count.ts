@@ -29,10 +29,20 @@ export function countInSlices<T>(items: readonly T[], test: (x: T) => boolean, d
 /**
  * The number of `items` passing `test`, or null until it is known. `test`
  * must be stable (module-level) and is expected to cache its own work.
+ * `onDone` gets the list once every item has been through `test`.
  */
-export function useIdleCount<T>(items: readonly T[], test: (x: T) => boolean): number | null {
+export function useIdleCount<T>(items: readonly T[], test: (x: T) => boolean, onDone?: (items: readonly T[]) => void): number | null {
   const [state, setState] = useState<{ items: readonly T[]; n: number } | null>(null);
-  useEffect(() => countInSlices(items, test, (n) => setState({ items, n })), [items, test]);
+  useEffect(
+    () =>
+      countInSlices(items, test, (n) => {
+        setState({ items, n });
+        onDone?.(items);
+      }),
+    // onDone is read when the count ends, not a reason to count again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, test],
+  );
   // Until the new count lands, keep showing the last one (a saved hand moves it by one at most).
   return state ? state.n : null;
 }
