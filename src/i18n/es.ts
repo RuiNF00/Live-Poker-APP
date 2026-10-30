@@ -833,7 +833,7 @@ const es: Record<string, string> = {
   'Se encontrar a compra, o teu plano liga-se sozinho.': 'Si encuentra la compra, tu plan se activa solo.',
   'Se a {store} confirmou o pagamento, o Plus liga-se sozinho. Se não, tenta outra vez.': 'Si {store} confirmó el pago, Plus se activa solo. Si no, inténtalo de nuevo.',
   'Toca em Restaurar compras para ligar o Plus neste telemóvel.': 'Toca Restaurar compras para activar Plus en este teléfono.',
-  'Nada foi apagado. Tenta outra vez daqui a pouco.': 'No se eliminó nada. Inténtalo de nuevo en un momento.',
+  'Nada foi apagado. Esta entrada já não se pode apagar daqui.': 'No se eliminó nada. Esta entrada ya no se puede eliminar desde aquí.',
   'Os teus dados continuam neste telemóvel. Tenta outra vez.': 'Tus datos siguen en este teléfono. Inténtalo de nuevo.',
   '{h} h a jogar': '{h} h jugando',
   'Procurar': 'Buscar',

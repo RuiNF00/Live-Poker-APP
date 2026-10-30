@@ -174,7 +174,8 @@ export function siteOgImage(locale: Locale = 'en') {
     <Frame>
       <div style={{ display: 'flex', flexDirection: 'column', width: 760, justifyContent: 'space-between' }}>
         <Logo />
-        <div style={{ display: 'flex', flexDirection: 'column', fontSize: 70, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>
+        {/* Long titles (es «antes del próximo deal.») a size down, clear of the cards. */}
+        <div style={{ display: 'flex', flexDirection: 'column', fontSize: Math.max(line1.length, line2.length) > 22 ? 62 : 70, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>
           <span>{line1}</span>
           <span style={{ color: K.accent }}>{line2}</span>
         </div>
