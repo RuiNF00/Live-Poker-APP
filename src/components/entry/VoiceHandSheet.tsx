@@ -6,7 +6,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useDeferredValue, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View, type ViewProps } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View, type ViewProps } from 'react-native';
 
 import { t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
@@ -211,7 +211,7 @@ export function VoiceHandSheet({
   return (
     <Modal visible={visible} animationType={sheetAnimation} transparent onRequestClose={close}>
       <Counted style={{ flex: 1 }}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <Pressable style={{ flex: 1, backgroundColor: C.overlay }} onPress={close} />
           <View style={{ backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, maxHeight: '92%', borderTopWidth: 1, borderColor: C.border }}>
             <ScrollView contentContainerStyle={{ padding: S.gutter, paddingTop: S.lg, gap: S.md, paddingBottom: sheetPad }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">

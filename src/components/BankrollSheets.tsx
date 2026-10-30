@@ -36,7 +36,7 @@ export function Sheet({ visible, title, onClose, children, footer }: { visible: 
   }, [footer]);
   return (
     <Modal visible={visible} animationType={sheetAnim} onRequestClose={onClose} presentationStyle="pageSheet">
-      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={footer && Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={footer || Platform.OS === 'android' ? 'padding' : undefined}>
         <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: S.gutter, gap: S.lg, paddingTop: S.xl, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           <SheetHeader title={title} onClose={onClose} closeLabel={t('Fechar')} />
           {visible ? children : null}

@@ -573,7 +573,7 @@ export default function NewHand() {
   return (
     <TapCountProvider value={countTouch}>
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
       style={{ flex: 1, backgroundColor: C.bg }}
       onStartShouldSetResponderCapture={() => {
         countTouch();

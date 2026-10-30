@@ -454,7 +454,7 @@ function PasteSheet({ visible, title, hint, placeholder, initial, parse, onClose
   const sheetPad = useSheetPad(S.xxl);
   return (
     <Modal visible={visible} transparent animationType={animation} onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: C.overlay }}>
         <View style={{ backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: S.lg, paddingBottom: sheetPad, gap: S.md }}>
           <SheetHeader title={title} onClose={onClose} />
           <T v="small">{hint}</T>

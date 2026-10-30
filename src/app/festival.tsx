@@ -31,7 +31,7 @@ import { profit } from '@/store/session-math';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
 import { tripFromFestival } from '@/store/trip-math';
-import { C, R, S } from '@/theme';
+import { C, ff, R, S } from '@/theme';
 import { reduceMotion } from '@/lib/motion';
 import { track } from '@/lib/events';
 
@@ -151,7 +151,7 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
                 multiline
                 scrollEnabled={false}
                 submitBehavior="blurAndSubmit"
-                style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', paddingVertical: 2 }}
+                style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 24, fontWeight: '700', fontFamily: ff(700), paddingVertical: 2 }}
               />
               <Ionicons name="pencil" size={16} color={C.textDim} />
             </Row>

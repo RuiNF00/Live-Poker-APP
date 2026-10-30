@@ -1,7 +1,7 @@
 // Edit sheets for staking: a backer, a package of sessions, a payment.
 
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, ChipRow, confirmAction, Field, NumField, Section, Segmented, SheetHeader, T, ToggleItem, ListGroup } from '@/components/ui';
@@ -27,7 +27,7 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
   const animation = useSheetAnimation();
   return (
     <Modal visible={visible} animationType={animation} presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior="padding">
         <ScrollView
           contentContainerStyle={{ padding: S.gutter, paddingTop: S.xl, gap: S.xl, paddingBottom: insets.bottom + 40 }}
           keyboardShouldPersistTaps="handled"
