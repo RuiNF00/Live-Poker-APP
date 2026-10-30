@@ -23,6 +23,8 @@ import { SwapSettleCard, useSwapSettleCard } from '@/components/swaps/SwapSettle
 import { TrialTries, useTrialTries } from '@/components/TrialTries';
 import { useNowAlways } from '@/components/useNow';
 import { useWhatsNewCard, WhatsNewCard } from '@/components/WhatsNewCard';
+import { PlannedNow } from '@/components/FestivalItem';
+import { useFestivals } from '@/store/my-festivals';
 import { Amount, Banner, Button, Card, IconButton, Row, ScreenHeader, Section, T, tap, Wordmark } from '@/components/ui';
 import { locale, t } from '@/i18n';
 import { useCoach } from '@/lib/coach-api';
@@ -52,6 +54,7 @@ export default function HomeScreen() {
   // 200% text or a very small screen: one column, nothing side by side.
   const compact = win.fontScale >= 1.6 || win.width < 330;
   const { hands, sessions, players, activeSession, settings, draft, setDraft } = useStore();
+  const festivals = useFestivals();
   // Cloud copy failed or a week old: one quiet card with «Fazer cópia agora».
   const backup = useBackupWarning();
   // After an update: one card with the first thing that's new.
@@ -198,6 +201,8 @@ export default function HomeScreen() {
       {fresh ? <FirstRun /> : <MonthHero sessions={sessions} hands={hands} now={now} streak={hands.length > 0} compact={compact} />}
 
       {activeSession ? <LiveCard s={activeSession} /> : null}
+      {/* Tournament day: the planned event right here, not only in the Sessão tab. */}
+      {activeSession ? null : <PlannedNow festivals={festivals} group />}
       {card}
       {!activeSession && !fresh ? (
         <FadeUp i={1} style={{ flexDirection: compact ? 'column' : 'row', gap: S.sm }}>

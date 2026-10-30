@@ -13,7 +13,7 @@ import { dayOf } from '@/store/multi-day';
 import { useStore } from '@/store/store';
 import { C } from '@/theme';
 
-import { ListItem } from './ui';
+import { ListGroup, ListItem } from './ui';
 import { useStartEvent } from './useStartEvent';
 
 /** "22–30 jan" or "15 jan – 7 mar" from 'YYYY-MM-DD' days. */
@@ -45,8 +45,11 @@ export function FestivalItem({ f }: { f: Festival }) {
   );
 }
 
-/** The Sessão tab's shortcut to the tournament planned for now, in any festival: one tap starts it, filled in. */
-export function PlannedNow({ festivals }: { festivals: Festival[] }) {
+/**
+ * The shortcut to the tournament planned for now, in any festival: one tap starts it, filled in.
+ * In the Sessão tab's list; `group` puts it in its own list (the Resumo, where nothing else goes with it).
+ */
+export function PlannedNow({ festivals, group }: { festivals: Festival[]; group?: boolean }) {
   const plans = useFestivalPlans();
   const { sessions } = useStore();
   const start = useStartEvent();
@@ -62,7 +65,7 @@ export function PlannedNow({ festivals }: { festivals: Festival[] }) {
   const name = eventTitle(p.e) + (p.e.flight ? ` · Flight ${p.e.flight}` : '');
   // The phone's clock when it isn't the festival's (still at home): «Às 16:00» would be an hour off.
   const at = startOnPhone(f, p.e, locale);
-  return (
+  const row = (
     <ListItem
       icon="play"
       iconColor={C.accent}
@@ -73,4 +76,5 @@ export function PlannedNow({ festivals }: { festivals: Festival[] }) {
       onPress={() => start(f, p.e)}
     />
   );
+  return group ? <ListGroup>{row}</ListGroup> : row;
 }
