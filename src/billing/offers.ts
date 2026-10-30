@@ -1,6 +1,8 @@
 // When the app offers the Pro trial by itself, without the player hitting a
 // limit. Pure so the rules can be tested; pro.tsx supplies the state.
 
+import { PLANS, TIER_PLANS, type PlanId } from './plans';
+
 export interface WelcomeOfferState {
   isPro: boolean;
   /** Hands saved on this install. */
@@ -28,4 +30,20 @@ export function shouldOfferWelcome(s: WelcomeOfferState): boolean {
  */
 export function welcomeReason(handsSaved: number): 'welcome' | 'generic' {
   return handsSaved <= 3 ? 'welcome' : 'generic';
+}
+
+/**
+ * The yearly plan a monthly subscriber can switch to from Settings: the same tier's, while the
+ * monthly renews, never during free days or with Pro paid once. On Google Play the switch replaces
+ * the monthly product, so it needs that product's id (purchases.buy).
+ */
+export function annualSwitch<P extends { id: string }>(
+  sub: { plan: PlanId; renews: boolean; trial?: boolean; product: string } | null,
+  plans: readonly P[],
+  o: { forGood: boolean; os: string },
+): P | undefined {
+  if (!sub || !sub.renews || sub.trial || o.forGood) return undefined;
+  const own = TIER_PLANS[PLANS[sub.plan].tier];
+  if (sub.plan !== own.monthly || (o.os !== 'ios' && !sub.product)) return undefined;
+  return plans.find((p) => p.id === own.annual);
 }

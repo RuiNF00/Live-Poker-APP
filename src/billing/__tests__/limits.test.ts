@@ -151,3 +151,19 @@ test('«Primeira mão feita» só a quem acabou de começar; quem trouxe anos de
   assert.equal(welcomeReason(4), 'generic');
   assert.equal(welcomeReason(5000), 'generic');
 });
+
+test('annualSwitch: only a renewing monthly, never in a trial or with lifetime', async () => {
+  const { annualSwitch } = await import('../offers');
+  const plans = [{ id: 'monthly' }, { id: 'annual' }, { id: 'plusMonthly' }, { id: 'plusAnnual' }];
+  const ios = { forGood: false, os: 'ios' };
+  const sub = { plan: 'monthly' as const, renews: true, product: 'sweatbook_pro_monthly' };
+  assert.equal(annualSwitch(sub, plans, ios)?.id, 'annual');
+  assert.equal(annualSwitch({ ...sub, plan: 'plusMonthly' }, plans, ios)?.id, 'plusAnnual');
+  assert.equal(annualSwitch({ ...sub, trial: true }, plans, ios), undefined);
+  assert.equal(annualSwitch({ ...sub, renews: false }, plans, ios), undefined);
+  assert.equal(annualSwitch({ ...sub, plan: 'annual' }, plans, ios), undefined);
+  assert.equal(annualSwitch(sub, plans, { forGood: true, os: 'ios' }), undefined);
+  assert.equal(annualSwitch(null, plans, ios), undefined);
+  assert.equal(annualSwitch({ ...sub, product: '' }, plans, { forGood: false, os: 'android' }), undefined);
+  assert.equal(annualSwitch(sub, [{ id: 'monthly' }], ios), undefined);
+});
