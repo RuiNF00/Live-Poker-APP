@@ -80,7 +80,7 @@ export function planFor(a: Answers): { title: string; points: string[]; pro: str
   const points: string[] = [];
   const add = (p: string) => !points.includes(p) && points.push(p);
   for (const g of a.goals) {
-    if (g === 'results') add(mtt ? 'Bankroll, ROI e ITM por sala' : 'Bankroll e ganho por hora, por sala');
+    if (g === 'results') add(mtt ? 'Bankroll, ROI e ITM por sala' : 'Bankroll e resultado por hora, por sala');
     if (g === 'leaks') add('Cada mão revista rua a rua no replayer');
     if (g === 'backers') add('Staking: quanto deves a cada backer, com makeup');
     if (g === 'discuss') add('Um link por mão para os amigos votarem');

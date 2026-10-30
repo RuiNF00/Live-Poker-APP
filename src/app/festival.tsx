@@ -347,7 +347,7 @@ function Summary({
           <T v="mono">{money(balance, bankrollCurrency)}</T>
           {share != null ? (
             <T v="monoS" color={tone}>
-              {partial ? t('{pct}% da banca no que falta', { pct: Math.round(share * 100) }) : t('{pct}% da banca', { pct: Math.round(share * 100) })}
+              {partial ? t('{pct}% do bankroll no que falta', { pct: Math.round(share * 100) }) : t('{pct}% do bankroll', { pct: Math.round(share * 100) })}
             </T>
           ) : null}
         </View>
@@ -358,12 +358,12 @@ function Summary({
         </View>
       ) : null}
       {sameCurrency && balance <= 0 ? (
-        <T v="tiny">{t('Regista os teus depósitos no Bankroll para veres quanto da banca o plano usa.')}</T>
+        <T v="tiny">{t('Regista os teus depósitos no Bankroll para veres quanto do bankroll o plano usa.')}</T>
       ) : !sameCurrency ? (
-        <T v="tiny">{t('A tua banca está em {cur} e o festival em {fcur}: cria uma banca em {fcur} para veres a percentagem.', { cur: bankrollCurrency, fcur: f.currency })}</T>
+        <T v="tiny">{t('O teu bankroll está em {cur} e o festival em {fcur}: cria um bankroll em {fcur} para veres a percentagem.', { cur: bankrollCurrency, fcur: f.currency })}</T>
       ) : share != null && share > 1 ? (
         <T v="tiny" color={C.bad}>
-          {t('O plano custa mais do que tens na banca.')}
+          {t('O plano custa mais do que tens no bankroll.')}
         </T>
       ) : null}
     </Card>

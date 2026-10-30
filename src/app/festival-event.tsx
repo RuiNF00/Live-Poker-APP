@@ -115,7 +115,7 @@ function EventView({ base, eventId }: { base: Festival; eventId: string }) {
         </Card>
 
         <StatGrid cols={2}>
-          <Stat label={t('Buy-in')} value={e.day2 ? '—' : money(e.buyIn, f.currency)} sub={e.day2 ? t('Sem novo buy-in: continua o Dia 1 ({amount})', { amount: money(cost, f.currency) }) : share != null ? t('{pct}% da banca', { pct: Math.round(share * 100) }) : undefined} />
+          <Stat label={t('Buy-in')} value={e.day2 ? '—' : money(e.buyIn, f.currency)} sub={e.day2 ? t('Sem novo buy-in: continua o Dia 1 ({amount})', { amount: money(cost, f.currency) }) : share != null ? t('{pct}% do bankroll', { pct: Math.round(share * 100) }) : undefined} />
           <Stat label={t('Garantido')} value={e.guarantee ? rawCompactMoney(e.guarantee, f.currency) : '—'} sub={e.guarantee ? undefined : t('Sem garantido publicado')} />
           <Stat label={t('Stack inicial')} value={e.stack ? e.stack.toLocaleString(locale) : '—'} sub={e.stack ? t('fichas') : e.day2 ? t('O teu stack do Dia 1') : t('Não publicado')} />
           <Stat label={t('Níveis')} value={e.levelMinutes ? `${e.levelMinutes} min` : '—'} sub={e.levelMinutes ? t('cada nível') : t('Não publicado')} />

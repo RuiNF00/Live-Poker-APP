@@ -130,7 +130,7 @@ export function SharePlan({ f, plan }: { f: Festival; plan: FestivalPlan }) {
               </View>
             </View>
             <ListGroup>
-              <ToggleItem icon="cash-outline" title={t('Mostrar buy-ins')} subtitle={t('Nunca o total nem a banca')} value={buyIns} onChange={setBuyIns} />
+              <ToggleItem icon="cash-outline" title={t('Mostrar buy-ins')} subtitle={t('Nunca o total nem o bankroll')} value={buyIns} onChange={setBuyIns} />
             </ListGroup>
           </>
         }
