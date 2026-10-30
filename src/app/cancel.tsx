@@ -231,7 +231,7 @@ export default function Cancel() {
                           ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
                           : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })
                       }>
-                      <Button kind="secondary" title={t('Mudar para o anual')} disabled={buying} onPress={once(async () => result(await purchase(ownPlans.annual, undefined, product ?? undefined), 'annual'))} />
+                      <Button kind="secondary" title={t('Mudar para o anual')} disabled={buying} onPress={once(async () => result(await purchase(ownPlans.annual, 'switch', product ?? undefined), 'annual'))} />
                     </OfferCard>
                   ) : null}
                   {offer || toAnnual ? (

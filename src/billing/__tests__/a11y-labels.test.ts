@@ -33,3 +33,7 @@ test('a button says its second line; the cancel flow asks the store once at a ti
   assert.match(c, /hint=\{t\('Escolher outro motivo'\)\}/);
   assert.match(c, /announceForAccessibility\(t\('Obrigado\. Lemos tudo o que nos mandam\.'\)\)/);
 });
+
+test('the cancel flow\'s switch to the yearly plan counts as a switch, not a paywall purchase', () => {
+  assert.match(read('app/cancel.tsx'), /purchase\(ownPlans\.annual, 'switch', product \?\? undefined\)/);
+});
