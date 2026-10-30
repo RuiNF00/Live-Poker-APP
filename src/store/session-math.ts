@@ -342,14 +342,16 @@ export function lastTimeAt(name: string, s: Session, sessions: Session[]): Parti
 }
 
 /**
- * What a new live session starts on: the kind of the last game played in this currency and, for
- * cash, its blinds and buy-in. A tournament keeps only the kind: its last blinds were the late ones.
+ * What a new live session starts on: the kind and room of the last game played in this currency and,
+ * for cash, its blinds and buy-in. A tournament keeps only the kind and room: its last blinds were the late ones.
  */
 export function nextLive(currency: string, sessions: Session[]): Partial<Session> {
   const last = lastPlayed(currency, sessions);
+  // A regular plays in the same room: its venue (and live or online with it) comes along.
+  const room = last.venue ? { venue: last.venue, ...(last.format ? { format: last.format } : {}) } : {};
   // An imported cash session can have no blinds or buy-in: then only the kind.
-  if (last.kind !== 'cash' || !last.bb) return last.kind ? { kind: last.kind } : {};
-  return { kind: 'cash', sb: last.sb, bb: last.bb, ante: last.ante, anteType: last.anteType, ...(last.buyIn ? { buyIn: last.buyIn, stack: last.buyIn } : {}) };
+  if (last.kind !== 'cash' || !last.bb) return last.kind ? { kind: last.kind, ...room } : {};
+  return { kind: 'cash', ...room, sb: last.sb, bb: last.bb, ante: last.ante, anteType: last.anteType, ...(last.buyIn ? { buyIn: last.buyIn, stack: last.buyIn } : {}) };
 }
 
 /** The session that ended last, or null when none has. */

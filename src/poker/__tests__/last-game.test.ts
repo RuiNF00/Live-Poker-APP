@@ -66,8 +66,10 @@ test('lastEnded skips the running session and picks the latest end', () => {
 test('a new live session opens on the last cash game; a tournament keeps only the kind', () => {
   assert.deepEqual(nextLive('€', []), {});
   const cash = nextLive('€', [mk({ sb: 2, bb: 5, buyIn: 500 })]);
-  assert.deepEqual(cash, { kind: 'cash', sb: 2, bb: 5, ante: 0, anteType: 'none', buyIn: 500, stack: 500 });
-  assert.deepEqual(nextLive('€', [mk({ kind: 'mtt', sb: 2000, bb: 4000 })]), { kind: 'mtt' });
+  assert.deepEqual(cash, { kind: 'cash', venue: 'Casino Lisboa', sb: 2, bb: 5, ante: 0, anteType: 'none', buyIn: 500, stack: 500 });
+  assert.deepEqual(nextLive('€', [mk({ kind: 'mtt', sb: 2000, bb: 4000 })]), { kind: 'mtt', venue: 'Casino Lisboa' });
+  assert.deepEqual(nextLive('€', [mk({ venue: 'GGPoker', format: 'online' })]).format, 'online', 'an online room comes with online');
+  assert.equal(nextLive('€', [mk({ venue: '' })]).venue, undefined, 'no room: the field stays empty');
   assert.deepEqual(nextLive('$', [mk()]), {}, 'another currency is another game');
 });
 
@@ -78,6 +80,6 @@ test('an imported session with no blinds or stack does not give the game (no 0/0
   assert.ok(h.players.every((p) => p.stack > 0));
   const noStack = newHand({ id: 'n', recent: mk({ kind: 'mtt', sb: 100, bb: 200, stack: 0 }) });
   assert.equal(noStack.players[0].stack, 20000, 'no stack known: 100 bb');
-  assert.deepEqual(nextLive('€', [mk({ sb: 0, bb: 0, buyIn: 0 })]), { kind: 'cash' });
-  assert.deepEqual(nextLive('€', [mk({ buyIn: 0 })]), { kind: 'cash', sb: 1, bb: 2, ante: 0, anteType: 'none' });
+  assert.deepEqual(nextLive('€', [mk({ sb: 0, bb: 0, buyIn: 0, venue: '' })]), { kind: 'cash' });
+  assert.deepEqual(nextLive('€', [mk({ buyIn: 0, venue: '' })]), { kind: 'cash', sb: 1, bb: 2, ante: 0, anteType: 'none' });
 });
