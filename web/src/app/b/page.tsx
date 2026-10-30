@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteImage } from '@/lib/site-image';
 import { headers } from 'next/headers';
 import { BackingView } from '@/components/backing/BackingView';
 import { backingCopy } from '@/components/backing/copy';
@@ -18,7 +19,7 @@ export async function generateMetadata({ searchParams }: SearchParams): Promise<
     description: c.metaDescription,
     robots: { index: false, follow: false },
     referrer: 'no-referrer',
-    openGraph: { title: c.metaTitle, description: c.metaDescription, type: 'website', siteName: 'Sweatbook', locale: ogLocale(locale), images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Sweatbook' }] },
+    openGraph: { title: c.metaTitle, description: c.metaDescription, type: 'website', siteName: 'Sweatbook', locale: ogLocale(locale), images: [siteImage(locale)] },
   };
 }
 

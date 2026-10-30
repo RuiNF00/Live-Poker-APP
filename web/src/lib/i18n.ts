@@ -23,9 +23,9 @@ export function previewLocale(lang: unknown, acceptLanguage: string | null | und
   return pickLocale(acceptLanguage);
 }
 
-/** og:locale (pt_PT): chat apps use it to pick fonts and text direction. */
+/** og:locale (pt_PT): chat apps use it to pick fonts and text direction. English is the US's. */
 export function ogLocale(l: Locale): string {
-  return l === 'pt' ? 'pt_PT' : l === 'pt-BR' ? 'pt_BR' : l === 'es' ? 'es_ES' : 'en_GB';
+  return l === 'pt' ? 'pt_PT' : l === 'pt-BR' ? 'pt_BR' : l === 'es' ? 'es_ES' : 'en_US';
 }
 
 /** BCP 47 tag for dates and times (Intl / toLocale*String). */
@@ -67,9 +67,9 @@ export function formatMoney(n: number, currency: string, l: Locale, signed = fal
  * order of preference wins (pt-BR, other Portuguese, Spanish, English); anything else gets English.
  */
 export function pickLocale(acceptLanguage: string | null | undefined): Locale {
-  // No header at all (link-preview bots): the site's own language, as before.
-  const m = matchLocale(acceptLanguage);
-  return m ?? (m === null ? 'en' : 'pt');
+  // No header at all (link-preview bots): English, the main market's. Every link the app shares
+  // names its language (?lang=), so this only reaches bare links to the site.
+  return matchLocale(acceptLanguage) ?? 'en';
 }
 
 /**

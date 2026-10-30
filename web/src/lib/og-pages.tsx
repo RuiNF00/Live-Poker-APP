@@ -5,6 +5,7 @@ import { brand } from '@/config/brand';
 import { numberTag, type Locale } from '@/lib/i18n';
 import { liveCopy } from '@/components/live/copy';
 import { previewCopy } from '@/lib/preview-copy';
+import { landingCopy } from '@/components/landing/copy';
 import { MARK_ARROW, MARK_CLUB, MARK_PLAY, MARK_VIEWBOX } from '@/components/Brand';
 import { SUIT_PATHS } from '@/components/PlayingCard';
 import type { LiveSnapshot } from '@/lib/live-snapshot';
@@ -166,16 +167,18 @@ function Hand() {
 }
 
 /** The bare site link (Instagram bio, WhatsApp). */
-export function siteOgImage() {
+export function siteOgImage(locale: Locale = 'en') {
+  const c = landingCopy(locale);
+  const [line1, line2] = c.heroTitle;
   return render(
     <Frame>
       <div style={{ display: 'flex', flexDirection: 'column', width: 760, justifyContent: 'space-between' }}>
         <Logo />
         <div style={{ display: 'flex', flexDirection: 'column', fontSize: 70, fontWeight: 800, lineHeight: 1.04, letterSpacing: -2.5 }}>
-          <span>Grava a mão</span>
-          <span style={{ color: K.accent }}>antes do próximo deal.</span>
+          <span>{line1}</span>
+          <span style={{ color: K.accent }}>{line2}</span>
         </div>
-        <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>Regista, revê e partilha as tuas mãos live.</div>
+        <div style={{ display: 'flex', fontSize: 30, fontWeight: 500, color: K.dim }}>{c.heroNote}</div>
       </div>
       <Hand />
     </Frame>,
@@ -231,7 +234,7 @@ const num = (n: number) => fmt.format(n);
  * share sold stay on the page; the preview shows the stack, the level and the place.
  */
 export function liveOgImage(s: LiveSnapshot | null, locale: Locale = 'pt') {
-  if (!s) return siteOgImage();
+  if (!s) return siteOgImage(locale);
   const c = liveCopy(locale);
   const nf = new Intl.NumberFormat(numberTag(locale), { maximumFractionDigits: 1 });
   // The narrow group space (12 345), as on the page.
@@ -304,7 +307,7 @@ export function liveOgImage(s: LiveSnapshot | null, locale: Locale = 'pt') {
  * lands in may have more than the two of them).
  */
 export function swapOgImage(sw: { a: string; b: string; title: string } | null, locale: Locale = 'pt') {
-  if (!sw) return siteOgImage();
+  if (!sw) return siteOgImage(locale);
   const c = previewCopy(locale);
   // About 0.55 em per character in the brand font, bold.
   const names = Math.min(76, Math.floor(1056 / (0.55 * Math.max(sw.a.length, sw.b.length + 2))));
@@ -333,7 +336,7 @@ export function swapOgImage(sw: { a: string; b: string; title: string } | null, 
 
 /** A pack of hands (/p/<id>): how many and its title, never whose or the amounts. */
 export function packOgImage(pack: { title: string; hands: number } | null, locale: Locale = 'pt') {
-  if (!pack) return siteOgImage();
+  if (!pack) return siteOgImage(locale);
   const c = previewCopy(locale);
   return render(
     <Frame>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteImage } from '@/lib/site-image';
 import { headers } from 'next/headers';
 import { handTitle } from '@livepoker/hand-format';
 import { Mark } from '@/components/Brand';
@@ -26,8 +27,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     description,
     robots: { index: false, follow: false, nocache: true },
     referrer: 'no-referrer',
-    openGraph: { title, description, type: 'website', siteName: 'Sweatbook', locale: ogLocale(locale), images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Sweatbook' }] },
-    twitter: { card: 'summary_large_image', title, description, images: ['/opengraph-image'] },
+    openGraph: { title, description, type: 'website', siteName: 'Sweatbook', locale: ogLocale(locale), images: [siteImage(locale)] },
+    twitter: { card: 'summary_large_image', title, description, images: [siteImage(locale)] },
   };
 }
 

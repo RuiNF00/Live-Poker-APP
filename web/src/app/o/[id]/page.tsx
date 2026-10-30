@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteImage } from '@/lib/site-image';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
@@ -25,7 +26,7 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   if (!rec) return { title: c.notFound, ...base };
   const title = c.metaTitle(rec.offer.player);
   const description = c.metaDescription;
-  return { title, description, ...base, openGraph: { title, description, type: 'website', locale: ogLocale(locale), images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Sweatbook' }] }, twitter: { card: 'summary', title, description } };
+  return { title, description, ...base, openGraph: { title, description, type: 'website', locale: ogLocale(locale), images: [siteImage(locale)] }, twitter: { card: 'summary', title, description } };
 }
 
 export default async function OfferPage({ params, searchParams }: Params & SearchParams) {

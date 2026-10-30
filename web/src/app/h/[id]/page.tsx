@@ -9,6 +9,7 @@ import { challengeTeaser, heroLastSpot, resolveHand } from '@/lib/hand';
 import { brand } from '@/config/brand';
 import { ogLocale, pageLocale, previewLocale, t } from '@/lib/i18n';
 import { previewCopy } from '@/lib/preview-copy';
+import { siteImage } from '@/lib/site-image';
 import { getStore, loadShare as loadShareById } from '@/lib/store';
 import { ShareView } from '@/components/ShareView';
 import { PageFooter } from '@/components/PageFooter';
@@ -27,7 +28,7 @@ export async function generateMetadata({ params, searchParams }: Params & Search
   const hand = share && resolveHand(share.payload)?.hand;
   if (!share || !hand) {
     // Deleted or never existed: still a branded card in the sharer's language, never a bare link.
-    const site = { url: '/opengraph-image', width: 1200, height: 630, alt: brand.name };
+    const site = siteImage(locale);
     return {
       title: c.notFound,
       description: c.goneBody,

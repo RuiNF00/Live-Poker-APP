@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteImage } from '@/lib/site-image';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
@@ -33,7 +34,7 @@ export async function generateMetadata({ params, searchParams }: Params & Search
     referrer: 'no-referrer',
     // Each seat confirms here without the app: no store banner on group swaps.
     itunes: null,
-    openGraph: { title, description: c.groupMetaDescription, type: 'website', url: `${brand.siteUrl}/swap/g/${id}`, siteName: brand.name, locale: ogLocale(locale), images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Sweatbook' }] },
+    openGraph: { title, description: c.groupMetaDescription, type: 'website', url: `${brand.siteUrl}/swap/g/${id}`, siteName: brand.name, locale: ogLocale(locale), images: [siteImage(locale)] },
   };
 }
 

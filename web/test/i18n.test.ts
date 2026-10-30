@@ -31,10 +31,10 @@ describe('pickLocale', () => {
     ['pt;q=0,es', 'es'],
     // Nothing supported: English.
     ['fr-FR,fr;q=0.9', 'en'],
-    // No header (link-preview bots): the site's own language.
-    ['', 'pt'],
-    [null, 'pt'],
-    [undefined, 'pt'],
+    // No header (link-preview bots): English, the main market's.
+    ['', 'en'],
+    [null, 'en'],
+    [undefined, 'en'],
     ['*', 'en'],
     // Not Portuguese or Spanish, despite the letters.
     ['ptx, esperanto', 'en'],
@@ -130,11 +130,11 @@ describe('previewLocale', () => {
   });
   it("falls back to the reader's browser, then the site's language", () => {
     expect(previewLocale(undefined, 'es-ES,es;q=0.9')).toBe('es');
-    expect(previewLocale(['es'], null)).toBe('pt');
-    expect(previewLocale('fr', null)).toBe('pt');
+    expect(previewLocale(['es'], null)).toBe('en');
+    expect(previewLocale('fr', null)).toBe('en');
   });
   it('names og:locale', () => {
-    expect(LOCALES.map(ogLocale)).toEqual(['pt_PT', 'pt_BR', 'en_GB', 'es_ES']);
+    expect(LOCALES.map(ogLocale)).toEqual(['pt_PT', 'pt_BR', 'en_US', 'es_ES']);
   });
 });
 
@@ -164,7 +164,7 @@ describe('pageLocale', () => {
     expect(pageLocale('es', '')).toBe('es');
     expect(pageLocale(undefined, 'fr-FR')).toBe('en');
     expect(pickLocale('fr-FR')).toBe('en');
-    expect(pickLocale('')).toBe('pt');
+    expect(pickLocale('')).toBe('en');
   });
 });
 
