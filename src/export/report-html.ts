@@ -8,7 +8,7 @@ import { decimalsOf } from '@/store/currencies';
 import { cost, playedMs, profit, rateShown, type Breakdown } from '@/store/session-math';
 
 import { countryName, flag } from '@/tax/countries';
-import { EXPENSE_KINDS } from '@/store/trip-math';
+import { EXPENSE_KINDS, skippedLabel } from '@/store/trip-math';
 import { isBagged } from '@/store/multi-day';
 import type { ExpenseKind, Session } from '@/store/types';
 import type { TaxReport } from '@/tax/tax-math';
@@ -141,7 +141,9 @@ function tripsBlock(r: Report): string {
   const rows = r.trips
     .map(({ trip, summary: s }) => {
       const conv = s.converted ? `<br/><span class="muted">≈ ${esc(signed(s.converted.net, s.converted.currency))}</span>` : '';
-      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span></td><td class="n">${s.sessions}</td><td class="n ${cls(s.poker, s.currency)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(rawMoney(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net, s.currency)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
+      // Totals that leave something out say what, as the trip screen does.
+      const out = s.skipped.length ? `<br/><span class="muted">${esc(t('Fora das contas (sem câmbio): {list}.', { list: skippedLabel(s.skipped) }))}</span>` : '';
+      return `<tr><td>${esc(trip.name)}<br/><span class="muted">${esc(range(trip.from, trip.to))}${trip.venue ? ' · ' + esc(trip.venue) : ''}</span>${out}</td><td class="n">${s.sessions}</td><td class="n ${cls(s.poker, s.currency)}">${esc(signed(s.poker, s.currency))}</td><td class="n">${esc(rawMoney(Math.round(s.expenses * 100) / 100, s.currency))}</td><td class="n ${cls(s.net, s.currency)}">${esc(signed(s.net, s.currency))}${conv}</td></tr>`;
     })
     .join('');
   return `

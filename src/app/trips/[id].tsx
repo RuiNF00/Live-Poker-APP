@@ -17,7 +17,7 @@ import { planTotals, useFestivalPlan } from '@/store/festival-plan';
 import { useFestivals } from '@/store/my-festivals';
 import { playedMs, profit } from '@/store/session-math';
 import { useStore, uid } from '@/store/store';
-import { blankExpense, EXPENSE_KINDS, toTripCurrency, tripSessions, tripSummary } from '@/store/trip-math';
+import { blankExpense, EXPENSE_KINDS, fxInUse, skippedLabel, skippedStuck, toTripCurrency, tripSessions, tripSummary } from '@/store/trip-math';
 import type { Expense, ExpenseKind, Trip } from '@/store/types';
 import { C, R, S } from '@/theme';
 
@@ -59,6 +59,10 @@ export default function TripScreen() {
   const list = tripSessions(trip, sessions).reverse();
   const expenses = [...trip.expenses].sort((a, b) => b.at - a.at);
   const other = trip.fx && trip.fx.currency !== cur ? trip.fx : null;
+  // Left out and no way to bring it in from «Editar viagem»: say so instead of sending the player there.
+  const stuck = skippedStuck(trip, s.skipped, sessions);
+  // Running now and started during the trip: not counted until it ends, which the list would otherwise leave unsaid.
+  const live = sessions.find((x) => !x.endedAt && x.startedAt >= trip.from && x.startedAt <= trip.to);
 
   const saveExpense = (x: Expense) => {
     saveTrip({ ...trip, expenses: [x, ...trip.expenses.filter((e) => e.id !== x.id)] });
@@ -90,7 +94,7 @@ export default function TripScreen() {
             </T>
             {s.converted ? <T v="mono" color={C.textDim}>{`≈ ${signed(s.converted.net, s.converted.currency)}`}</T> : null}
             <T v="small">
-              {[s.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: s.sessions }), `${Math.round(s.hours)} h`, s.days === 1 ? t('1 dia de viagem') : t('{n} dias de viagem', { n: s.days })].join(' · ')}
+              {[s.played === 1 ? t('1 sessão') : t('{n} sessões', { n: s.played }), `${Math.round(s.hours)} h`, s.days === 1 ? t('1 dia de viagem') : t('{n} dias de viagem', { n: s.days })].join(' · ')}
             </T>
           </View>
           <Divider />
@@ -101,15 +105,13 @@ export default function TripScreen() {
             </T>
           ) : null}
           {s.skipped.length ? (
-            <T v="tiny">
-              {t('Fora das contas (sem câmbio): {list}.', {
-                list: s.skipped.map((k) => `${k.currency} · ${[k.sessions ? (k.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: k.sessions })) : '', k.expenses ? (k.expenses === 1 ? t('1 despesa') : t('{n} despesas', { n: k.expenses })) : ''].filter(Boolean).join(', ')}`).join('; '),
-              })}
+            <T v="tiny" onPress={stuck ? undefined : () => setSheet({ type: 'trip' })} accessibilityRole={stuck ? undefined : 'button'}>
+              {[t('Fora das contas (sem câmbio): {list}.', { list: skippedLabel(s.skipped) }), stuck ? t('Uma viagem converte só a sua moeda e mais uma.') : ''].filter(Boolean).join(' ')}
             </T>
           ) : null}
         </Card>
 
-        {s.sessions ? <ShareRecap trip={trip} /> : null}
+        {s.played ? <ShareRecap trip={trip} /> : null}
 
         {trip.festivalId ? <FestivalPlanCard trip={trip} fmt={fmt} /> : null}
 
@@ -129,7 +131,7 @@ export default function TripScreen() {
                     icon={KIND[x.kind]?.icon ?? 'ellipsis-horizontal'}
                     iconColor={KIND[x.kind]?.color}
                     title={x.note || KIND[x.kind]?.label || x.kind}
-                    subtitle={[x.note ? KIND[x.kind]?.label : '', day(x.at), x.currency !== cur && inTrip !== null ? `≈ ${fmt(inTrip)}` : ''].filter(Boolean).join(' · ')}
+                    subtitle={[x.note ? KIND[x.kind]?.label : '', day(x.at), x.currency === cur ? '' : inTrip !== null ? `≈ ${fmt(inTrip)}` : t('fora das contas')].filter(Boolean).join(' · ')}
                     value={hidden ? '•••' : minus() + money(x.amount, x.currency)}
                     onPress={() => setSheet({ type: 'expense', x, isNew: false })}
                   />
@@ -143,7 +145,10 @@ export default function TripScreen() {
           )}
         </Section>
 
-        <Section title={t('Sessões')} hint={list.length ? undefined : t('As sessões que jogares entre {from} e {to} entram aqui sozinhas.', { from: day(trip.from), to: day(trip.to) })}>
+        <Section
+          title={t('Sessões')}
+          hint={live ? t('A sessão em curso entra quando a terminares.') : list.length ? undefined : t('As sessões que jogares entre {from} e {to} entram aqui sozinhas.', { from: day(trip.from), to: day(trip.to) })}
+        >
           {list.length ? (
             <ListGroup>
               {list.map((x) => {
@@ -153,7 +158,7 @@ export default function TripScreen() {
                     key={x.id}
                     icon={x.kind === 'mtt' ? 'trophy-outline' : 'cash-outline'}
                     title={x.name || x.venue || t('Sessão')}
-                    subtitle={[day(x.startedAt), `${(playedMs(x) / 3600000).toFixed(1).replace('.', decimalComma ? ',' : '.')} h`].join(' · ')}
+                    subtitle={[day(x.startedAt), `${(playedMs(x) / 3600000).toFixed(1).replace('.', decimalComma ? ',' : '.')} h`, p === null ? t('fora das contas') : ''].filter(Boolean).join(' · ')}
                     value={p === null ? signed(profit(x), x.currency) : signed(p)}
                     valueColor={profit(x) >= 0 ? C.good : C.bad}
                   />
@@ -170,6 +175,7 @@ export default function TripScreen() {
             initial={trip}
             home={settings.currency}
             isNew={false}
+            fxLocked={fxInUse(trip, sessions)}
             onSave={(x) => {
               saveTrip(x);
               setSheet(null);

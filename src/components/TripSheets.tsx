@@ -10,7 +10,7 @@ import { useRates } from '@/lib/fx';
 import { endOfDay, startOfDay } from '@/store/bankroll-math';
 import { rate as fxRate } from '@/store/fx-math';
 import { parseDay } from '@/store/session-math';
-import { changeTripCurrency, EXPENSE_KINDS } from '@/store/trip-math';
+import { changeTripCurrency, EXPENSE_KINDS, rateLooksFlipped } from '@/store/trip-math';
 import type { Expense, ExpenseKind, Trip } from '@/store/types';
 import { C, F, S } from '@/theme';
 
@@ -43,8 +43,25 @@ function parseRate(v: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** New trip or edit one. `home` is the player's own currency, offered for the exchange rate. */
-export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: Trip; home: string; isNew: boolean; onSave: (x: Trip) => void; onDelete?: () => void }) {
+/**
+ * New trip or edit one. `home` is the player's own currency, offered for the exchange rate.
+ * `fxLocked`: expenses or sessions are already in the second currency, so it can't be swapped.
+ */
+export function TripForm({
+  initial,
+  home,
+  isNew,
+  fxLocked = false,
+  onSave,
+  onDelete,
+}: {
+  initial: Trip;
+  home: string;
+  isNew: boolean;
+  fxLocked?: boolean;
+  onSave: (x: Trip) => void;
+  onDelete?: () => void;
+}) {
   const [x, setX] = useState(initial);
   const [fromText, setFromText] = useState(dd(initial.from));
   const [toText, setToText] = useState(dd(initial.to));
@@ -101,6 +118,24 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
         </ChipRow>
       </Section>
       <Section title={t('Câmbio')} hint={t('Para despesas pagas em {cur} e para veres o resultado convertido. Usa o câmbio que o banco te cobrou.', { cur: fxCur })}>
+        {fxLocked ? null : (
+          // The second currency: the player's own by default, any other for a flight paid in a third one.
+          <ChipRow>
+            {CURRENCIES.filter((c) => c !== x.currency).map((c) => (
+              <Chip
+                key={c}
+                label={c}
+                active={fxCur === c}
+                onPress={() => {
+                  if (c === fxCur) return;
+                  set({ fx: { currency: c, rate: 0 } });
+                  setRateText('');
+                }}
+                style={{ minWidth: 48 }}
+              />
+            ))}
+          </ChipRow>
+        )}
         <Row gap={S.sm}>
           <T v="mono" style={{ fontSize: 16 }}>{`1 ${x.currency} =`}</T>
           <Field
@@ -115,6 +150,11 @@ export function TripForm({ initial, home, isNew, onSave, onDelete }: { initial: 
             {fxCur}
           </T>
         </Row>
+        {rateLooksFlipped(rate, ecb) ? (
+          <T v="tiny" color={C.warn}>
+            {t('Parece ao contrário: hoje 1 {a} vale {rate} {b}.', { a: x.currency, rate: ecbText, b: fxCur })}
+          </T>
+        ) : null}
         {ecb && ecbText !== rateText ? (
           <Chip icon="sync-outline" label={t('Câmbio do BCE hoje: {rate}', { rate: ecbText })} onPress={() => setRateText(ecbText)} style={{ alignSelf: 'flex-start' }} />
         ) : null}

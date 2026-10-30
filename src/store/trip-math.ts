@@ -45,10 +45,46 @@ export function changeTripCurrency(trip: Pick<Trip, 'currency' | 'fx'>, fxCur: s
   return { currency: next, fx: trip.fx && trip.fx.currency !== next ? { currency: trip.fx.currency, rate: 0 } : undefined };
 }
 
+/**
+ * A typed rate that is most likely the wrong way round: closer to the inverse of today's ECB rate
+ * than to the rate itself (1 € = 1,08 $ typed as 0,93). False when it looks right or there is
+ * nothing to compare with. Rates within ~5% of 1 can't tell the two apart, so they never warn.
+ */
+export function rateLooksFlipped(typed: number, ecb: number | null | undefined): boolean {
+  if (!(typed > 0) || !ecb || !(ecb > 0)) return false;
+  const e = Math.log(ecb);
+  const x = Math.log(typed);
+  return Math.abs(e) >= 0.05 && Math.abs(x + e) < 0.1 && Math.abs(x + e) < Math.abs(x - e);
+}
+
+/**
+ * The trip's second currency already carries an expense or a session, so changing it would drop
+ * them from the totals: the form keeps it as it is.
+ */
+export function fxInUse(trip: Trip, sessions: Session[]): boolean {
+  const fx = trip.fx?.currency;
+  if (!fx || fx === trip.currency) return false;
+  return trip.expenses.some((x) => x.currency === fx) || tripSessions(trip, sessions).some((s) => s.currency === fx);
+}
+
+/**
+ * What was left out can't be brought in by editing the trip: more than one other currency, or one
+ * that isn't the second currency when that is already in use. A trip converts its own and one more.
+ */
+export function skippedStuck(trip: Trip, skipped: TripSummary['skipped'], sessions: Session[]): boolean {
+  if (!skipped.length) return false;
+  if (new Set(skipped.map((k) => k.currency)).size > 1) return true;
+  return fxInUse(trip, sessions) && skipped[0].currency !== trip.fx?.currency;
+}
+
 export interface TripSummary {
   currency: string;
   days: number;
+  /** Sessions in the totals. */
   sessions: number;
+  /** Every finished session of the trip, those left out for want of a rate too. */
+  played: number;
+  /** Hours of all of them: time needs no exchange rate. */
   hours: number;
   /** Poker results (session expenses already in them). */
   poker: number;
@@ -70,14 +106,15 @@ export function tripSummary(trip: Trip, sessions: Session[]): TripSummary {
   let poker = 0;
   let hours = 0;
   let count = 0;
-  for (const s of tripSessions(trip, sessions)) {
+  const all = tripSessions(trip, sessions);
+  for (const s of all) {
+    hours += playedMs(s) / 3600000;
     const v = toTripCurrency(profit(s), s.currency, trip);
     if (v === null) {
       skip(s.currency).sessions++;
       continue;
     }
     poker += v;
-    hours += playedMs(s) / 3600000;
     count++;
   }
   let expenses = 0;
@@ -96,6 +133,7 @@ export function tripSummary(trip: Trip, sessions: Session[]): TripSummary {
     currency: trip.currency,
     days: Math.max(1, Math.round((endOfDay(trip.to) + 1 - startOfDay(trip.from)) / DAY)),
     sessions: count,
+    played: all.length,
     hours,
     poker,
     expenses,
@@ -104,6 +142,14 @@ export function tripSummary(trip: Trip, sessions: Session[]): TripSummary {
     skipped: [...skipped.values()],
     converted: r ? { currency: r.currency, poker: poker * r.rate, expenses: expenses * r.rate, net: net * r.rate } : null,
   };
+}
+
+/** «£ · 1 sessão, 2 despesas; CHF · 1 despesa»: what a summary left out, for the line that says so. */
+export function skippedLabel(skipped: TripSummary['skipped']): string {
+  const n = (k: number, one: string, many: string) => (k ? (k === 1 ? t(one) : t(many, { n: k })) : '');
+  return skipped
+    .map((k) => `${k.currency} · ${[n(k.sessions, '1 sessão', '{n} sessões'), n(k.expenses, '1 despesa', '{n} despesas')].filter(Boolean).join(', ')}`)
+    .join('; ');
 }
 
 /** Trips that overlap a date range, newest first. */

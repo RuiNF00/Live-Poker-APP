@@ -3969,6 +3969,10 @@ const en: Record<string, string> = {
   'por ano': 'per year',
   'por mês': 'per month',
   'sem limite': 'no limit',
+  'fora das contas': 'left out',
+  'A sessão em curso entra quando a terminares.': "The session you're playing counts once you end it.",
+  'Uma viagem converte só a sua moeda e mais uma.': 'A trip converts only its own currency and one more.',
+  'Parece ao contrário: hoje 1 {a} vale {rate} {b}.': 'Looks the wrong way round: today 1 {a} is {rate} {b}.',
 };
 
 export default en;

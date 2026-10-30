@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { BAHAMAS_DEC_2026 as F, BAHIA_JAN_2027 } from '../../poker/festival-data';
 import { SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals-nov-2026';
 import { EMPTY_PLAN, togglePicked } from '../festival-plan';
-import { blankTrip, changeTripCurrency, currentTrip, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';
+import { blankTrip, changeTripCurrency, currentTrip, fxInUse, rateLooksFlipped, skippedLabel, skippedStuck, toTripCurrency, tripFromFestival, tripToCover, tripSessions, tripsIn, tripSummary } from '../trip-math';
 import type { Session, Trip } from '../types';
 
 const H = 3600000;
@@ -57,7 +57,9 @@ test('tripSummary: poker minus expenses, by kind, converted, unconvertible left 
   assert.equal(s.byKind.hotel, 1500);
   assert.equal(s.expenses, 2500);
   assert.equal(s.net, 4000 - 2500);
-  assert.equal(s.hours, 12);
+  // The £ session is out of the money but not out of the count or the hours: time needs no rate.
+  assert.equal(s.played, 3);
+  assert.equal(s.hours, 18);
   assert.equal(s.days, 5);
   assert.deepEqual(s.skipped, [{ currency: '£', sessions: 1, expenses: 1 }]);
   assert.ok(s.converted);
@@ -147,4 +149,35 @@ test('a new trip lasts five calendar days across a DST change', () => {
   assert.equal(x.to, new Date(2026, 9, 26, 23, 59, 59, 999).getTime());
   const y = blankTrip('t', '€', new Date(2026, 2, 26, 23, 30).getTime());
   assert.equal(y.to, new Date(2026, 2, 30, 23, 59, 59, 999).getTime());
+});
+
+test('rateLooksFlipped: the inverse of today\'s rate warns, a close or near-1 rate does not', () => {
+  // 1 € = 1,08 $ today; typing 0,93 for 1 € is the dollar's rate.
+  assert.equal(rateLooksFlipped(0.93, 1.08), true);
+  assert.equal(rateLooksFlipped(1.05, 1.08), false);
+  // The bank's own rate, a few percent off, is fine.
+  assert.equal(rateLooksFlipped(1.12, 1.08), false);
+  // 1 $ = 0,86 £, typed as the pound's 1,16.
+  assert.equal(rateLooksFlipped(1.16, 0.86), true);
+  // 1 CHF ≈ 1,04 €: both ways look alike, never warn.
+  assert.equal(rateLooksFlipped(0.96, 1.04), false);
+  assert.equal(rateLooksFlipped(0, 1.08), false);
+  assert.equal(rateLooksFlipped(0.93, null), false);
+});
+
+test('left out: said in one line, and fixable from the trip only when one currency could take the rate', () => {
+  const sum = tripSummary(trip, [mk({ id: 'c', currency: '£', cashOut: 500 })]);
+  assert.equal(skippedLabel(sum.skipped), '£ · 1 sessão, 1 despesa');
+  // The flight in € holds the second currency: £ can't come in.
+  assert.equal(fxInUse(trip, []), true);
+  assert.equal(skippedStuck(trip, sum.skipped, []), true);
+  // Nothing in € yet: pick £ as the second currency instead.
+  const free = { ...trip, expenses: trip.expenses.filter((x) => x.currency !== '€') };
+  assert.equal(fxInUse(free, []), false);
+  assert.equal(skippedStuck(free, tripSummary(free, []).skipped, []), false);
+  // A session in € holds it too.
+  assert.equal(fxInUse(free, [mk({ currency: '€' })]), true);
+  // Two other currencies: one rate can't cover both.
+  assert.equal(skippedStuck(free, [{ currency: '£', sessions: 1, expenses: 0 }, { currency: 'CHF', sessions: 0, expenses: 1 }], []), true);
+  assert.equal(skippedStuck(trip, [], []), false);
 });

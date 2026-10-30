@@ -2159,6 +2159,8 @@ const ptBR: Record<string, string> = {
   'Uma mão, revista ou nova, ou uma nota mantém-na': 'Uma mão, nova ou revisada, ou uma nota mantém a sequência',
   'Conta as semanas em que registas ou revês pelo menos uma mão, ou escreves uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.': 'Conta as semanas em que você registra ou revisa pelo menos uma mão, ou escreve uma nota. Não tem nada a ver com jogar mais: é revisar seu jogo com regularidade.',
   'Aspeto': 'Aparência',
+  'A sessão em curso entra quando a terminares.': 'A sessão em andamento entra quando você terminar.',
+  'Parece ao contrário: hoje 1 {a} vale {rate} {b}.': 'Parece invertido: hoje 1 {a} vale {rate} {b}.',
 };
 
 export default ptBR;

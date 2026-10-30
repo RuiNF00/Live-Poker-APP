@@ -3963,6 +3963,10 @@ const es: Record<string, string> = {
   'por ano': 'al año',
   'por mês': 'al mes',
   'sem limite': 'sin límite',
+  'fora das contas': 'fuera de las cuentas',
+  'A sessão em curso entra quando a terminares.': 'La sesión en curso entra cuando la termines.',
+  'Uma viagem converte só a sua moeda e mais uma.': 'Un viaje solo convierte su moneda y una más.',
+  'Parece ao contrário: hoje 1 {a} vale {rate} {b}.': 'Parece al revés: hoy 1 {a} vale {rate} {b}.',
 };
 
 export default es;
