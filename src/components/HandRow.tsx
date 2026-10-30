@@ -31,7 +31,7 @@ export function rowSummary(hand: Hand) {
 export const isIncomplete = (h: Hand) => !rowSummary(h).done;
 export const netOf = (h: Hand) => rowSummary(h).net;
 
-export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false, picked = false, onPick, coach = 0, queue }: { hand: Hand; inBB: boolean; picking?: boolean; picked?: boolean; onPick?: (id: string) => void; coach?: number; queue?: boolean }) {
+export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false, picked = false, onPick, coach = 0, queue, snippet }: { hand: Hand; inBB: boolean; picking?: boolean; picked?: boolean; onPick?: (id: string) => void; coach?: number; queue?: boolean; snippet?: string | null }) {
   const { net, done } = rowSummary(hand);
   const heroPos = positions(hand.players.length, hand.button)[hand.hero];
   // Next to a full board only two tags fit on the line at 390 pt.
@@ -62,7 +62,8 @@ export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false
             <Badge label={heroPos} />
           </Row>
           <T v="small" numberOfLines={1}>
-            {(hand.game.name || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash')) + ' · ' + blindsLabel(hand)}
+            {/* With no game name the venue says where it was, which «Cash» alone never does. */}
+            {(hand.game.name || hand.game.venue || (hand.game.kind === 'mtt' ? t('Torneio') : 'Cash')) + ' · ' + blindsLabel(hand)}
           </T>
         </View>
         <View style={rowSt.side}>
@@ -78,6 +79,15 @@ export const HandRow = React.memo(function HandRow({ hand, inBB, picking = false
           <T v="monoS">{timeOf(hand.createdAt)}</T>
         </View>
       </Row>
+      {snippet ? (
+        // The search found this in a note: show the line, so the reason the hand is here is on the row.
+        <Row gap={6}>
+          <Ionicons name="chatbubble-ellipses-outline" size={13} color={C.muted} />
+          <T v="small" numberOfLines={1} style={rowSt.snippet}>
+            {snippet}
+          </T>
+        </Row>
+      ) : null}
       {hand.board.length || hand.tags.length || !done || hand.shareId || coach ? (
         <Row gap={6} style={rowSt.wrap}>
           {hand.board.length ? (
@@ -111,4 +121,5 @@ const rowSt = StyleSheet.create({
   combo: { fontSize: 16 },
   wrap: { flexWrap: 'wrap' },
   board: { marginRight: 4 },
+  snippet: { flex: 1, fontStyle: 'italic' },
 });

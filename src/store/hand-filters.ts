@@ -64,12 +64,40 @@ export function matches(h: Hand, f: HandFilter, netOf?: (h: Hand) => number | un
 }
 
 /**
- * What the hands search looks in: tournament or game, venue, notes, title, players, and hero's
- * cards both as a class ("aks") and as dealt ("ahkh").
+ * What the hands search looks in: tournament or game, venue, every note (the hand's, the review's
+ * and each street's), tags and folders, title, players, and hero's cards both as a class ("aks")
+ * and as dealt ("ahkh").
  */
 export function handSearchText(h: Hand): string {
   const cards = h.players[h.hero]?.cards;
-  return [h.game.name, h.game.venue, h.notes, h.title, comboLabel(cards), cards?.join(''), ...h.players.map((p) => p.name)].join(' ').toLowerCase();
+  return [h.game.name, h.game.venue, ...handNotes(h), ...h.tags, ...(h.folders ?? []), h.title, comboLabel(cards), cards?.join(''), ...h.players.map((p) => p.name)].join(' ').toLowerCase();
+}
+
+function handNotes(h: Hand): string[] {
+  return [h.notes, h.reviewNote, ...Object.values(h.streetNotes ?? {})].filter((x): x is string => !!x?.trim());
+}
+
+/**
+ * The bit of a note the search found, so the row shows why the hand is there:
+ * one line around the first word typed, with «…» where it was cut. Null when no note has it.
+ */
+export function noteSnippet(h: Hand, words: SearchWord[], width = 60): string | null {
+  const texts = words.flatMap((w) => (w.kind === 'text' ? [w.text] : []));
+  if (!texts.length) return null;
+  for (const note of handNotes(h)) {
+    const line = note.replace(/\s+/g, ' ').trim();
+    const at = texts.map((w) => line.toLowerCase().indexOf(w)).filter((i) => i >= 0).sort((a, b) => a - b)[0];
+    if (at === undefined) continue;
+    if (line.length <= width) return line;
+    // Start a little before the word, on a word boundary, so it reads as a phrase.
+    let from = Math.max(0, at - Math.floor(width / 3));
+    if (from > 0) from = line.indexOf(' ', from) + 1 || from;
+    if (from > at) from = at;
+    let to = Math.min(line.length, from + width);
+    if (to < line.length) to = line.lastIndexOf(' ', to) > at ? line.lastIndexOf(' ', to) : to;
+    return (from > 0 ? '…' : '') + line.slice(from, to).trim() + (to < line.length ? '…' : '');
+  }
+  return null;
 }
 
 /** How many filters are on (sorting not counted). */

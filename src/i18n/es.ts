@@ -3326,7 +3326,7 @@ const es: Record<string, string> = {
   'Só datas publicadas pelos organizadores. Falta o teu? Adiciona-o.': 'Solo fechas publicadas por los organizadores. ¿Falta el tuyo? Añádelo.',
   'Combina uma percentagem com outro jogador. A app diz quem deve a quem.': 'Acuerda un porcentaje con otro jugador. La app dice quién le debe a quién.',
   'Partilha uma mão e os comentários aparecem aqui.': 'Comparte una mano y los comentarios aparecen aquí.',
-  'AK, QQ+, BTN, torneio…': 'AK, QQ+, BTN, torneo…',
+  'AK, BTN, bluff, uma nota…': 'AK, BTN, bluff, una nota…',
   // Hands list: result chips (HandFilters RESULTS).
   'Ganhei': 'Gané',
   'Perdi': 'Perdí',

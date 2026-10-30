@@ -12,7 +12,7 @@ import { locale, t } from '@/i18n';
 import { fileInFolder, needsReview } from '@/poker/review';
 import { DEFAULT_TAGS, type Hand } from '@/poker/types';
 import { filterPills, HandFilterSheet, RESULTS } from '@/components/HandFilters';
-import { activeFilters, handSearchText, matches, matchesSearch, NO_FILTER, parseSearch, sortByResult, type HandFilter } from '@/store/hand-filters';
+import { activeFilters, handSearchText, matches, matchesSearch, NO_FILTER, noteSnippet, parseSearch, sortByResult, type HandFilter } from '@/store/hand-filters';
 import { unreadByHand } from '@/lib/coach-core';
 import { useCoach } from '@/lib/coach-api';
 import { openInGtoWizard } from '@/lib/gto-wizard';
@@ -79,8 +79,9 @@ export default function HandsScreen() {
 
   // The search also looks in the hand's session ("Main Event Dia 1", "Casino Lisboa").
   const sessionText = useMemo(() => new Map(sessions.map((x) => [x.id, ` ${x.name} ${x.venue}`.toLowerCase()])), [sessions]);
+  const searchWords = useMemo(() => parseSearch(q), [q]);
   const sections = useMemo(() => {
-    const words = parseSearch(q);
+    const words = searchWords;
     const rows = [...hands]
       .sort((a, b) => b.createdAt - a.createdAt)
       .filter(
@@ -105,7 +106,7 @@ export default function HandsScreen() {
       out[out.length - 1].data.push(h);
     }
     return out;
-  }, [hands, q, tag, sentToCoach, filter, sessionText]);
+  }, [hands, searchWords, tag, sentToCoach, filter, sessionText]);
 
   const sessionName = useCallback((id: string) => {
     const x = sessions.find((y) => y.id === id);
@@ -158,8 +159,10 @@ export default function HandsScreen() {
   const [tagging, setTagging] = useState(false);
 
   const renderItem = useCallback(
-    ({ item }: { item: Hand }) => <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} coach={unread[item.id] ?? 0} queue={tag === TO_REVIEW} />,
-    [settings.inBB, picking, picked, togglePick, unread, tag],
+    ({ item }: { item: Hand }) => (
+      <HandRow hand={item} inBB={settings.inBB} picking={picking} picked={picked.has(item.id)} onPick={togglePick} coach={unread[item.id] ?? 0} queue={tag === TO_REVIEW} snippet={searchWords.length ? noteSnippet(item, searchWords) : null} />
+    ),
+    [settings.inBB, picking, picked, togglePick, unread, tag, searchWords],
   );
 
   const usedTags = useMemo(() => DEFAULT_TAGS.filter((tg) => hands.some((h) => h.tags.includes(tg))), [hands]);
@@ -204,7 +207,7 @@ export default function HandsScreen() {
                   }}
                 />
               ) : null}
-              {searching ? <SearchField autoFocus value={q} onChange={setQ} placeholder={t('AK, QQ+, BTN, torneio…')} /> : null}
+              {searching ? <SearchField autoFocus value={q} onChange={setQ} placeholder={t('AK, BTN, bluff, uma nota…')} /> : null}
               {searching ? (
                 // One tap each for what players look for most: how it went, where, and the usual hands.
                 <ChipRow>
@@ -422,7 +425,8 @@ const searchCache = new WeakMap<Hand, string>();
 function searchText(h: Hand): string {
   let s = searchCache.get(h);
   if (s === undefined) {
-    s = handSearchText(h);
+    // Tags are stored in Portuguese; the search also takes them in the language on screen.
+    s = handSearchText(h) + ' ' + h.tags.map((tg) => t(tg)).join(' ').toLowerCase();
     searchCache.set(h, s);
   }
   return s;

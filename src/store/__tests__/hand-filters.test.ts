@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { sampleHand } from '../../poker/sample';
 import type { Hand } from '../../poker/types';
-import { activeFilters, comboSet, gridCombo, handSearchText, heroPosition, matches, matchesSearch, NO_FILTER, parseSearch, sortByResult } from '../hand-filters';
+import { activeFilters, comboSet, gridCombo, handSearchText, heroPosition, matches, matchesSearch, NO_FILTER, noteSnippet, parseSearch, sortByResult } from '../hand-filters';
 
 function hand(id: string, over: Partial<Hand> = {}, heroCards?: Hand['players'][number]['cards'], stack?: number): Hand {
   const h = sampleHand(id);
@@ -104,4 +104,27 @@ test('500 hands: the two lookups land on the hand at the top of the list', () =>
   // "A última mão que perdi com um par alto": Perdi chip + QQ+ chip.
   const lost = run('QQ+', { ...NO_FILTER, result: 'lost' });
   assert.equal(lost[0].id, all.find((h) => ['QQ', 'KK', 'AA'].includes(h.players[h.hero].cards!.map((c) => c[0]).join('')) && net(h) < 0)!.id);
+});
+
+test('search looks in tags, folders, the review note and every street note', () => {
+  const h = hand('n', { notes: '', tags: ['Cooler'], folders: ['Rever com coach'], reviewNote: 'Devia pagar mais vezes', streetNotes: { turn: 'Barrel no turn com draw' } });
+  const s = handSearchText(h);
+  for (const w of ['cooler', 'rever com coach', 'pagar', 'barrel']) assert.ok(s.includes(w), w);
+  assert.ok(matchesSearch(h, parseSearch('cooler barrel'), s));
+});
+
+test('note snippet: the line around the word typed, cut on words with «…»', () => {
+  const short = hand('s', { notes: 'Vilão regular, joga muito tight no river' });
+  assert.equal(noteSnippet(short, parseSearch('tight')), 'Vilão regular, joga muito tight no river');
+  // Card and position words never pick a snippet; neither does a word only in the hand's other fields.
+  assert.equal(noteSnippet(short, parseSearch('AK BTN')), null);
+  assert.equal(noteSnippet(short, parseSearch('casino')), null);
+  const long = hand('l', { notes: 'Primeira hora muito calma na mesa e depois entrou um alemão que abria todos os botões e fazia 3-bet light contra toda a gente, sobretudo no BB' });
+  const sn = noteSnippet(long, parseSearch('3-bet'))!;
+  assert.ok(sn.includes('3-bet'), sn);
+  assert.ok(sn.startsWith('…') && sn.endsWith('…'), sn);
+  assert.ok(sn.length <= 62, sn);
+  // A word found only in a street note shows that note.
+  const street = hand('t', { notes: 'Nada de especial', streetNotes: { river: 'Overbet no river' } });
+  assert.equal(noteSnippet(street, parseSearch('overbet')), 'Overbet no river');
 });
