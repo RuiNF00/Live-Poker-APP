@@ -3907,6 +3907,10 @@ const es: Record<string, string> = {
   // The come-back nudge, on a Monday.
   'Semana nova': 'Semana nueva',
   'Ficou alguma sessão por registar? Leva 20 segundos.': '¿Te quedó alguna sesión por registrar? Son 20 segundos.',
+  // Bankroll in the first sessions.
+  'Falta 1 sessão para o resto': 'Falta 1 sesión para el resto',
+  'Faltam {n} sessões para o resto': 'Faltan {n} sesiones para el resto',
+  'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.': 'Con {n} sesiones aparecen el gráfico, los números de las sesiones, el calendario y las herramientas de análisis.',
 };
 
 export default es;

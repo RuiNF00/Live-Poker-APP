@@ -2123,6 +2123,10 @@ const ptBR: Record<string, string> = {
   // The come-back nudge, on a Monday.
   'Semana nova': 'Semana nova',
   'Ficou alguma sessão por registar? Leva 20 segundos.': 'Ficou alguma sessão sem registrar? Leva 20 segundos.',
+  // Bankroll in the first sessions.
+  'Falta 1 sessão para o resto': 'Falta 1 sessão para o resto',
+  'Faltam {n} sessões para o resto': 'Faltam {n} sessões para o resto',
+  'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.': 'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.',
 };
 
 export default ptBR;

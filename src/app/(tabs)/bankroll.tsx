@@ -192,6 +192,10 @@ function BankrollTab() {
   const nFilters = activeFilters(filter);
   // Nothing played yet in this bankroll: one next action, near the top.
   const fresh = !nFilters && !scoped.some((x) => x.endedAt);
+  // The first sessions: the balance, the result and the history. Charts, rates and analysis tools
+  // say little with so few, so they come in at EARLY_UNTIL sessions, with one line saying when.
+  const played = scoped.filter((x) => x.endedAt).length;
+  const early = !nFilters && played > 0 && played < EARLY_UNTIL;
   const scopeBankrolls = bankrolls.filter((b) => inScope.has(b.id));
   const single = 'bankrollId' in scope ? bankrolls.find((b) => b.id === scope.bankrollId) : undefined;
   const scopeName = single?.name ?? t('Todas {currency}', { currency: cur });
@@ -301,7 +305,7 @@ function BankrollTab() {
           <MoreTools />
 
           {/* Filters only once there is something to filter. */}
-          {scoped.some((x) => x.endedAt) || nFilters ? (
+          {(scoped.some((x) => x.endedAt) && !early) || nFilters ? (
             <View style={{ gap: S.sm }}>
               <Segmented
                 options={[
@@ -375,6 +379,8 @@ function BankrollTab() {
                     .filter(Boolean)
                     .join(' · ')}
                 </T>
+                {early ? null : (
+                <>
                 <View style={{ marginTop: S.sm, marginHorizontal: -S.xs }}>
                   <LineChart
                     values={pts}
@@ -389,7 +395,11 @@ function BankrollTab() {
                   <Mini label={t('Abaixo do pico')} value={dd.current ? minus() + fmt(dd.current, cur) : t('No pico')} color={dd.current ? C.bad : C.good} />
                 </Row>
                 <T v="tiny">{t('Pico: o teu melhor resultado acumulado. Maior queda: o máximo que já desceste a partir de um pico.')}</T>
+                </>
+                )}
               </Card>
+              {early ? <EarlyCard played={played} /> : (
+              <>
               <StatGrid cols={2}>
                 <Stat label={t('Por hora')} sub={t('Lucro ÷ horas à mesa')} value={rateShown(tot.hours) ? fmt(Math.round(tot.hourly), cur) : '—'} tone={!rateShown(tot.hours) ? undefined : tot.hourly > 0 ? 'good' : tot.hourly < 0 ? 'bad' : undefined} />
                 {tot.roi !== null ? <Stat label="ROI" sub={t('Lucro por cada {currency} pago em torneios', { currency: cur })} value={pct(tot.roi)} tone={tot.roi > 0 ? 'good' : tot.roi < 0 ? 'bad' : undefined} /> : null}
@@ -464,6 +474,8 @@ function BankrollTab() {
                   onPress={() => router.push({ pathname: '/variance', params: { currency: cur } })}
                 />
               </ListGroup>
+              </>
+              )}
             </>
           )}
           {history.length ? (
@@ -924,5 +936,25 @@ function MoreTools() {
         )
       ) : null}
     </>
+  );
+}
+
+/** Sessions before the chart, the rates and the analysis tools show. */
+const EARLY_UNTIL = 5;
+
+/** «Faltam N sessões»: what shows next, and when, instead of blocks that would say «ainda não há dados». */
+function EarlyCard({ played }: { played: number }) {
+  const left = EARLY_UNTIL - played;
+  return (
+    <Card style={{ gap: S.sm }}>
+      <T v="h3">{left === 1 ? t('Falta 1 sessão para o resto') : t('Faltam {n} sessões para o resto', { n: left })}</T>
+      <View
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: EARLY_UNTIL, now: played }}
+        style={{ height: 6, borderRadius: 3, backgroundColor: C.surface3, overflow: 'hidden' }}>
+        <View style={{ width: `${(played / EARLY_UNTIL) * 100}%`, height: 6, backgroundColor: C.accent }} />
+      </View>
+      <T v="small">{t('Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.', { n: EARLY_UNTIL })}</T>
+    </Card>
   );
 }
