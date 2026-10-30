@@ -78,7 +78,7 @@ export default function DownswingScreen() {
               <Stat label={t('Duração')} sub={t('Do pico ao fundo')} value={big.sessions === 1 ? t('1 sessão') : t('{n} sessões', { n: big.sessions })} />
               <Stat label={t('Começou')} sub={t('No pico')} value={date(big.from)} />
               {/* Counted from the bottom, like the year card: how long it took to climb back. */}
-              <Stat label={t('Recuperado')} sub={big.recovered ? t('{n} dias depois do fundo', { n: Math.max(1, Math.round((big.recovered - big.to) / DAY)) }) : t('Ainda não')} value={big.recovered ? date(big.recovered) : '—'} tone={big.recovered ? 'good' : 'bad'} />
+              <Stat label={t('Recuperado')} sub={big.recovered ? recoveredIn(Math.max(1, Math.round((big.recovered - big.to) / DAY))) : t('Ainda não')} value={big.recovered ? date(big.recovered) : '—'} tone={big.recovered ? 'good' : 'bad'} />
             </StatGrid>
             {bi > 0 ? <T v="tiny">{t('Buy-in: o valor de entrada mais habitual nas tuas sessões, {amount}.', { amount: fmt(bi) })}</T> : null}
           </Section>
@@ -183,3 +183,5 @@ function Underwater({ values, height = 110, label }: { values: number[]; height?
     </View>
   );
 }
+
+const recoveredIn = (n: number) => (n === 1 ? t('1 dia depois do fundo') : t('{n} dias depois do fundo', { n }));

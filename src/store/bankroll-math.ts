@@ -532,7 +532,8 @@ export function ledgerMonths(shown: readonly LedgerEntry[], all: readonly Ledger
     if (!g || g.key !== k) {
       const m = totals.get(k);
       const one = m && m.currencies.size === 1 ? [...m.currencies][0] : null;
-      g = { key: k, entries: [], sessions: m?.sessions ?? 0, net: one ? m!.net : null, currency: one };
+      // To the cent: a month that closes at zero summed 1e-14 and showed «+0,00 €» in green.
+      g = { key: k, entries: [], sessions: m?.sessions ?? 0, net: one ? Math.round(m!.net * 100) / 100 || 0 : null, currency: one };
       groups.push(g);
     }
     g.entries.push(e);

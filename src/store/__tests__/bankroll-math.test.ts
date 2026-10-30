@@ -364,6 +364,8 @@ test('the history in months: each month with its sessions and result, mixed curr
     ['2026-9', 2, 2, null, null],
   ]);
   // «Mostrar mais» cut October short: the month still shows its whole total.
+  const zero = [s('z1', at(9, 3), 0.1), s('z2', at(9, 4), 0.2), s('z3', at(9, 5), -0.3)];
+  assert.equal(ledgerMonths(ledger(zero, []), ledger(zero, []), key, net)[0].net, 0, 'a month at zero is 0, not 5e-17');
   const cut = ledgerMonths(all.slice(0, 1), all, key, net);
   assert.deepEqual(cut.map((x) => [x.entries.length, x.sessions, x.net]), [[1, 2, 70]]);
 });

@@ -102,7 +102,7 @@ export default function TournamentStatsScreen() {
           )}
           <Stat label="ITM" value={pct(sum.itm)} sub={sum.cashes === 1 ? t('1 cash') : t('{n} cashes', { n: sum.cashes })} />
           <Stat label={t('Buy-ins')} value={hidden ? '•••' : compact(sum.invested, currency, false)} />
-          <Stat label={t('Lugar médio')} value={sum.avgFinish ? Math.round(sum.avgFinish).toLocaleString(locale) : '—'} sub={sum.avgFieldPct !== null ? t('top {p}', { p: pct(sum.avgFieldPct) }) : sum.finishes ? t('médio em {n}', { n: sum.finishes }) : t('sem lugares')} />
+          <Stat label={t('Lugar médio')} value={sum.avgFinish ? Math.round(sum.avgFinish).toLocaleString(locale) : '—'} sub={sum.avgFieldPct !== null ? t('top {p}', { p: pct(sum.avgFieldPct) }) : sum.finishes ? (sum.finishes === 1 ? t('em 1 torneio') : t('em {n} torneios', { n: sum.finishes })) : t('sem lugares')} />
           <Stat label="Re-entry" value={pct(sum.reentryRate)} sub={sum.reentriesPer !== null ? t('{x} por torneio', { x: sum.reentriesPer.toLocaleString(locale, { maximumFractionDigits: 1 }) }) : undefined} />
           <Stat label="Bounties" value={hidden ? '•••' : compact(sum.bounties, currency, false)} />
         </StatGrid>
