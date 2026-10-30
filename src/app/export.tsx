@@ -17,6 +17,7 @@ import { sharePdf } from '@/lib/pdf';
 import { money, plus } from '@/poker/format';
 import { endOfDay, inRange, scopeIds, scopeOptions, sameScope, type DateRange, type Scope } from '@/store/bankroll-math';
 import { buildBackup, sessionsCsv } from '@/store/backup';
+import { exportAll } from '@/store/export-extras';
 import { parseDay } from '@/store/session-math';
 import { useStore } from '@/store/store';
 import { taxReport } from '@/tax/tax-math';
@@ -98,7 +99,7 @@ export default function ExportScreen() {
       return saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(list, bankrolls, tx, spent, csvSep()), 'text/csv');
     });
   const handsFile = () => run('hands', true, () => saveTextFile(`sweatbook-maos-${stamp}.csv`, handsCsv(hands, sessions, range, BRAND.webUrl, csvSep()), 'text/csv'));
-  const backup = () => run('json', false, () => saveTextFile(`sweatbook-${new Date(now).toISOString().slice(0, 10)}.json`, JSON.stringify(buildBackup(store)), 'application/json'));
+  const backup = () => run('json', false, async () => saveTextFile(`sweatbook-${new Date(now).toISOString().slice(0, 10)}.json`, await exportAll(buildBackup(store)), 'application/json'));
 
   const lock = pro.isPro ? undefined : <Pill label="Pro" color={C.accent} />;
   const periods: [Period, string][] = [

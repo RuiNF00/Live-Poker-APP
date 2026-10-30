@@ -29,6 +29,7 @@ import { canEnterCode, claimInvite, type ClaimResult } from '@/lib/referrals';
 import { crashReportsAvailable } from '@/lib/crash-report';
 import { csvSep } from '@/export/csv';
 import { buildBackup, sessionsCsv } from '@/store/backup';
+import { exportAll as exportFile } from '@/store/export-extras';
 import { useStore } from '@/store/store';
 import { unsettledSwaps } from '@/store/swaps';
 import { BRAND, C, F, S } from '@/theme';
@@ -116,7 +117,7 @@ export default function SettingsScreen() {
   const exportAll = async () => {
     tap();
     try {
-      await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup(store)), 'application/json');
+      await saveTextFile(`sweatbook-${stamp}.json`, await exportFile(buildBackup(store)), 'application/json');
     } catch {
       note(t('Não deu para exportar'), t('Os teus dados continuam neste telemóvel. Tenta outra vez.'));
     }
