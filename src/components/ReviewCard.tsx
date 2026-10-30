@@ -3,7 +3,7 @@
 // Opened from a queue (end of session, the Sunday notice), it then offers the next one.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { t } from '@/i18n';
@@ -23,8 +23,12 @@ export function ReviewCard({ hand, onChange, left = 0, onNext, inQueue }: { hand
   const sent = useMemo(() => new Set(coach.links.flatMap((l) => l.handIds)), [coach]);
   const pending = needsReview(hand, sent);
   const reviewed = hand.review === 'reviewed';
+  // Only a note the player typed is saved: a review note that changed elsewhere stays as it is.
+  const touched = useRef(false);
   const saveNote = () => {
-    if ((hand.reviewNote ?? '') !== note.trim()) onChange({ ...hand, reviewNote: note.trim() || undefined });
+    if (!touched.current || (hand.reviewNote ?? '') === note.trim()) return;
+    touched.current = false;
+    onChange({ ...hand, reviewNote: note.trim() || undefined });
   };
   useSaveOnLeave(saveNote);
 
@@ -76,7 +80,10 @@ export function ReviewCard({ hand, onChange, left = 0, onNext, inQueue }: { hand
       </Row>
       <Field
         value={note}
-        onChangeText={setNote}
+        onChangeText={(v) => {
+          touched.current = true;
+          setNote(v);
+        }}
         onBlur={saveNote}
         placeholder={t('O que tiraste desta mão (tu ou o coach)')}
         multiline

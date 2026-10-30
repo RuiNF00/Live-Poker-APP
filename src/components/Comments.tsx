@@ -303,7 +303,14 @@ function ReplyLink({ c, onPress }: { c: Comment; onPress: (c: Comment) => void }
 /** The player's own note on a street: editable while that street is on screen, saved on blur. */
 function StreetNote({ street, value, editable, onSave }: { street: Street; value: string; editable: boolean; onSave: (v: string) => void }) {
   const [draft, setDraft] = useState(value);
-  const pending = () => draft.trim() !== value.trim() && onSave(draft.trim());
+  // Only what the player typed is saved: a note that changed elsewhere (sync, another screen) is never
+  // overwritten by the copy this box opened with.
+  const touched = useRef(false);
+  const pending = () => {
+    if (!touched.current || draft.trim() === value.trim()) return;
+    touched.current = false;
+    onSave(draft.trim());
+  };
   useSaveOnLeave(pending);
   // Moving to another street hides the box without a blur on every phone: what was typed is kept.
   useEffect(() => {
@@ -317,8 +324,11 @@ function StreetNote({ street, value, editable, onSave }: { street: Street; value
       {editable ? (
         <TextInput
           value={draft}
-          onChangeText={setDraft}
-          onBlur={() => draft !== value && onSave(draft.trim())}
+          onChangeText={(v) => {
+            touched.current = true;
+            setDraft(v);
+          }}
+          onBlur={pending}
           placeholder={t('Nota privada sobre o {s} (só tu vês)').replace('{s}', STREET_NAME[street])}
           placeholderTextColor={C.muted}
           selectionColor={C.accent}

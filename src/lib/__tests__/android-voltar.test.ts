@@ -57,6 +57,17 @@ test('notes saved on blur are saved too when the screen goes, the street changes
   assert.match(d, /onChange=\{keepNote\}/);
 });
 
+test('only a note the player typed is saved on the way out: one that changed elsewhere is never overwritten', () => {
+  for (const f of ['components/Comments.tsx', 'components/ReviewCard.tsx']) {
+    const s = read(f);
+    assert.match(s, /const touched = useRef\(false\);/, f);
+    assert.match(s, /onChangeText=\{\(v\) => \{\s*touched\.current = true;/, f);
+    assert.match(s, /if \(!touched\.current \|\| .+\) return;\s*touched\.current = false;/, f);
+  }
+  // The street note's blur goes through the same guard.
+  assert.match(read('components/Comments.tsx'), /onBlur=\{pending\}/);
+});
+
 test('Android opens the same links as the iPhone, and only those', () => {
   const app = JSON.parse(readFileSync(join(src, '..', 'app.json'), 'utf8'));
   const data = app.expo.android.intentFilters.flatMap((f: { data: { path?: string; pathPrefix?: string }[] }) => f.data);
