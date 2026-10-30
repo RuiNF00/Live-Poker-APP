@@ -39,6 +39,17 @@ export default function Cancel() {
   const [forGood, setForGood] = useState(false);
   // Paid once: the subscription still renews until it is cancelled in the store, which stays one tap away.
   const [paidOnce, setPaidOnce] = useState(false);
+  // One store sheet at a time: a second tap while it opens would ask the store twice.
+  const [buying, setBuying] = useState(false);
+  const once = (go: () => Promise<void>) => async () => {
+    if (buying) return;
+    setBuying(true);
+    try {
+      await go();
+    } finally {
+      setBuying(false);
+    }
+  };
   const ownPlans = TIER_PLANS[onPlus ? 'plus' : 'pro'];
   const annual = plans.find((p) => p.id === ownPlans.annual);
   const monthly = plans.find((p) => p.id === ownPlans.monthly);
@@ -131,6 +142,7 @@ export default function Cancel() {
   const send = () => {
     track('cancel_flow', { step: 'feedback', reason: reason ?? '', note: scrubNote(note) });
     setSent(true);
+    AccessibilityInfo.announceForAccessibility(t('Obrigado. Lemos tudo o que nos mandam.'));
   };
 
   // Inside one App Store group the switch is a plain purchase; on Google Play it replaces the monthly product (purchases.buy).
@@ -184,7 +196,7 @@ export default function Cancel() {
                 <T v="h2" accessibilityRole="header" style={{ flex: 1 }}>
                   {t(CANCEL_REASONS.find((r) => r.key === reason)!.label)}
                 </T>
-                <Button kind="ghost" small title={t('Mudar')} onPress={() => {
+                <Button kind="ghost" small title={t('Mudar')} hint={t('Escolher outro motivo')} onPress={() => {
                     setReason(null);
                     setSent(false);
                     setNote('');
@@ -206,7 +218,7 @@ export default function Cancel() {
                 <>
                   {offer ? (
                     <OfferCard icon="pricetag" title={t('−{pct}% durante {n} meses', { pct: offer.pct, n: offer.months })} body={t('{price} por mês durante {n} meses. Depois, {monthly} por mês, até cancelares.', { price: offer.priceString, n: offer.months, monthly: monthly!.priceString })}>
-                      <Button kind="secondary" title={t('Aceitar a oferta')} onPress={async () => result(await offer.buy(), 'discount')} />
+                      <Button kind="secondary" title={t('Aceitar a oferta')} disabled={buying} onPress={once(async () => result(await offer.buy(), 'discount'))} />
                     </OfferCard>
                   ) : null}
                   {toAnnual ? (
@@ -219,7 +231,7 @@ export default function Cancel() {
                           ? t('{price} por mês, −{pct}% face ao mensal.', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale), pct: annualSavingPct(monthly.price, annual.price) })
                           : t('{price} por mês', { price: priceLike(annual.priceString, perMonth(annual.price, annual.currency), annual.currency, locale) })
                       }>
-                      <Button kind="secondary" title={t('Mudar para o anual')} onPress={async () => result(await purchase(ownPlans.annual, undefined, product ?? undefined), 'annual')} />
+                      <Button kind="secondary" title={t('Mudar para o anual')} disabled={buying} onPress={once(async () => result(await purchase(ownPlans.annual, undefined, product ?? undefined), 'annual'))} />
                     </OfferCard>
                   ) : null}
                   {offer || toAnnual ? (
@@ -238,7 +250,7 @@ export default function Cancel() {
                   </OfferCard>
                 ) : lifetimeShown ? (
                   <OfferCard icon="infinite" title={t('Pro para sempre: {price}', { price: lifetimeShown.priceString })} body={t('Pagas uma vez. A subscrição não é cancelada nem reembolsada sozinha: cancelas tu na {store}, logo a seguir.', { store })}>
-                    <Button kind="secondary" title={t('Pagar uma vez')} onPress={async () => lifetimeResult(await lifetimeShown.buy())} />
+                    <Button kind="secondary" title={t('Pagar uma vez')} disabled={buying} onPress={once(async () => lifetimeResult(await lifetimeShown.buy()))} />
                   </OfferCard>
                 ) : (
                   <OfferCard icon="wallet" title={t('Fica tudo guardado')} body={onPlus ? t('Sem Plus, continuas a registar 3 mãos por dia e a partilhar sem limite.') : t('Sem Pro, continuas a registar 3 mãos por dia e a partilhar sem limite.')} />

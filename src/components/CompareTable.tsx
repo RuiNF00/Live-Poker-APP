@@ -5,7 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 
-import { freeVsPro, PLUS_ON } from '@/billing/plans';
+import { compareRowLabel, freeVsPro, PLUS_ON } from '@/billing/plans';
 import { Button, Row, T, useSheetPad } from '@/components/ui';
 import { t } from '@/i18n';
 import { C, R, S } from '@/theme';
@@ -22,22 +22,25 @@ export function CompareTable({ full }: { full?: boolean }) {
     );
   return (
     <View style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-      <Row style={{ paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: C.surface2 }}>
-        <View style={{ flex: 1 }} />
-        <T v="label" style={{ width: 56, textAlign: 'center' }}>
-          {t('Grátis')}
-        </T>
-        {PLUS_ON ? (
+      {/* The column names are read inside each row, so VoiceOver skips the header. */}
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Row style={{ paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: C.surface2 }}>
+          <View style={{ flex: 1 }} />
           <T v="label" style={{ width: 56, textAlign: 'center' }}>
-            Plus
+            {t('Grátis')}
           </T>
-        ) : null}
-        <T v="label" color={C.accent} style={{ width: 56, textAlign: 'center' }}>
-          Pro
-        </T>
-      </Row>
+          {PLUS_ON ? (
+            <T v="label" style={{ width: 56, textAlign: 'center' }}>
+              Plus
+            </T>
+          ) : null}
+          <T v="label" color={C.accent} style={{ width: 56, textAlign: 'center' }}>
+            Pro
+          </T>
+        </Row>
+      </View>
       {freeVsPro(full).map((r, i) => (
-        <Row key={r.label} style={{ paddingHorizontal: S.md, minHeight: 44, borderTopWidth: i ? 1 : 0, borderTopColor: C.border }}>
+        <Row key={r.label} accessible accessibilityLabel={compareRowLabel(r)} style={{ paddingHorizontal: S.md, minHeight: 44, borderTopWidth: i ? 1 : 0, borderTopColor: C.border }}>
           <T v="body" style={{ flex: 1 }}>
             {t(r.label)}
           </T>

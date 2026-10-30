@@ -3939,6 +3939,11 @@ const es: Record<string, string> = {
   'Vens de outra app? Importa o histórico': '¿Vienes de otra app? Importa tu historial',
   'Uma mão, revista ou nova, ou uma nota mantém-na': 'Una mano, nueva o revisada, o una nota la mantiene',
   'Conta as semanas em que registas ou revês pelo menos uma mão, ou escreves uma nota. Não tem nada a ver com jogar mais: é rever o teu jogo com regularidade.': 'Cuenta las semanas en que registras o revisas al menos una mano, o escribes una nota. No se trata de jugar más: se trata de revisar tu juego con regularidad.',
+  // Accessibility: what VoiceOver says on the paywall, the comparison and the cancel flow
+  'Escolher outro motivo': 'Elegir otro motivo',
+  'por ano': 'al año',
+  'por mês': 'al mes',
+  'sem limite': 'sin límite',
 };
 
 export default es;

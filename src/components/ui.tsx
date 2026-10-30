@@ -676,7 +676,8 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      // The second line is part of what the button says («No teu plano, Toca para tirar»).
+      accessibilityLabel={sub ? `${title}, ${sub}` : title}
       accessibilityHint={hint}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}

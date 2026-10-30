@@ -483,3 +483,23 @@ export function annualSavingPct(monthly: number, annual: number): number {
 
 /** Apple and Google require these links next to the subscribe button (disclosure.ts: legalUrl opens the player's language). */
 export { LEGAL } from './disclosure';
+
+// What VoiceOver says on the comparison table and the plan cards (pure, so it is tested).
+
+/** A cell as VoiceOver says it: «Sim», «Não», «sem limite» or the number. */
+const spoken = (v: Cell) => (typeof v === 'boolean' ? (v ? t('Sim') : t('Não')) : v === '∞' ? t('sem limite') : v);
+
+/** One row, one sentence: «Mãos novas por dia. Grátis: 3. Pro: sem limite.» */
+export function compareRowLabel(r: { label: string; free: Cell; plus: Cell; pro: Cell }): string {
+  const cols = [`${t('Grátis')}: ${spoken(r.free)}`, ...(PLUS_ON ? [`Plus: ${spoken(r.plus)}`] : []), `Pro: ${spoken(r.pro)}`];
+  return [t(r.label), ...cols].join('. ') + '.';
+}
+
+/**
+ * What VoiceOver says for a plan: «/ano» as «por ano» (not «barra ano»), and the free days and the
+ * saving, which only show as tags.
+ */
+export function planLabel(p: { name: string; title: string; big: string; unit: string; line: string; tags?: (string | null)[] }): string {
+  const unit = p.unit === t('/ano') ? t('por ano') : p.unit === t('/mês') ? t('por mês') : p.unit;
+  return [p.name, p.title, `${p.big} ${unit}`, p.line, ...(p.tags ?? []).filter(Boolean)].join(', ');
+}

@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, priceLike, FREE, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, unlocks, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, planLabel, priceLike, FREE, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, unlocks, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
 import { invitePct } from '@/billing/disclosure';
 import { ONBOARDING_KEY, proHeadline, type Answers } from '@/billing/onboarding';
 import { chargeNoticeAt } from '@/billing/nudges';
@@ -489,7 +489,7 @@ function PlanCard({
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={`${name}, ${title}, ${big} ${unit}, ${line}`}
+      accessibilityLabel={planLabel({ name, title, big, unit, line, tags })}
       onPress={() => {
         tap('select');
         onPress();
