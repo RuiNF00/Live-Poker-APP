@@ -1852,6 +1852,11 @@ const en: Record<string, string> = {
   'As sessões terminadas aparecem aqui.': 'Finished sessions show up here.',
   'A guardar…': 'Saving…',
   'Guardar alterações': 'Save changes',
+  // Editar uma mão guardada: sair sem guardar pergunta primeiro
+  'Sair sem guardar?': 'Leave without saving?',
+  'As alterações a esta mão perdem-se.': 'Your changes to this hand will be lost.',
+  'Continuar a editar': 'Keep editing',
+  'Sair sem guardar': 'Leave without saving',
   'Tudo guardado': 'All saved',
   'Criar perfil público': 'Create public profile',
   'Qualquer pessoa com o link vê o que escolheste. Podes mudar ou apagar quando quiseres.': 'Anyone with the link sees what you picked. Change or delete it any time.',

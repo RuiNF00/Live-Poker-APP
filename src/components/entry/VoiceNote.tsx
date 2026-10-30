@@ -13,7 +13,7 @@ import {
   useAudioRecorderState,
 } from 'expo-audio';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { BackHandler, Platform, Pressable, View } from 'react-native';
 
 import { t } from '@/i18n';
 import { notice } from '@/lib/notice';
@@ -111,6 +111,16 @@ export function VoiceCapture({ onDone, onEnd }: { onDone: (uri: string) => void;
     if (was.current && !voice.recording) end.current();
     was.current = voice.recording;
   }, [voice.recording]);
+  // Android back while recording works like «Cancelar»: the recording stops and the hand stays on screen.
+  const cancel = useRef(voice.cancel);
+  useEffect(() => {
+    cancel.current = voice.cancel;
+  });
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => (void cancel.current(), true));
+    return () => sub.remove();
+  }, []);
   return <RecordingBar ms={voice.ms} onStop={voice.stop} onCancel={voice.cancel} />;
 }
 

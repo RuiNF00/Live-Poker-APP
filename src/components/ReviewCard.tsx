@@ -14,6 +14,7 @@ import type { Hand } from '@/poker/types';
 import { C, S } from '@/theme';
 
 import { Button, Card, Field, Row, T, tap } from './ui';
+import { useSaveOnLeave } from './useSaveOnLeave';
 
 export function ReviewCard({ hand, onChange, left = 0, onNext, inQueue }: { hand: Hand; onChange: (h: Hand) => void; left?: number; onNext?: () => void; inQueue?: 'all' | 'session' }) {
   // Keyed by hand id where it is used, so the draft note starts fresh per hand.
@@ -25,6 +26,7 @@ export function ReviewCard({ hand, onChange, left = 0, onNext, inQueue }: { hand
   const saveNote = () => {
     if ((hand.reviewNote ?? '') !== note.trim()) onChange({ ...hand, reviewNote: note.trim() || undefined });
   };
+  useSaveOnLeave(saveNote);
 
   if (!pending && !reviewed) {
     return (

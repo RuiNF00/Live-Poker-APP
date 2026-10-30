@@ -15,6 +15,7 @@ import { BRAND, C, F, R, S } from '@/theme';
 
 import { Avatar } from './Avatar';
 import { Button, Card, Field, Row, T } from './ui';
+import { useSaveOnLeave } from './useSaveOnLeave';
 
 const STREET_NAME: Record<Street, string> = { preflop: t('Pré-flop'), flop: 'Flop', turn: 'Turn', river: 'River' };
 
@@ -302,6 +303,13 @@ function ReplyLink({ c, onPress }: { c: Comment; onPress: (c: Comment) => void }
 /** The player's own note on a street: editable while that street is on screen, saved on blur. */
 function StreetNote({ street, value, editable, onSave }: { street: Street; value: string; editable: boolean; onSave: (v: string) => void }) {
   const [draft, setDraft] = useState(value);
+  const pending = () => draft.trim() !== value.trim() && onSave(draft.trim());
+  useSaveOnLeave(pending);
+  // Moving to another street hides the box without a blur on every phone: what was typed is kept.
+  useEffect(() => {
+    if (!editable) pending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable]);
   if (!editable && !value.trim()) return null;
   return (
     <View style={{ flexDirection: 'row', gap: 8, alignItems: editable ? 'center' : 'flex-start', paddingHorizontal: 12, paddingVertical: editable ? 2 : 8, borderRadius: R.md, backgroundColor: C.bgDeep, borderWidth: 1, borderColor: C.border, borderStyle: 'dashed' }}>

@@ -1747,6 +1747,11 @@ const es: Record<string, string> = {
   'As sessões terminadas aparecem aqui.': 'Las sesiones terminadas aparecen aquí.',
   'A guardar…': 'Guardando…',
   'Guardar alterações': 'Guardar cambios',
+  // Editar uma mão guardada: sair sem guardar pergunta primeiro
+  'Sair sem guardar?': '¿Salir sin guardar?',
+  'As alterações a esta mão perdem-se.': 'Los cambios en esta mano se perderán.',
+  'Continuar a editar': 'Seguir editando',
+  'Sair sem guardar': 'Salir sin guardar',
   'Tudo guardado': 'Todo guardado',
   'Criar perfil público': 'Crear perfil público',
   'Qualquer pessoa com o link vê o que escolheste. Podes mudar ou apagar quando quiseres.': 'Cualquiera con el link ve lo que elegiste. Puedes cambiarlo o eliminarlo cuando quieras.',

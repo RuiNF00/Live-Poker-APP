@@ -204,7 +204,12 @@
             {
               "scheme": "https",
               "host": "sweatbook.poker",
-              "pathPrefix": "/b"
+              "path": "/b"
+            },
+            {
+              "scheme": "https",
+              "host": "sweatbook.poker",
+              "pathPrefix": "/b/"
             }
           ],
           "category": [

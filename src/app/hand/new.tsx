@@ -14,9 +14,9 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams, useNavigation, usePreventRemove } from 'expo-router';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, findNodeHandle, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View, type Text } from 'react-native';
+import { AccessibilityInfo, Alert, Animated, findNodeHandle, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View, type Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
@@ -454,6 +454,33 @@ export default function NewHand() {
     store.setDraft(null);
     router.back();
   };
+
+  // A new hand needs no guard: its draft is kept and comes back the next time this screen opens.
+  // An edit of a saved hand has no draft, so leaving it any way (Android back or gesture, ×) with
+  // changes not saved asks first. After «Guardar» the screen leaves with nothing to ask.
+  const navigation = useNavigation();
+  const [editedFrom] = useState(() => (isEdit ? draft.hand : null));
+  // The way out, once chosen: the guard comes off first, then the same navigation runs again.
+  const [leaving, setLeaving] = useState<Parameters<typeof navigation.dispatch>[0] | null>(null);
+  usePreventRemove(isEdit && !leaving && draft.hand !== editedFrom, ({ data }) => {
+    const leave = () => setLeaving(data.action);
+    if (saved.current) return leave();
+    const title = t('Sair sem guardar?');
+    const body = t('As alterações a esta mão perdem-se.');
+    if (Platform.OS === 'web') {
+      if (typeof window === 'undefined' || window.confirm(`${title}\n\n${body}`)) leave();
+      return;
+    }
+    Alert.alert(title, body, [
+      { text: t('Continuar a editar'), style: 'cancel' },
+      { text: t('Sair sem guardar'), style: 'destructive', onPress: leave },
+      { text: t('Guardar'), onPress: () => void save() },
+    ]);
+  });
+  // After usePreventRemove, so its guard is already off when this runs.
+  useEffect(() => {
+    if (leaving) navigation.dispatch(leaving);
+  }, [leaving, navigation]);
 
   // A hand is over with its last tap («Todos fold», the last Fold, hero's Fold, the villain's second card
   // at a heads-up showdown): it saves itself, with no «Guardar» to find. Only a hand entered here with taps: an edit, a reopened draft

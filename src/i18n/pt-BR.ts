@@ -892,6 +892,11 @@ const ptBR: Record<string, string> = {
   'Com montantes: aparecem o resultado e o buy-in.': 'Com valores: aparecem o resultado e o buy-in.',
   'A guardar…': 'Salvando…',
   'Guardar alterações': 'Salvar alterações',
+  // Editar uma mão guardada: sair sem guardar pergunta primeiro
+  'Sair sem guardar?': 'Sair sem salvar?',
+  'As alterações a esta mão perdem-se.': 'As alterações nesta mão serão perdidas.',
+  'Continuar a editar': 'Continuar editando',
+  'Sair sem guardar': 'Sair sem salvar',
   'Tudo guardado': 'Tudo salvo',
   'Qualquer pessoa com o link vê o que escolheste. Podes mudar ou apagar quando quiseres.': 'Qualquer pessoa com o link vê o que você escolheu. Você pode mudar ou excluir quando quiser.',
   'Apagar perfil': 'Excluir perfil',

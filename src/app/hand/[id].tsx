@@ -219,8 +219,11 @@ export default function HandScreen() {
     const seen = new Set(replay(hand).steps.map((s) => s.street));
     return (['preflop', 'flop', 'turn', 'river'] as Street[]).filter((x) => seen.has(x));
   }, [hand]);
+  // Notes typed but not blurred are saved as the screen goes (useSaveOnLeave): never onto a hand deleted here.
+  const deleted = useRef(false);
+  const keepNote = (h: Hand) => void (deleted.current || saveHand(h));
   const saveNote = (st: Street, text: string) => {
-    if (!hand) return;
+    if (!hand || deleted.current) return;
     const next = { ...hand.streetNotes, [st]: text || undefined };
     saveHand({ ...hand, streetNotes: next, updatedAt: Date.now() });
   };
@@ -443,6 +446,7 @@ ${link}`;
     const doIt = () => {
       // The public link goes with the hand (the store queues it until there's signal).
       dropVoiceNote(hand.voiceNote);
+      deleted.current = true;
       deleteHand(hand.id);
       // Opened straight from a link there is nothing to go back to.
       if (router.canGoBack()) router.back();
@@ -564,7 +568,7 @@ ${link}`;
         <ReviewCard
           key={hand.id}
           hand={hand}
-          onChange={saveHand}
+          onChange={keepNote}
           left={reviewNext?.left}
           inQueue={queueOf ? (queueOf === 'all' || queueOf === 'train' ? 'all' : 'session') : undefined}
           onNext={reviewNext?.next ? () => router.replace({ pathname: '/hand/[id]', params: { id: reviewNext.next!.id, q: queueOf, ...(queueOf === 'train' ? { k: String(trainBudget) } : {}) } }) : undefined}
