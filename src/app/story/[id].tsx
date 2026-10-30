@@ -5,6 +5,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { brandLockLine } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { HandPoster } from '@/components/HandPoster';
@@ -448,7 +449,7 @@ export default function StoryScreen() {
             <ToggleItem
               icon="pricetag-outline"
               title={t('Com marca Sweatbook')}
-              subtitle={pro.can('story') ? undefined : t('Tirar a marca é do Plus')}
+              subtitle={pro.can('story') ? undefined : t(brandLockLine())}
               value={brand || !pro.can('story')}
               onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))}
             />

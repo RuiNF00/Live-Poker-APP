@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { cachedPro, cachedTier, proCache } from '../limits';
-import { freeVsPro, offersPlus, PLANS, planOfProduct, PLUS_UNLOCKS, PRO_ONLY, PRODUCTS, TIER_PLANS, tierFor, unlocks, type FeatureKey, type PlanId, type ProFeature } from '../plans';
+import { freeVsPro, offersPlus, PLUS_ON, PLANS, planOfProduct, PLUS_UNLOCKS, PRO_ONLY, PRODUCTS, TIER_PLANS, tierFor, unlocks, type FeatureKey, type PlanId, type ProFeature } from '../plans';
 import { restoreFound } from '../buy-result';
 
 const proFeatures = Object.keys(PRO_ONLY) as ProFeature[];
@@ -24,20 +24,20 @@ test('Plus unlocks only what PLUS_UNLOCKS lists', () => {
 });
 
 test('the paywall opens on the cheapest tier that unlocks what was tapped; the trial offers open on Pro', () => {
-  assert.equal(tierFor('hands'), 'plus');
-  assert.equal(tierFor('handsLive'), 'plus');
-  assert.equal(tierFor('voiceHand'), 'plus');
-  assert.equal(tierFor('story'), 'plus');
-  assert.equal(tierFor('winrateDetail'), 'plus');
-  assert.equal(tierFor('staking'), 'pro');
-  assert.equal(tierFor('stats'), 'pro');
+  assert.equal(tierFor('hands', true), 'plus');
+  assert.equal(tierFor('handsLive', true), 'plus');
+  assert.equal(tierFor('voiceHand', true), 'plus');
+  assert.equal(tierFor('story', true), 'plus');
+  assert.equal(tierFor('winrateDetail', true), 'plus');
+  assert.equal(tierFor('staking', true), 'pro');
+  assert.equal(tierFor('stats', true), 'pro');
   for (const r of ['welcome', 'sessionStart', 'generic', 'plan'] as const) {
-    assert.equal(tierFor(r), 'pro', r);
-    assert.ok(offersPlus(r), r);
+    assert.equal(tierFor(r, true), 'pro', r);
+    assert.ok(offersPlus(r, true), r);
   }
   // Pro-only reasons show no Plus tab: Plus wouldn't unlock what was tapped.
-  assert.ok(!offersPlus('staking'));
-  assert.ok(!offersPlus('taxReport'));
+  assert.ok(!offersPlus('staking', true));
+  assert.ok(!offersPlus('taxReport', true));
 });
 
 test('Pro prices stay as they are and the 3 free days stay on the yearly Pro only', () => {
@@ -80,4 +80,21 @@ test('a restore that finds only Plus says Plus', () => {
   assert.equal(restoreFound(info({ plus }), 'pro', 'sweatbook_lifetime', 'plus'), 'plus');
   assert.equal(restoreFound(info({ plus, pro: { productIdentifier: 'sweatbook_pro_annual', expirationDate: '2027-01-01T00:00:00Z' } }), 'pro', 'sweatbook_lifetime', 'plus'), 'ok');
   assert.equal(restoreFound(info({ plus }), 'pro', 'sweatbook_lifetime'), 'none');
+});
+
+test('while Plus is off (until Rui picks it), every paywall is Pro and offers no Plus tab', () => {
+  assert.equal(PLUS_ON, false);
+  for (const r of ['hands', 'handsLive', 'voiceHand', 'story', 'winrateDetail', 'staking', 'welcome', 'generic'] as const) {
+    assert.equal(tierFor(r), 'pro', r);
+    assert.ok(!offersPlus(r), r);
+  }
+});
+
+test('the full comparison keeps every short-table row and only adds to it', () => {
+  const short = freeVsPro().map((r) => r.label);
+  const full = freeVsPro(true).map((r) => r.label);
+  assert.deepEqual(full.slice(0, short.length), short);
+  assert.ok(full.length > short.length);
+  // What is free today is marked free in the comparison too.
+  for (const r of freeVsPro(true)) if (r.label.startsWith('Calculadora') || r.label.startsWith('Importar')) assert.equal(r.free, true, r.label);
 });

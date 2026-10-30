@@ -59,7 +59,7 @@ test('on 760-900 pt screens the paywall keeps both plans above the footer', () =
   assert.match(p, /const medium = !compact && win\.height < 900;/);
   assert.match(p, /\{compact \|\| medium \|\| result \? null : \(/);
   assert.match(p, /featuresFor\(reason\)\.slice\(0, medium \? 1 : undefined\)/);
-  assert.match(p, /table && !compact && !medium \? <FreeVsPro/);
+  assert.match(p, /table && !compact && !medium \? <CompareTable/);
   assert.match(p, /reason !== 'welcome' && !medium && !result \? <Pill/);
   // The result layout: the notebook card goes on short screens and keeps only its counts at 760-900.
   assert.match(p, /result && !compact \? \(\s*<Notebook[\s\S]*?\.slice\(0, medium \|\| tight \? 0 : 3\)\}\s*compact=\{medium \|\| tight\}/);
@@ -143,4 +143,11 @@ test('the summary never asks for notifications under the trial offer that slides
   const s = src.find(([f]) => f === path.join('app', 'summary', '[id].tsx'))![1];
   assert.match(s, /const trialDue = deferState\(\)\.then\(\(d\) => sessionStartOffer\(d, \{ isPro: isPlus, trialDays \}\)/);
   assert.match(s, /if \(await trialDue\) return;\n\s+const asks/);
+});
+
+test('a lock mentions the free days only after something is saved, and never at the table', () => {
+  const g = src.find(([f]) => f === path.join('components', 'ProGate.tsx'))![1];
+  const body = /export function useTrialLine\(\)[^{]*\{([\s\S]*?)\n\}/.exec(g)?.[1] ?? '';
+  assert.match(body, /if \(isPro \|\| trialDays < 1 \|\| activeSession\) return null;/);
+  assert.match(body, /if \(!hands\.length && !sessions\.some\(\(s\) => s\.endedAt\)\) return null;/);
 });

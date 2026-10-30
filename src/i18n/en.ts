@@ -3916,6 +3916,20 @@ const en: Record<string, string> = {
   'Falta 1 sessão para o gráfico e as estatísticas': '1 more session for the chart and the stats',
   'Faltam {n} sessões para o gráfico e as estatísticas': '{n} more sessions for the chart and the stats',
   'Com {n} sessões aparecem o gráfico, os números das sessões, o calendário e as ferramentas de análise.': 'At {n} sessions the chart, the session numbers, the calendar and the analysis tools show up.',
+  // Conversão: comparison, locks and trial line
+  'Começar os {days} dias grátis': 'Start the {days} free days',
+  'Comparar Grátis e Pro': 'Compare Free and Pro',
+  'Vê onde o teu bankroll cresce': 'See where your bankroll grows',
+  'Vários bankrolls, e filtros por sala, jogo e stake.': 'Several bankrolls, and filters by room, game and stake.',
+  'Grátis e Pro': 'Free and Pro',
+  'O que tens hoje fica teu. O Pro junta o resto.': 'What you have today stays yours. Pro adds the rest.',
+  'Voltar aos planos': 'Back to the plans',
+  '{days} dias grátis no plano anual. Cancelas quando quiseres.': '{days} free days on the yearly plan. Cancel whenever you like.',
+  'Relatório do ano com impostos, em PDF': 'Yearly report with taxes, as a PDF',
+  'Range do vilão na grelha': 'Villain\'s range on the grid',
+  'Mais do que uma viagem com despesas': 'More than one trip with expenses',
+  'Calculadora de equity, ICM e backup': 'Equity calculator, ICM and backup',
+  'Importar e exportar o histórico em CSV': 'Import and export your history as CSV',
 };
 
 export default en;

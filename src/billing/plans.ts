@@ -13,6 +13,12 @@ export const ENTITLEMENT = 'pro';
  * Pro product left without `plus` still unlocks everything.
  */
 export const PLUS_ENTITLEMENT = 'plus';
+/**
+ * Whether Plus is sold. Off until Rui picks its price and content (conversao/planos/, his choices page):
+ * every paywall is Pro's, the texts say Pro, and the table has no Plus column. A Plus bought elsewhere
+ * (a code, a test build) still works, since the entitlement is read either way.
+ */
+export const PLUS_ON = false;
 
 /** What the player has: nothing paid, Plus, or Pro (which includes all of Plus). */
 export type Tier = 'free' | 'plus' | 'pro';
@@ -145,7 +151,7 @@ export type PaywallReason = 'hands' | 'handsLive' | ProFeature | 'stats' | 'stor
 export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }> = {
   hands: {
     title: t('Mão guardada como rascunho'),
-    body: t('Com Plus ou Pro, guardas mãos sem limite.'),
+    body: PLUS_ON ? t('Com Plus ou Pro, guardas mãos sem limite.') : t('Com Pro, guardas mãos sem limite.'),
   },
   staking: {
     title: t('Staking sem folhas de cálculo'),
@@ -182,11 +188,11 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
   },
   handsLive: {
     title: t('A sessão continua'),
-    body: t('Esta mão fica guardada como rascunho. Com Plus ou Pro, guardas todas sem limite.'),
+    body: PLUS_ON ? t('Esta mão fica guardada como rascunho. Com Plus ou Pro, guardas todas sem limite.') : t('Esta mão fica guardada como rascunho. Com Pro, guardas todas sem limite.'),
   },
   views: {
     title: t('A tua mão está a ser vista'),
-    body: t('Com Plus ou Pro, guardas todas as mãos da sessão.'),
+    body: PLUS_ON ? t('Com Plus ou Pro, guardas todas as mãos da sessão.') : t('Com Pro, guardas todas as mãos da sessão.'),
   },
   bigWin: {
     title: t('Vê de onde vem o teu lucro'),
@@ -230,8 +236,8 @@ export const PAYWALL_COPY: Record<PaywallReason, { title: string; body: string }
     body: t('Risco de ruína com o teu win rate, e um plano com o ponto em que voltas atrás.'),
   },
   stats: {
-    title: t('Conhece o teu bankroll'),
-    body: t('Vários bankrolls, filtros, salas e jogos.'),
+    title: t('Vê onde o teu bankroll cresce'),
+    body: t('Vários bankrolls, e filtros por sala, jogo e stake.'),
   },
   trips: {
     title: t('Todas as tuas viagens'),
@@ -334,17 +340,17 @@ export const PLUS_UNLOCKS: Partial<Record<FeatureKey, true>> = {
 };
 
 /** The cheapest tier that unlocks what this paywall is about. Offers with no feature of their own are Pro's (the trial). */
-export function tierFor(reason: PaywallReason): PaidTier {
+export function tierFor(reason: PaywallReason, plusOn = PLUS_ON): PaidTier {
   const key = LEADS[reason];
-  return key && PLUS_UNLOCKS[key] && !TRIAL_REASONS.includes(reason) ? 'plus' : 'pro';
+  return plusOn && key && PLUS_UNLOCKS[key] && !TRIAL_REASONS.includes(reason) ? 'plus' : 'pro';
 }
 
 /** Paywalls that offer the 3 free days: they open on Pro, with Plus one tap away. */
 const TRIAL_REASONS: PaywallReason[] = ['welcome', 'sessionStart', 'generic', 'plan'];
 
 /** Whether the paywall lets the player pick Plus: when Plus unlocks what was tapped, or when nothing in particular was. */
-export function offersPlus(reason: PaywallReason): boolean {
-  return tierFor(reason) === 'plus' || TRIAL_REASONS.includes(reason);
+export function offersPlus(reason: PaywallReason, plusOn = PLUS_ON): boolean {
+  return plusOn && (tierFor(reason, plusOn) === 'plus' || TRIAL_REASONS.includes(reason));
 }
 
 /** Whether a player on this tier has this feature. Pro has everything; Plus what PLUS_UNLOCKS lists; free what PRO_ONLY leaves free. */
@@ -361,6 +367,9 @@ export const TIER_SUMMARY: Record<PaidTier, string> = {
 };
 export const tierSummary = (tier: PaidTier) => TIER_SUMMARY[tier];
 
+/** The line under a locked «Com marca Sweatbook»: the cheapest plan that removes it. Portuguese key; show with t(). */
+export const brandLockLine = () => (tierFor('story') === 'plus' ? 'Tirar a marca é do Plus' : 'Tirar a marca é do Pro');
+
 /** Three rows: the feature the player just reached for first, then generic ones. */
 export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATURES)[number]; highlight: boolean }[] {
   const key = LEADS[reason] ?? null;
@@ -372,7 +381,7 @@ export function featuresFor(reason: PaywallReason): { feature: (typeof PRO_FEATU
 type Cell = string | boolean;
 
 /** Free, Plus and Pro, for the "table" paywall. Built from FREE so the limits never drift. Portuguese labels; show with t(). */
-export function freeVsPro(): { label: string; free: Cell; plus: Cell; pro: Cell }[] {
+export function freeVsPro(full = false): { label: string; free: Cell; plus: Cell; pro: Cell }[] {
   const n = (v: number | null): Cell => (v === null ? '∞' : String(v));
   const row = (label: string, key: FeatureKey | null, free: Cell) => ({ label, free, plus: key ? unlocks('plus', key) : free, pro: true as Cell });
   return [
@@ -388,6 +397,17 @@ export function freeVsPro(): { label: string; free: Cell; plus: Cell; pro: Cell 
     row('Staking e swaps', 'staking', !PRO_ONLY.staking),
     row('Total em todas as moedas', 'homeTotal', !PRO_ONLY.homeTotal),
     row('Onde ganhas e onde perdes', 'insights', !PRO_ONLY.insights),
+    // The full comparison (CompareSheet) adds the rest, so nothing Pro has is left unsaid.
+    ...(full
+      ? [
+          row('Relatório do ano com impostos, em PDF', 'taxReport', !PRO_ONLY.taxReport),
+          row('A variância com os teus números', 'varianceMine', false),
+          row('Range do vilão na grelha', 'villainRange', !PRO_ONLY.villainRange),
+          row('Mais do que uma viagem com despesas', 'trips', false),
+          { label: 'Calculadora de equity, ICM e backup', free: true as Cell, plus: true as Cell, pro: true as Cell },
+          { label: 'Importar e exportar o histórico em CSV', free: true as Cell, plus: true as Cell, pro: true as Cell },
+        ]
+      : []),
   ];
 }
 

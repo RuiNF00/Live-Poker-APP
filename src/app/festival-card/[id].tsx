@@ -10,6 +10,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { brandLockLine } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { FESTIVAL_LOOKS, FestivalCard } from '@/components/FestivalCard';
 import { CardShareSheet } from '@/components/CardShareSheet';
@@ -173,7 +174,7 @@ export default function FestivalCardScreen() {
             <ToggleItem
               icon="pricetag-outline"
               title={t('Com marca Sweatbook')}
-              subtitle={pro.can('story') ? undefined : t('Tirar a marca é do Plus')}
+              subtitle={pro.can('story') ? undefined : t(brandLockLine())}
               value={withBrand}
               onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))}
             />

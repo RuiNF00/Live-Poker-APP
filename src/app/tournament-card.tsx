@@ -8,6 +8,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { brandLockLine } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { CardShareSheet } from '@/components/CardShareSheet';
 import { STORY_H, STORY_W } from '@/components/story-brand';
@@ -121,7 +122,7 @@ export default function TournamentCardScreen() {
         <View style={{ paddingHorizontal: S.gutter, alignSelf: 'stretch' }}>
           <ListGroup>
             <ToggleItem icon="eye-off-outline" title={t('Esconder valores')} subtitle={t('Mostra lugares e múltiplos do buy-in, sem dinheiro')} value={hideMoney} onChange={setHideMoney} />
-            <ToggleItem icon="pricetag-outline" title={t('Com marca Sweatbook')} subtitle={pro.can('story') ? undefined : t('Tirar a marca é do Plus')} value={withBrand} onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))} />
+            <ToggleItem icon="pricetag-outline" title={t('Com marca Sweatbook')} subtitle={pro.can('story') ? undefined : t(brandLockLine())} value={withBrand} onChange={() => (pro.can('story') ? setBrand((b) => !b) : pro.paywall('story'))} />
           </ListGroup>
         </View>
       </ScrollView>

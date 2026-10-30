@@ -1,14 +1,16 @@
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack } from 'expo-router';
-import React, { createContext, useContext } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { createContext, useContext, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { PAYWALL_COPY, type PaywallReason, type ProFeature } from '@/billing/plans';
+import { featuresFor, PAYWALL_COPY, type PaywallReason, type ProFeature } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
-import { Button, Card, Empty, Screen, T } from '@/components/ui';
+import { CompareSheet } from '@/components/CompareTable';
+import { Button, Card, Empty, Row, Screen, T, type IconName } from '@/components/ui';
+import { useStore } from '@/store/store';
 import { t } from '@/i18n';
-import { C, R, S } from '@/theme';
+import { C, R, S, ff } from '@/theme';
 
 const ICON = { staking: 'people', swaps: 'swap-horizontal', taxReport: 'document-text', homeTotal: 'globe', insights: 'bulb', downswingRead: 'trending-down', winrateDetail: 'speedometer', monthCompare: 'calendar', moveUpPlan: 'layers', villainRange: 'grid', faceVideo: 'videocam', voiceHand: 'mic' } as const satisfies Record<ProFeature, string>;
 
@@ -17,15 +19,76 @@ export function useLocked(feature: ProFeature): boolean {
   return !usePro().can(feature);
 }
 
-/** What a locked screen shows: what the feature does, and the one Pro paywall. */
+/**
+ * «3 dias grátis no plano anual» under a lock, when the store still offers this player the trial.
+ * Only once something is saved (the trial comes after the first hand or session) and never at the
+ * table: nothing about the trial mid-session.
+ */
+export function useTrialLine(): string | null {
+  const { isPro, trialDays } = usePro();
+  const { hands, sessions, activeSession } = useStore();
+  if (isPro || trialDays < 1 || activeSession) return null;
+  if (!hands.length && !sessions.some((s) => s.endedAt)) return null;
+  return t('{days} dias grátis no plano anual. Cancelas quando quiseres.', { days: trialDays });
+}
+
+/** What a locked screen shows: what the feature does, what else Pro has, and the one Pro paywall. */
 export function ProLocked({ feature, title }: { feature: ProFeature; title: string }) {
   const { paywall } = usePro();
   const copy = PAYWALL_COPY[feature];
+  const trial = useTrialLine();
+  const [comparing, setComparing] = useState(false);
+  // The feature itself is the title: the rows say what else comes with it.
+  const more = featuresFor(feature)
+    .map((x) => x.feature)
+    .filter((x) => x.key !== feature)
+    .slice(0, 2);
   return (
     <>
       <Stack.Screen options={{ title, headerBackTitle: t('Voltar') }} />
       <Screen contentStyle={{ paddingTop: S.xl }}>
-        <Empty icon={ICON[feature]} title={copy.title} body={copy.body} action={<Button title={t('Ver com Pro')} iconRight="chevron-forward" onPress={() => paywall(feature)} />} />
+        <Empty
+          icon={ICON[feature]}
+          title={copy.title}
+          body={copy.body}
+          action={
+            <View style={{ gap: S.md }}>
+              {more.length ? (
+                <View style={{ gap: S.sm, paddingHorizontal: S.sm }}>
+                  <T v="label">{t('Com Pro, também')}</T>
+                  {more.map((f) => (
+                    <Row key={f.key} gap={S.sm}>
+                      <Ionicons name={f.icon as IconName} size={16} color={C.textDim} />
+                      <T v="small" color={C.text} style={{ flex: 1 }}>
+                        {f.title}
+                        <T v="small">{' · ' + f.body}</T>
+                      </T>
+                    </Row>
+                  ))}
+                </View>
+              ) : null}
+              <Button title={t('Ver com Pro')} iconRight="chevron-forward" onPress={() => paywall(feature)} />
+              {trial ? (
+                <T v="small" style={{ textAlign: 'center' }}>
+                  {trial}
+                </T>
+              ) : null}
+              <Pressable accessibilityRole="button" onPress={() => setComparing(true)} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+                  {t('Comparar Grátis e Pro')}
+                </T>
+              </Pressable>
+            </View>
+          }
+        />
+        <CompareSheet
+          visible={comparing}
+          onClose={() => setComparing(false)}
+          onPro={() => {
+            setComparing(false);
+            paywall(feature);
+          }}
+        />
       </Screen>
     </>
   );
@@ -82,6 +145,7 @@ export function ReadOnlyNote({ feature, body }: { feature: Exclude<PaywallReason
  */
 export function ProBlur({ feature, title, locked, children }: { feature: Exclude<PaywallReason, 'generic'>; title: string; locked: boolean; children: React.ReactNode }) {
   const { paywall } = usePro();
+  const trial = useTrialLine();
   if (!locked) return <>{children}</>;
   return (
     <View style={{ borderRadius: R.lg, overflow: 'hidden', minHeight: 140 }}>
@@ -93,6 +157,11 @@ export function ProBlur({ feature, title, locked, children }: { feature: Exclude
           {title}
         </T>
         <Button size="md" icon="lock-closed" title={t('Ver com Pro')} onPress={() => paywall(feature)} />
+        {trial ? (
+          <T v="tiny" color={C.text} style={{ textAlign: 'center' }}>
+            {trial}
+          </T>
+        ) : null}
       </BlurView>
     </View>
   );

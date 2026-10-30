@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { annualSavingPct, featuresFor, priceLike, FREE, freeVsPro, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, unlocks, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
+import { annualSavingPct, featuresFor, priceLike, FREE, INVITE, offersPlus, PAYWALL_COPY, perMonth, PLANS, TIER_PLANS, TIER_RANK, tierFor, tierSummary, unlocks, type PaidTier, type PaywallReason, type PlanId } from '@/billing/plans';
 import { invitePct } from '@/billing/disclosure';
 import { ONBOARDING_KEY, proHeadline, type Answers } from '@/billing/onboarding';
 import { chargeNoticeAt } from '@/billing/nudges';
@@ -13,6 +13,7 @@ import { teasers } from '@/billing/teasers';
 import { buyNotice, restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, inviteOfferPrice, LIVE } from '@/billing/purchases';
 import { deferTrial } from '@/billing/trial-moments';
+import { CompareSheet, CompareTable } from '@/components/CompareTable';
 import { LegalLink, LegalLinks } from '@/components/LegalLinks';
 import { useNotifySoftAsk } from '@/components/NotifySoftAsk';
 import { Button, IconButton, Pill, Row, Segmented, T, tap, useSheetPad, type IconName } from '@/components/ui';
@@ -99,6 +100,7 @@ export default function Paywall() {
   const base = profile ? { title: t(profile.title), body: t(profile.body) } : (PAYWALL_COPY[reason] ?? PAYWALL_COPY.generic);
   const copy = { ...base, ...paywallConfig.copy[reason] };
   const [exitAsk, setExitAsk] = useState(false);
+  const [comparing, setComparing] = useState(false);
   // «Ver o mensal» keeps the paywall open: the real close carries exit 'monthly', so it counts once.
   const [tookMonthly, setTookMonthly] = useState(false);
   // The strongest thing Pro would show them, without the answer (teasers.ts). Result layout, Pro's tab: Plus doesn't open insights.
@@ -285,7 +287,7 @@ export default function Paywall() {
               {trial ? ' ' + t('depois de {days} dias grátis', { days: trial }) : ''}
             </T>
           ) : null}
-          <Button title={trial ? t('Continuar') : view === 'plus' ? t('Subscrever Plus') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
+          <Button title={trial ? t('Começar os {days} dias grátis', { days: trial }) : view === 'plus' ? t('Subscrever Plus') : t('Subscrever Pro')} iconRight="chevron-forward" disabled={!chosen || !!busy} onPress={onBuy} />
         </>
       )}
       {deferable && trial ? (
@@ -333,7 +335,7 @@ export default function Paywall() {
           </View>
         ) : null}
 
-        {table && !compact && !medium ? <FreeVsPro /> : null}
+        {table && !compact && !medium ? <CompareTable /> : null}
 
         {/* Short screens (SE, large text) keep the strip and both plans above the footer: the notebook card goes. */}
         {/* On Plus's tab only what Plus unlocks, under its own name. */}
@@ -423,12 +425,24 @@ export default function Paywall() {
             {trial && !result ? <TrialSteps days={trial} after={after} /> : null}
           </View>
         )}
+        {/* Before deciding: everything Free and Pro have, side by side (the table layout already shows it). */}
+        {table || !plans.length ? null : (
+          <Pressable accessibilityRole="button" onPress={() => setComparing(true)} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>
+              {t('Comparar Grátis e Pro')}
+            </T>
+          </Pressable>
+        )}
         {inline ? footer : null}
         {short || result ? <View style={{ gap: S.sm }}>{extras}</View> : null}
       </ScrollView>
 
       {inline ? null : footer}
       {sheet}
+      <CompareSheet
+        visible={comparing}
+        onClose={() => setComparing(false)}
+      />
       {exitAsk && monthly ? (
         <ExitSheet
           monthly={monthly.priceString}
@@ -545,44 +559,6 @@ function PlanCard({
         </>
       )}
     </Pressable>
-  );
-}
-
-/** The "table" layout: what stays free, what Plus adds and what Pro adds, side by side. */
-function FreeVsPro() {
-  const cell = (v: string | boolean, pro: boolean) =>
-    typeof v === 'boolean' ? (
-      <Ionicons name={v ? 'checkmark' : 'remove'} size={18} color={v ? (pro ? C.accent : C.text) : C.muted} accessibilityLabel={v ? t('Sim') : t('Não')} />
-    ) : (
-      <T v="mono" color={pro ? C.accent : C.text}>
-        {v}
-      </T>
-    );
-  return (
-    <View style={{ borderRadius: R.lg, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-      <Row style={{ paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: C.surface2 }}>
-        <View style={{ flex: 1 }} />
-        <T v="label" style={{ width: 56, textAlign: 'center' }}>
-          {t('Grátis')}
-        </T>
-        <T v="label" style={{ width: 56, textAlign: 'center' }}>
-          Plus
-        </T>
-        <T v="label" color={C.accent} style={{ width: 56, textAlign: 'center' }}>
-          Pro
-        </T>
-      </Row>
-      {freeVsPro().map((r, i) => (
-        <Row key={r.label} style={{ paddingHorizontal: S.md, minHeight: 44, borderTopWidth: i ? 1 : 0, borderTopColor: C.border }}>
-          <T v="body" style={{ flex: 1 }}>
-            {t(r.label)}
-          </T>
-          <View style={{ width: 56, alignItems: 'center' }}>{cell(r.free, false)}</View>
-          <View style={{ width: 56, alignItems: 'center' }}>{cell(r.plus, false)}</View>
-          <View style={{ width: 56, alignItems: 'center' }}>{cell(r.pro, true)}</View>
-        </Row>
-      ))}
-    </View>
   );
 }
 
