@@ -341,11 +341,6 @@ export function lastTimeAt(name: string, s: Session, sessions: Session[]): Parti
 }
 
 /**
- * A new past session starts as the last one played in that currency (of `kind`
- * when given): its kind, game, venue, stakes and buy-in, so a regular night is
- * the result and one tap. Empty when nothing was played there yet.
- */
-/**
  * What a new live session starts on: the kind of the last game played in this currency and, for
  * cash, its blinds and buy-in. A tournament keeps only the kind: its last blinds were the late ones.
  */
@@ -361,6 +356,11 @@ export function lastEnded(sessions: Session[]): Session | null {
   return sessions.reduce<Session | null>((a, x) => (x.endedAt && (!a || x.endedAt > (a.endedAt ?? 0)) ? x : a), null);
 }
 
+/**
+ * A new past session starts as the last one played in that currency (of `kind`
+ * when given): its kind, game, venue, stakes and buy-in, so a regular night is
+ * the result and one tap. Empty when nothing was played there yet.
+ */
 export function lastPlayed(currency: string, sessions: Session[], kind?: Session['kind']): Partial<Session> {
   const p = sessions.filter((x) => x.endedAt && x.currency === currency && (!kind || x.kind === kind)).sort((a, b) => b.startedAt - a.startedAt)[0];
   if (!p) return {};

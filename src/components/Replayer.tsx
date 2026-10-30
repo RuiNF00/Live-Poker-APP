@@ -566,7 +566,7 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
             disabled={future}
             onPress={() => onPick(it.k)}
             accessibilityRole="button"
-            accessibilityLabel={future && !street ? undefined : it.spoken}
+            accessibilityLabel={future ? undefined : it.spoken}
             accessibilityState={{ selected: on }}
             style={{ width: ITEM_W, alignItems: 'center', opacity: future ? 0.25 : idx > at ? 0.55 : 1 }}>
             <View style={{ height: 20, justifyContent: 'center' }}>
@@ -582,9 +582,9 @@ function Timeline({ items, current, last, onPick }: { items: TimelineItem[]; cur
                 }}
               />
             </View>
-            {/* Past the question, only the dots: the names and sizes would give the answer away. */}
+            {/* Past the question, only the dots: the names, sizes, streets and showdown would give the answer away. */}
             <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: street ? (on ? C.accent : '#B0A892') : on ? C.text : C.textDim, fontFamily: street ? ff(800) : F.medium, fontSize: 10, letterSpacing: street && it.kind !== 'end' ? 0.8 : 0 }}>
-              {future && !street ? ' ' : it.label}
+              {future ? ' ' : it.label}
             </Text>
             {it.detail && !future ? (
               <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: DOT[it.color], fontFamily: F.mono, fontSize: 10 }}>
