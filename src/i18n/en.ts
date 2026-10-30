@@ -473,8 +473,6 @@ const en: Record<string, string> = {
   'Grátis até {date}. Regista a próxima mão em segundos.': 'Free until {date}. Log your next hand in seconds.',
   'O teste grátis acaba a {date}': 'Your free trial ends on {date}',
   'Depois, {price} por ano. Para não pagar, cancela na {store} até 24 h antes.': "Then {price} a year. To avoid the charge, cancel in the {store} at least 24 h before.",
-  'Jogaste esta semana?': 'Played this week?',
-  'Regista a sessão e a mão que te ficou na cabeça.': 'Log the session and the hand you keep thinking about.',
   '{n} mãos no teu caderno': '{n} hands in your notebook',
   '/ano': '/year',
   '/mês': '/month',
@@ -3912,6 +3910,9 @@ const en: Record<string, string> = {
   '{n} mãos voltaram para treinar': '{n} hands are back for practice',
   'Responde antes de veres o que fizeste.': 'Answer before you see what you did.',
   'Treinar': 'Practise',
+  // The come-back nudge, on a Monday.
+  'Semana nova': 'New week',
+  'Ficou alguma sessão por registar? Leva 20 segundos.': 'Any session left to log? It takes 20 seconds.',
 };
 
 export default en;

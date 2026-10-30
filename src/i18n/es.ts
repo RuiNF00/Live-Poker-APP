@@ -445,8 +445,6 @@ const es: Record<string, string> = {
   'Grátis até {date}. Regista a próxima mão em segundos.': 'Gratis hasta el {date}. Registra la próxima mano en segundos.',
   'O teste grátis acaba a {date}': 'La prueba gratis termina el {date}',
   'Depois, {price} por ano. Para não pagar, cancela na {store} até 24 h antes.': 'Luego, {price} al año. Para no pagar, cancela en {store} hasta 24 h antes.',
-  'Jogaste esta semana?': '¿Jugaste esta semana?',
-  'Regista a sessão e a mão que te ficou na cabeça.': 'Registra la sesión y la mano que no te sacas de la cabeza.',
   '{n} mãos no teu caderno': '{n} manos en tu libreta',
   '/ano': '/año',
   '/mês': '/mes',
@@ -3906,6 +3904,9 @@ const es: Record<string, string> = {
   '{n} mãos voltaram para treinar': '{n} manos han vuelto para entrenar',
   'Responde antes de veres o que fizeste.': 'Responde antes de ver lo que hiciste.',
   'Treinar': 'Entrenar',
+  // The come-back nudge, on a Monday.
+  'Semana nova': 'Semana nueva',
+  'Ficou alguma sessão por registar? Leva 20 segundos.': '¿Te quedó alguna sesión por registrar? Son 20 segundos.',
 };
 
 export default es;

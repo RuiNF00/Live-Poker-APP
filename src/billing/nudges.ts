@@ -14,7 +14,7 @@ const DAY = 86_400_000;
 const HOUR = 3_600_000;
 /** Midday: before the player heads to the card room, not while at the table. */
 const NUDGE_HOUR = 13;
-/** Days without opening the app before the come-back nudge. */
+/** Days without opening the app before the come-back nudge, which then waits for a Monday. */
 export const COMEBACK_DAYS = 4;
 /** At most one come-back nudge in this many days, and none after this many in a row went unanswered. */
 export const COMEBACK_GAP_DAYS = 14;
@@ -164,6 +164,14 @@ function addDays(ts: number, days: number): number {
   return d.getTime();
 }
 
+/** Monday 13:00 of the week `ts` falls in, or of the next one when that Monday is before `ts`'s day. */
+export function mondayFrom(ts: number): number {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + ((8 - d.getDay()) % 7));
+  return atHour(d.getTime(), NUDGE_HOUR);
+}
+
 /** The hour the player usually sits down: the median of the last 10 sessions, between 12:00 and 22:00; 19:00 with none. */
 export function usualStartHour(sessions: { startedAt: number; endedAt?: number }[]): number {
   const hours = sessions
@@ -227,13 +235,16 @@ export function planNudges(p: NudgeInput): Nudge[] {
   const play = p.sessionActive ? [] : playNotices(p.plan, p.sessions, p.now);
   out.push(...play);
 
-  // Back after a few days away, only for someone who has logged something to come back to.
+  // Back after a few days away, only for someone who has logged something to come back to. It
+  // waits for the next Monday: people pick things up again at the start of a week (fresh start).
   const cb = p.comeback ?? { ignored: 0 };
   if (!p.sessionActive && p.hands.length + p.sessions.length > 0 && cb.ignored < COMEBACK_MAX_IGNORED) {
-    const at = atHour(Math.max(p.now + COMEBACK_DAYS * DAY, (cb.last ?? 0) + COMEBACK_GAP_DAYS * DAY), NUDGE_HOUR);
-    const near = out.some((n) => Math.abs(n.at - at) < (n.id === 'week' || n.id.startsWith('play-') ? WEEK_COMEBACK_GAP : 12 * HOUR));
-    if (!near && !p.festivalAt?.(at)) {
-      out.push({ id: 'comeback', at, title: t('Jogaste esta semana?'), body: t('Regista a sessão e a mão que te ficou na cabeça.') });
+    const near = (at: number) => out.some((n) => Math.abs(n.at - at) < (n.id === 'week' || n.id.startsWith('play-') ? WEEK_COMEBACK_GAP : 12 * HOUR));
+    // Not on the 1st (the month's recap), not next to another notice, not during a festival: the Monday after.
+    let at = mondayFrom(Math.max(p.now + COMEBACK_DAYS * DAY, (cb.last ?? 0) + COMEBACK_GAP_DAYS * DAY));
+    for (let i = 0; i < 3 && (new Date(at).getDate() === 1 || near(at) || p.festivalAt?.(at)); i++) at = addDays(at, 7);
+    if (new Date(at).getDate() !== 1 && !near(at) && !p.festivalAt?.(at)) {
+      out.push({ id: 'comeback', at, title: t('Semana nova'), body: t('Ficou alguma sessão por registar? Leva 20 segundos.') });
     }
   }
   return out;

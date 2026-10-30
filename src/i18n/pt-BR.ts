@@ -214,8 +214,6 @@ const ptBR: Record<string, string> = {
   'Grátis até {date}. Regista a próxima mão em segundos.': 'Grátis até {date}. Registre a próxima mão em segundos.',
   'O teste grátis acaba a {date}': 'O teste grátis acaba em {date}',
   'Depois, {price} por ano. Para não pagar, cancela na {store} até 24 h antes.': 'Depois, {price} por ano. Para não pagar, cancele na {store} até 24 h antes.',
-  'Jogaste esta semana?': 'Jogou esta semana?',
-  'Regista a sessão e a mão que te ficou na cabeça.': 'Registre a sessão e a mão que ficou na sua cabeça.',
   '{n} mãos no teu caderno': '{n} mãos no seu caderno',
   'Renova automaticamente. Cancela na {store} até 24 h antes do fim do período.': 'Renova automaticamente. Cancele na {store} até 24 h antes do fim do período.',
   'Agora não · amanhã tens mais {n}': 'Agora não · amanhã você tem mais {n}',
@@ -2122,6 +2120,9 @@ const ptBR: Record<string, string> = {
   '{n} mãos voltaram para treinar': '{n} mãos voltaram para treinar',
   'Responde antes de veres o que fizeste.': 'Responda antes de ver o que você fez.',
   'Treinar': 'Treinar',
+  // The come-back nudge, on a Monday.
+  'Semana nova': 'Semana nova',
+  'Ficou alguma sessão por registar? Leva 20 segundos.': 'Ficou alguma sessão sem registrar? Leva 20 segundos.',
 };
 
 export default ptBR;

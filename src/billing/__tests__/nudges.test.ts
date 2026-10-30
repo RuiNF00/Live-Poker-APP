@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { atHour, chargeNoticeAt, chargeNoticeDue, comebackSeen, NUDGE_IDS, NUDGE_KIND, planNudges, playNotices, usualStartHour, weekNotice, weekNoticeAt, type NudgeInput } from '../nudges';
+import { atHour, chargeNoticeAt, chargeNoticeDue, comebackSeen, mondayFrom, NUDGE_IDS, NUDGE_KIND, planNudges, playNotices, usualStartHour, weekNotice, weekNoticeAt, type NudgeInput } from '../nudges';
 
 const DAY = 86_400_000;
 // A 3-day trial started at a live session on Saturday evening.
@@ -52,9 +52,12 @@ test('past trial moments are not rescheduled', () => {
   assert.equal(late['trial-end'], undefined);
 });
 
-test('come-back nudge 4 days out, only with something logged and no session running', () => {
+test('come-back nudge: the first Monday 4 days out, only with something logged and no session running', () => {
   const free = { ...base, isPro: false, trial: null };
-  assert.equal(byId(free).comeback.at, new Date(2026, 9, 21, 13).getTime());
+  // Opened Saturday 17 Oct: 4 days is Wednesday 21, so Monday 26 at 13:00.
+  assert.equal(byId(free).comeback.at, new Date(2026, 9, 26, 13).getTime());
+  assert.equal(byId(free).comeback.title, 'Semana nova');
+  assert.doesNotMatch(byId(free).comeback.body, /jog/i, 'about logging, never about going to play');
   assert.equal(byId({ ...free, hands: [], sessions: [] }).comeback, undefined);
   assert.equal(byId({ ...free, sessionActive: true }).comeback, undefined);
 });
@@ -62,9 +65,13 @@ test('come-back nudge 4 days out, only with something logged and no session runn
 test('come-back nudge: at most one every 14 days, none after 2 unanswered, none during a festival', () => {
   const free = { ...base, isPro: false, trial: null };
   const last = start - 5 * DAY;
-  assert.equal(byId({ ...free, comeback: { last, ignored: 0 } }).comeback.at, atHour(last + 14 * DAY, 13));
+  assert.equal(byId({ ...free, comeback: { last, ignored: 0 } }).comeback.at, mondayFrom(last + 14 * DAY));
+  assert.ok(byId({ ...free, comeback: { last, ignored: 0 } }).comeback.at >= atHour(last + 14 * DAY, 0));
   assert.equal(byId({ ...free, comeback: { ignored: 2 } }).comeback, undefined);
   assert.equal(byId({ ...free, festivalAt: () => true }).comeback, undefined);
+  // A festival on that Monday only: the Monday after.
+  const mon26 = new Date(2026, 9, 26).toDateString();
+  assert.equal(byId({ ...free, festivalAt: (ts) => new Date(ts).toDateString() === mon26 }).comeback.at, new Date(2026, 10, 2, 13).getTime());
   // It went off, and the player came back the next day: answered.
   assert.deepEqual(comebackSeen({ planned: start - DAY, ignored: 1 }, start), { last: start - DAY, ignored: 0 });
   // Came back a week after it went off: one more ignored.
@@ -134,12 +141,13 @@ test('week notice: not on the 1st (month recap day), not during a session or a f
   assert.equal(byId({ ...p, sessionActive: true }).week, undefined);
   const sunday = new Date(2026, 9, 18).toDateString();
   assert.equal(byId({ ...p, festivalAt: (ts) => new Date(ts).toDateString() === sunday }).week, undefined);
-  // Opened Thursday: the come-back nudge would be Monday 13:00, a day after the week's notice. Only the week's goes.
+  // Opened Thursday: Monday 19 is a day after the week's notice, so the come-back nudge waits for Monday 26.
   const thu = new Date(2026, 9, 15, 20).getTime();
-  const planned = planNudges({ ...p, now: thu });
-  assert.deepEqual(planned.map((x) => x.id), ['week']);
-  // Opened Monday: the come-back nudge is Friday, far enough from Sunday: both.
-  assert.deepEqual(planNudges({ ...p, now: mon + 3 * 3_600_000 }).map((x) => x.id).sort(), ['comeback', 'week']);
+  const planned = byId({ ...p, now: thu });
+  assert.ok(planned.week);
+  assert.equal(planned.comeback.at, new Date(2026, 9, 26, 13).getTime());
+  // Opened Monday 12: Friday is 4 days on, and the same Monday 26.
+  assert.equal(byId({ ...p, now: mon + 3 * 3_600_000 }).comeback.at, new Date(2026, 9, 26, 13).getTime());
   assert.ok(NUDGE_IDS.includes('week'), 'cancelled and re-planned on every sync');
 });
 
@@ -183,7 +191,11 @@ test('play plan: in the plan, not during a session, and the come-back nudge step
   const p: NudgeInput = { ...base, now, isPro: false, trial: null, plan: { day: dayOf(2026, 9, 22) } };
   const ids = planNudges(p).map((x) => x.id);
   assert.ok(ids.includes('play-arrive') && ids.includes('play-log'));
-  assert.ok(!ids.includes('comeback'), 'the come-back nudge (4 days on, the 22nd) is within 2 days of the plan');
+  const cb = planNudges(p).find((x) => x.id === 'comeback');
+  assert.equal(cb?.at, new Date(2026, 9, 26, 13).getTime(), 'Monday 26, more than 2 days after the plan\'s notices');
+  // A plan for Sunday 25: its next-day notice is Monday 26, so the come-back nudge waits a week.
+  const late = planNudges({ ...p, plan: { day: dayOf(2026, 9, 25) } }).find((x) => x.id === 'comeback');
+  assert.equal(late?.at, new Date(2026, 10, 2, 13).getTime());
   assert.deepEqual(planNudges({ ...p, sessionActive: true }).filter((x) => x.id.startsWith('play-')), []);
 });
 
@@ -196,4 +208,14 @@ test('week notice: a reviewed hand whose question is due again by Sunday counts 
   assert.equal(due!.url, 'sweatbook://train');
   const later = weekNotice({ now: tue2, hands: [reviewed], sessions: [], drill: { h1: { due: sunday + 1, done: 1 } } });
   assert.doesNotMatch(later!.body, /para rever/);
+});
+
+test('mondayFrom: that Monday at 13:00, or the next one; Mondays on the 1st are skipped by the planner', () => {
+  assert.equal(mondayFrom(new Date(2026, 9, 26, 9).getTime()), new Date(2026, 9, 26, 13).getTime());
+  assert.equal(mondayFrom(new Date(2026, 9, 25, 20).getTime()), new Date(2026, 9, 26, 13).getTime());
+  assert.equal(mondayFrom(new Date(2026, 9, 27, 9).getTime()), new Date(2026, 10, 2, 13).getTime());
+  // Monday 1 Feb 2027 is the month's recap day: the come-back nudge goes to the 8th.
+  const now = new Date(2027, 0, 26, 20).getTime();
+  const cb = planNudges({ ...base, now, isPro: false, trial: null, hands: [{ createdAt: new Date(2026, 11, 1).getTime() }] }).find((x) => x.id === 'comeback');
+  assert.equal(cb?.at, new Date(2027, 1, 8, 13).getTime());
 });
