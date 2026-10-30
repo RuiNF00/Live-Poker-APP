@@ -10,7 +10,8 @@ import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { legalUrl } from '@/billing/disclosure';
-import { annualSwitch } from '@/billing/offers';
+import { annualSwitch, type AnnualSwitched } from '@/billing/offers';
+import { annualSwitched, rememberAnnualSwitch } from '@/billing/annual-switched';
 import { INVITE, PLANS, tierSummary, type PlanId } from '@/billing/plans';
 import { buyNotice, LOCAL_PRO, restoreNotice, usePro } from '@/billing/pro';
 import { getSubscription, hasLifetime, manageSubscription, redeemCode } from '@/billing/purchases';
@@ -98,29 +99,39 @@ export default function SettingsScreen() {
   const shownCurrencies = allCurrencies ? CURRENCIES : CURRENCIES.filter((c) => COMMON_CURRENCIES.includes(c) || c === settings.currency || sessions.some((x) => x.currency === c));
   const pro = usePro();
   // Renewal date, or the end of the paid period once cancelled, so nobody wonders whether the cancel worked. Lifetime has no date.
-  const [period, setPeriod] = useState<{ date: string; renews: boolean; trial?: boolean; plan: PlanId; product: string } | null>(null);
+  const [period, setPeriod] = useState<{ date: string; ends: string; renews: boolean; trial?: boolean; plan: PlanId; product: string } | null>(null);
   // Paid once: «Gerir subscrição» says so instead of asking why they want to cancel.
   const [forGood, setForGood] = useState(false);
   // Bumped by a restore: a monthly subscriber who restores lifetime is already Pro, so isPro alone wouldn't re-read it.
   const [restored, setRestored] = useState(0);
   useEffect(() => {
     void (pro.isPlus ? getSubscription() : Promise.resolve(null)).then((s) =>
-      setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), renews: s.willRenew, trial: s.trial, plan: s.plan, product: s.product } : null),
+      setPeriod(s?.ends ? { date: new Date(s.ends).toLocaleDateString(locale, { day: 'numeric', month: 'long' }), ends: new Date(s.ends).toISOString(), renews: s.willRenew, trial: s.trial, plan: s.plan, product: s.product } : null),
     );
     void (pro.isPro ? hasLifetime() : Promise.resolve(false)).then(setForGood);
   }, [pro.isPro, pro.isPlus, restored]);
   // A monthly subscriber who means to stay: the yearly plan of the same tier, one tap, without going
   // through «Gerir subscrição» and its reasons for leaving. Same store prices; never during the free days.
-  const toAnnual = annualSwitch(period, pro.plans, { forGood, os: Platform.OS });
+  const [switched, setSwitched] = useState<AnnualSwitched | null>(null);
+  useEffect(() => {
+    void annualSwitched().then(setSwitched);
+  }, []);
+  const toAnnual = annualSwitch(period, pro.plans, { forGood, os: Platform.OS, switched });
   const [switching, setSwitching] = useState(false);
   const switchToAnnual = async () => {
     if (!toAnnual || !period || switching) return;
     tap();
     setSwitching(true);
-    const res = await pro.purchase(toAnnual.id, undefined, period.product);
+    const res = await pro.purchase(toAnnual.id, 'switch', period.product);
     setSwitching(false);
     // The store's own sheet already said yes or no; only what it didn't say is told here.
-    if (res === 'ok') setRestored((n) => n + 1);
+    if (res === 'ok') {
+      // The monthly still shows until it renews: the row would offer the same switch again.
+      const mark = { product: period.product, ends: period.ends };
+      setSwitched(mark);
+      rememberAnnualSwitch(mark);
+      setRestored((n) => n + 1);
+    }
     else buyNotice(res, Platform.OS === 'android' ? 'Google Play' : 'App Store', PLANS[toAnnual.id].tier === 'plus' ? 'plus' : 'pro');
   };
   const insets = useSafeAreaInsets();

@@ -166,4 +166,10 @@ test('annualSwitch: only a renewing monthly, never in a trial or with lifetime',
   assert.equal(annualSwitch(null, plans, ios), undefined);
   assert.equal(annualSwitch({ ...sub, product: '' }, plans, { forGood: false, os: 'android' }), undefined);
   assert.equal(annualSwitch(sub, [{ id: 'monthly' }], ios), undefined);
+  // Switched from Settings: hidden while the store still reports that monthly, back if it renews again.
+  const at = { ...sub, ends: '2026-11-30T10:00:00.000Z' };
+  const switched = { product: sub.product, ends: at.ends };
+  assert.equal(annualSwitch(at, plans, { ...ios, switched }), undefined);
+  assert.equal(annualSwitch({ ...at, ends: '2026-12-30T10:00:00.000Z' }, plans, { ...ios, switched })?.id, 'annual');
+  assert.equal(annualSwitch({ ...at, plan: 'plusMonthly', product: 'sweatbook_plus_monthly' }, plans, { ...ios, switched })?.id, 'plusAnnual');
 });

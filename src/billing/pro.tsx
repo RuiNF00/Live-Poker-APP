@@ -80,7 +80,7 @@ interface ProValue {
   paywall: (reason?: PaywallReason, then?: () => void) => void;
   /** The paywall takes the pending `then` (once) when Pro arrives, or drops it when closed. */
   takeResume: () => (() => void) | null;
-  purchase: (plan: PlanId, reason?: PaywallReason, replacing?: string) => Promise<store.BuyResult>;
+  purchase: (plan: PlanId, reason?: PaywallReason | 'switch', replacing?: string) => Promise<store.BuyResult>;
   /** The store couldn't charge the last renewal and is retrying (Pro still on, in its grace period). */
   billingIssue: boolean;
   restore: () => Promise<store.RestoreResult>;
@@ -205,7 +205,7 @@ export function ProProvider({ children }: { children: React.ReactNode }) {
   }, [trialDays, paywallConfig]);
 
   const purchase = useCallback(
-    async (id: PlanId, reason: PaywallReason = 'generic', replacing?: string) => {
+    async (id: PlanId, reason: PaywallReason | 'switch' = 'generic', replacing?: string) => {
       const plan = plans.find((p) => p.id === id);
       if (!plan) return 'unavailable' as const;
       const res = await store.buy(plan, replacing);
