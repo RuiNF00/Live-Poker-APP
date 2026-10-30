@@ -9,7 +9,7 @@ import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
 import { LineChart } from '@/components/LineChart';
 import { BankrollForm, blankTransfer, effectiveRange, FilterForm, PRESETS, rangeLabel, Sheet, TransferForm } from '@/components/BankrollSheets';
-import { blankSession, SessionForm } from '@/components/SessionForm';
+import { blankSession, FIRST_KIND, SessionForm } from '@/components/SessionForm';
 import { StakingEntry } from '@/components/staking/StakingEntry';
 import { TripsEntry } from '@/components/TripsEntry';
 import { SwapsEntry } from '@/components/swaps/SwapsEntry';
@@ -220,7 +220,7 @@ function BankrollTab() {
   }, []);
   const newPast = (): Session => {
     const last = lastPlayed(pastBankroll.currency, sessions);
-    return { ...blankSession(last.kind ?? playsKind ?? 'mtt', pastBankroll.currency, settings.defaultTableSize), ...last, bankrollId: pastBankroll.id };
+    return { ...blankSession(last.kind ?? playsKind ?? FIRST_KIND, pastBankroll.currency, settings.defaultTableSize), ...last, bankrollId: pastBankroll.id };
   };
   // What each bankroll's own rules let come out (a new withdrawal only).
   const keepFor = (id: string) => {

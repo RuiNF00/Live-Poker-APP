@@ -871,7 +871,7 @@ const es: Record<string, string> = {
   'Perfil': 'Perfil',
   'Tendências, tells, sizings…': 'Tendencias, tells, sizings…',
   'Relógio, stack e blinds num só sítio.': 'Reloj, stack y ciegas en un solo lugar.',
-  'Cada mão que registares já vem com o torneio, as blinds e o teu stack.': 'Cada mano que registres ya viene con el torneo, las ciegas y tu stack.',
+  'Cada mão que registares já vem com o jogo, as blinds e o teu stack.': 'Cada mano que registres ya viene con la partida, las ciegas y tu stack.',
   'Em pausa': 'En pausa',
   'Jogado': 'Jugado',
   'A jogar': 'Jugando',

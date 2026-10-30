@@ -178,7 +178,7 @@ export default function SessionScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Screen title={t('Sessão')} contentStyle={{ paddingBottom: bar + S.lg }}>
-        <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o torneio, as blinds e o teu stack.')}</T>
+        <T v="small" style={{ marginTop: -S.md }}>{t('Cada mão que registares já vem com o jogo, as blinds e o teu stack.')}</T>
         <ListGroup>
           {/* A tournament planned for now comes first: one tap and it's running, filled in. */}
           <PlannedNow festivals={coming} />

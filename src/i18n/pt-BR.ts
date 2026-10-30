@@ -448,7 +448,7 @@ const ptBR: Record<string, string> = {
   'Quem é quem, como joga e as mãos que tiveste contra ele. Na próxima vez que o vires, já sabes.': 'Quem é quem, como joga e as mãos que você teve contra ele. Na próxima vez que o vir, você já sabe.',
   'Como o reconheces': 'Como você o reconhece',
   'Relógio, stack e blinds num só sítio.': 'Relógio, stack e blinds em um só lugar.',
-  'Cada mão que registares já vem com o torneio, as blinds e o teu stack.': 'Cada mão que você registrar já vem com o torneio, as blinds e seu stack.',
+  'Cada mão que registares já vem com o jogo, as blinds e o teu stack.': 'Cada mão que você registrar já vem com o jogo, as blinds e seu stack.',
   'A jogar': 'Jogando',
   'Stacks e prémios ({currency})': 'Stacks e prêmios ({currency})',
   'Envias o teu link a um amigo': 'Você envia seu link a um amigo',

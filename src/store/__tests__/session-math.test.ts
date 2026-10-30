@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { addDays, atClock, breakdown, lastPlayed, lastTimeAt, ownBuyIns, owedToBackers, parseDay, profit, totals } from '../session-math';
+import { addDays, atClock, breakdown, lastPlayed, lastTimeAt, ownBuyIns, owedToBackers, parseDay, pastSessionDay, profit, totals } from '../session-math';
 import type { Session } from '../types';
 import { mttStats } from '../results-math';
 import { summarize } from '../tourney-stats';
@@ -199,4 +199,16 @@ test('ROI with a tournament sold 100%: its markup counts as result, nothing as b
   assert.equal(totals([sold]).roi, null);
   assert.equal(summarize([sold], 'mine').roi, null);
   assert.equal(mttStats([1, 2, 3, 4, 5].map((i) => ({ ...sold, id: 's' + i })))!.roi, null);
+});
+
+test('a new past session opens on last night in the morning, today from 14:00', () => {
+  const at = (h: number) => new Date(2026, 9, 30, h, 15).getTime();
+  const day = (d: number) => new Date(2026, 9, d).getTime();
+  assert.equal(pastSessionDay(at(0)), day(29));
+  assert.equal(pastSessionDay(at(10)), day(29));
+  assert.equal(pastSessionDay(at(13)), day(29));
+  assert.equal(pastSessionDay(at(14)), day(30));
+  assert.equal(pastSessionDay(at(23)), day(30));
+  // Across a month: the 1st in the morning is the last day of the month before.
+  assert.equal(pastSessionDay(new Date(2026, 10, 1, 9).getTime()), day(31));
 });

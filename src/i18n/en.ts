@@ -939,7 +939,7 @@ const en: Record<string, string> = {
   'Perfil': 'Profile',
   'Tendências, tells, sizings…': 'Tendencies, tells, sizings…',
   'Relógio, stack e blinds num só sítio.': 'Clock, stack and blinds in one place.',
-  'Cada mão que registares já vem com o torneio, as blinds e o teu stack.': 'Every hand you log comes with the tournament, blinds and your stack filled in.',
+  'Cada mão que registares já vem com o jogo, as blinds e o teu stack.': 'Every hand you log comes with the game, blinds and your stack filled in.',
   'Em pausa': 'On break',
   'Jogado': 'Played',
   'A jogar': 'Playing',

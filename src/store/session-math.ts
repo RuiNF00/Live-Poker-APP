@@ -253,6 +253,18 @@ export function curve(list: Session[], currency?: string): { t: number; v: numbe
   return [{ t: done[0]?.startedAt ?? Date.now(), v: 0 }, ...done.map((s) => ({ t: s.endedAt!, v: (acc += profit(s)) }))];
 }
 
+/**
+ * The day a new past session opens on: before 14:00 the last session was almost always last
+ * night, so yesterday; from 14:00, today. A morning «Hoje» saved last night's 4 hours as 06:00–10:00.
+ * Returns local midnight.
+ */
+export function pastSessionDay(now = Date.now()): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  if (new Date(now).getHours() < 14) d.setDate(d.getDate() - 1);
+  return d.getTime();
+}
+
 /** `n` calendar days after `ts` (before, if negative) at the same clock time: across a DST change a day is 23 or 25 hours. */
 export function addDays(ts: number, n: number): number {
   const d = new Date(ts);

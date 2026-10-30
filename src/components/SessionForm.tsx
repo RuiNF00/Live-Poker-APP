@@ -6,7 +6,7 @@ import { isMtt } from '@/billing/onboarding';
 import { CASH_LEVELS, gameForPlays, MTT_LEVELS } from '@/poker/factory';
 import { chips, money } from '@/poker/format';
 import type { GameKind } from '@/poker/types';
-import { addDays, bountiesOf, atClock, lastPlayed, lastTimeAt, nextLive, parseClock, parseDay, parseDuration, playedMs, rescaleStackLog } from '@/store/session-math';
+import { addDays, bountiesOf, atClock, lastPlayed, lastTimeAt, nextLive, parseClock, parseDay, parseDuration, pastSessionDay, playedMs, rescaleStackLog } from '@/store/session-math';
 import { uid, useStore } from '@/store/store';
 import type { Bankroll, Session } from '@/store/types';
 import { roundedClock, weeklyMatch, type WeeklyTournament } from '@/store/weekly';
@@ -52,6 +52,9 @@ export function blankSession(kind: GameKind, currency: string, tableSize = 9): S
 /** Usual tournament buy-in for each first-run answer, a starting point to edit. */
 const MTT_BUY_IN: Record<string, number> = { mtt1: 250, mtt2: 1100, mtt3: 5000 };
 
+/** The game a first session opens on when nothing says otherwise (see `nextSession`). */
+export const FIRST_KIND: GameKind = 'cash';
+
 /**
  * The very first session, from the first-run answers: tournament or cash and the
  * stakes, with a 100-big-blind buy-in for cash. Null when nothing was answered.
@@ -67,10 +70,14 @@ export function firstSession(plays: string | null | undefined, currency: string,
   return { ...blankSession('cash', currency, tableSize), sb: g.sb, bb: g.bb, buyIn, stack: buyIn };
 }
 
-/** A new live session, on the last game played in this currency (see `nextLive`). */
+/**
+ * A new live session, on the last game played in this currency (see `nextLive`). With nothing
+ * played and no first-run answers (skipped, or «Estou à mesa agora»), cash: most live play is
+ * cash, and its form is shorter (no tournament name or starting stack).
+ */
 export function nextSession(sessions: Session[], currency: string, tableSize = 9): Session {
   const next = nextLive(currency, sessions);
-  return { ...blankSession(next.kind ?? sessions[0]?.kind ?? 'mtt', currency, tableSize), ...next };
+  return { ...blankSession(next.kind ?? sessions[0]?.kind ?? FIRST_KIND, currency, tableSize), ...next };
 }
 
 /** Start a live session, or log a past one (`past`). */
@@ -110,7 +117,8 @@ export function SessionForm({
   const [mins, setMins] = useState(initMins);
   const [minsText, setMinsText] = useState('');
   const initDay = dayStart(initial.endedAt ? initial.startedAt : Date.now());
-  const [day, setDay] = useState(initDay);
+  // A new past session opens on last night in the morning (pastSessionDay); an edit on its own day.
+  const [day, setDay] = useState(() => (past && !initial.endedAt ? pastSessionDay() : initDay));
   const [dateText, setDateText] = useState('');
   const initTime = initial.endedAt ? clockOf(initial.startedAt) : '';
   const [timeText, setTimeText] = useState(initTime);
