@@ -573,10 +573,13 @@ function FirstRun() {
         </T>
       </View>
       <View style={{ gap: S.sm }}>
+        {/* One main action (Ladder); the two session ways side by side, as on the home after it; the sample is a link. */}
         <Button title={t('Registar a primeira mão')} icon="add" onPress={() => router.push('/hand/new')} />
-        <Button title={t('Começar uma sessão')} icon="timer-outline" kind="secondary" size="md" onPress={() => router.navigate('/session')} />
-        <Button title={t('Já jogaste? Regista a última sessão')} icon="time-outline" kind="secondary" size="md" onPress={() => router.navigate({ pathname: '/bankroll', params: { add: 'session' } })} />
-        <Button title={t('Ver uma mão de exemplo')} kind="ghost" size="md" onPress={() => router.push({ pathname: '/hand/[id]', params: { id: 'sample' } })} />
+        <Row gap={S.sm} style={{ alignItems: 'stretch' }}>
+          <Button title={t('Começar sessão')} icon="play" kind="secondary" size="md" onPress={() => router.navigate('/session')} style={{ flex: 1.3, paddingHorizontal: 10 }} />
+          <Button title={t('Já joguei')} icon="time-outline" kind="secondary" size="md" onPress={() => router.navigate({ pathname: '/bankroll', params: { add: 'session' } })} style={{ flex: 1, paddingHorizontal: 10 }} />
+        </Row>
+        <Button title={t('Ver uma mão de exemplo')} kind="plain" size="sm" onPress={() => router.push({ pathname: '/hand/[id]', params: { id: 'sample' } })} />
       </View>
     </Card>
   );

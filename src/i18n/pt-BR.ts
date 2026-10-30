@@ -818,7 +818,6 @@ const ptBR: Record<string, string> = {
   'Mudar os torneios ou o markup pede a cada backer que confirme outra vez.': 'Mudar os torneios ou o markup pede que cada backer confirme de novo.',
   'Os pagamentos fazem-se fora da app; aqui só os registas. Cada link é privado e mostra só a parte desse backer.': 'Os pagamentos são feitos fora do app; aqui você só registra. Cada link é privado e mostra só a parte desse backer.',
   'Registar': 'Registrar',
-  'Marca primeiro os torneios que vais jogar': 'Marque primeiro os torneios que vai jogar',
   'Os pagamentos fazem-se fora da app; aqui só os registas.': 'Os pagamentos são feitos fora do app; aqui você só registra.',
   'Com depósitos, levantamentos e despesas de viagem, para Excel ou Google Sheets': 'Com depósitos, saques e despesas de viagem, para Excel ou Google Sheets',
   'Define o câmbio {a} → {b} para converter o resultado e as despesas em {b}.': 'Defina o câmbio {a} → {b} para converter o resultado e as despesas em {b}.',
@@ -1833,7 +1832,6 @@ const ptBR: Record<string, string> = {
   '1 mão para rever': '1 mão para revisar',
   '{n} mãos para rever': '{n} mãos para revisar',
   'Enquanto ainda te lembras de tudo.': 'Enquanto você ainda se lembra de tudo.',
-  'Já jogaste? Regista a última sessão': 'Já jogou? Registre a última sessão',
   'Visto a {date}': 'Visto em {date}',
   'Escreve um nome ou alcunha': 'Escreva um nome ou apelido',
   // Festival tournament screen.

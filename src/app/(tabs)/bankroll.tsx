@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Pressable, View } from 'react-native';
 
 import { firstKind, ONBOARDING_KEY } from '@/billing/onboarding';
 import { FREE } from '@/billing/plans';
@@ -58,7 +58,7 @@ import { cashDone, winRate } from '@/store/winrate-math';
 import { withdrawable } from '@/store/moveup-math';
 import { defaultMonth, monthKey, monthName, monthRecap } from '@/store/month-recap';
 import type { Bankroll, Session, Transfer } from '@/store/types';
-import { C, S } from '@/theme';
+import { C, ff, R, S } from '@/theme';
 
 /** Amounts on this tab, or ••• when the player hid them (at the table). */
 const Hidden = createContext(false);
@@ -271,14 +271,41 @@ function BankrollTab() {
               .join(' · ')}
           </T>
           {thisMonth.sessions ? (
-            <T v="small" color={C.accent} accessibilityRole="link" onPress={() => router.push({ pathname: '/month', params: { m: thisMonth.key, c: cur } })}>
-              {t('{month} até agora: {amount} em {h} h', { month: monthName(thisMonth.key), amount: signedMoney(thisMonth.profit), h: Math.round(thisMonth.hours) })} ›
-            </T>
+            // A row the size of a finger, the amount in its result's colour (orange read as a loss next to green).
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={t('{month} até agora: {amount} em {h} h', { month: monthName(thisMonth.key), amount: signedMoney(thisMonth.profit), h: Math.round(thisMonth.hours) })}
+              onPress={() => router.push({ pathname: '/month', params: { m: thisMonth.key, c: cur } })}
+              style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}>
+              <T v="small" style={{ flexShrink: 1 }}>
+                {t('{month} até agora', { month: monthName(thisMonth.key) })}
+              </T>
+              <T v="small" color={hidden ? C.textDim : thisMonth.profit > 0 ? C.good : thisMonth.profit < 0 ? C.bad : C.textDim} style={{ fontFamily: ff(700) }}>
+                {signedMoney(thisMonth.profit)}
+              </T>
+              <T v="small" style={{ flexShrink: 1 }}>
+                {t('em {h} h', { h: Math.round(thisMonth.hours) })}
+              </T>
+              <Ionicons name="chevron-forward" size={14} color={C.accent} style={{ marginLeft: 'auto' }} />
+            </Pressable>
           ) : null}
-          <Row gap={S.sm} style={{ marginTop: S.xs }}>
-            <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-down" title={t('Depositar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'deposit'), isNew: true })} />
-            <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => withdraw()} />
-          </Row>
+          {fresh && !bal.deposits && !bal.withdrawals ? (
+            // Nothing in it yet: one dashed way to start (Copilot), not a «Levantar» from 0.
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'deposit'), isNew: true })}
+              style={({ pressed }) => ({ marginTop: S.xs, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: R.md, borderWidth: 1, borderStyle: 'dashed', borderColor: C.accentLine, opacity: pressed ? 0.7 : 1 })}>
+              <Ionicons name="add" size={16} color={C.accent} />
+              <T v="body" color={C.accent} style={{ fontFamily: ff(700) }}>
+                {t('Define o bankroll inicial')}
+              </T>
+            </Pressable>
+          ) : (
+            <Row gap={S.sm} style={{ marginTop: S.xs }}>
+              <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-down" title={t('Depositar')} onPress={() => setSheet({ type: 'transfer', x: blankTransfer(pastBankroll.id, 'deposit'), isNew: true })} />
+              <Button style={{ flex: 1 }} size="sm" kind="secondary" icon="arrow-up" title={t('Levantar')} onPress={() => withdraw()} />
+            </Row>
+          )}
         </Card>
 
         <CashListCard />

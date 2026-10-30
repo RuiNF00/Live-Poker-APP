@@ -26,14 +26,18 @@ export function spanLabel(from: string, to: string): string {
 export function FestivalItem({ f }: { f: Festival }) {
   const plan = useFestivalPlan(f.id);
   const span = festivalSpan(f);
-  const when = f.events.length ? t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size }) : span ? spanLabel(span.from, span.to) : t('Datas a confirmar');
+  const name = festivalName(f, plan);
+  const venue = f.own ? f.venue : t(f.venue);
+  // Every row the same shape: the days, then how many tournaments; the place only when the name doesn't already say it.
+  const count = f.events.length ? t('{n} torneios', { n: new Set(f.events.map((e) => e.number)).size }) : '';
+  const when = span ? spanLabel(span.from, span.to) : count ? '' : t('Datas a confirmar');
   return (
     <ListItem
       icon={f.own ? 'flag-outline' : 'calendar-outline'}
       iconColor={C.accent}
-      title={festivalName(f, plan)}
+      title={name}
       numberOfLines={0}
-      subtitle={[f.own ? f.venue : t(f.venue), when].filter(Boolean).join(' · ')}
+      subtitle={[venue && !name.toLowerCase().includes(venue.toLowerCase()) ? venue : '', when, count].filter(Boolean).join(' · ')}
       chevron
       onPress={() => router.push({ pathname: '/festival', params: { id: f.id } })}
     />

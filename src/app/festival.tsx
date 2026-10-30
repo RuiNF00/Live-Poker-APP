@@ -163,7 +163,8 @@ function FestivalView({ f: base, focus }: { f: Festival; focus?: string }) {
           {f.events.length ? <T v="small">{t('Marca os eventos que vais jogar. Avisamos-te 30 min antes de cada um e antes de fechar o late reg.')}</T> : null}
         </View>
 
-        {f.events.length ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
+        {/* Nothing marked yet: no card of zeros between the name and the schedule; it comes with the first event. */}
+        {tot.events ? <Summary f={f} tot={tot} balance={balance} share={share} bankrollName={bankroll.name} bankrollCurrency={bankroll.currency} sameCurrency={sameCurrency} /> : null}
         {f.events.length || f.dates ? <TripLink f={f} plan={plan} /> : null}
         {tot.events ? <SharePlan f={f} plan={plan} /> : null}
 

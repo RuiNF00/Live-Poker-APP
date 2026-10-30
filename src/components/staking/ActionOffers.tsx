@@ -30,16 +30,8 @@ export function ActionOffers({ f, picked }: { f: Festival; picked: string[] }) {
     // Straight to the first backer: most of the time it's the one from last time.
     router.push({ pathname: '/action/[id]', params: { id: o.id, add: '1' } });
   };
-  if (!offers.length)
-    return (
-      <Button
-        kind="secondary"
-        icon="people-outline"
-        title={t('Registar ação vendida')}
-        sub={picked.length ? undefined : t('Marca primeiro os torneios que vais jogar')}
-        onPress={start}
-      />
-    );
+  // Selling action needs the tournaments first: before any is marked the button only pushed the schedule down.
+  if (!offers.length) return picked.length ? <Button kind="secondary" icon="people-outline" title={t('Registar ação vendida')} onPress={start} /> : null;
   return (
     <View style={{ gap: S.sm }}>
       <ListGroup>

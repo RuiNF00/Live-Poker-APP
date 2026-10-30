@@ -864,11 +864,14 @@ export function Segmented<K extends string | number>({
               justifyContent: 'center',
               flexDirection: 'row',
               gap: 4,
+              // The chosen segment has to read at a glance (the paywall's Plus/Pro sets the price under it): a lit edge, not just a shade.
               backgroundColor: on ? C.surface3 : 'transparent',
+              borderWidth: 1,
+              borderColor: on ? C.borderStrong : 'transparent',
               ...(on ? SHADOW : null),
             }}>
             {/* Equal-width segments: at large text a long label ("Live e online") shrinks instead of being cut. */}
-            <FitText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ flexShrink: 1, color: on ? C.text : C.muted, fontFamily: ff(700), fontWeight: '700', fontSize: size === 'md' ? 14 : 13 }}>
+            <FitText numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={CONTROL_SCALE} style={{ flexShrink: 1, color: on ? C.text : C.muted, fontFamily: ff(on ? 800 : 600), fontWeight: on ? '800' : '600', fontSize: size === 'md' ? 14 : 13 }}>
               {o.label}
             </FitText>
             {o.locked ? <Ionicons name="lock-closed" size={10} color={C.accent} /> : null}
