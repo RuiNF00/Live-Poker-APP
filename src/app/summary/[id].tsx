@@ -132,7 +132,7 @@ export default function SessionSummary() {
         <Tile label={t('Maior pote')} value={biggest ? bbs(biggest.bb, 1) : '—'} />
       </Row>
 
-      {/* The marked hands come before the Pro teaser: reviewing them is what the session asks for now (Design). */}
+      {/* The asks are drawn in the order summaryPrompts picks them: marked hands, half-saved hands, Pro (Design). */}
       {shown.has('review') ? (
         <Banner
           icon="school-outline"
@@ -142,6 +142,19 @@ export default function SessionSummary() {
           onPress={() => router.push({ pathname: '/hand/[id]', params: { id: toReview[0].id, q: s.id } })}
         />
       ) : null}
+
+      {/* Hands saved with "Guardar já": one tap opens the oldest where it stopped. */}
+      {shown.has('unfinished') ? (
+        <Banner
+          tone="warn"
+          icon="create-outline"
+          title={left.length === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: left.length })}
+          action={t('Acabar')}
+          onPress={() => router.push({ pathname: '/hand/new', params: { edit: left[0].id } })}
+        />
+      ) : null}
+      {/* The session is over: the oldest half-saved hand can be told now, with its voice note. */}
+      {shown.has('unfinished') ? <TellByVoice handId={left[0].id} first={left.length > 1} /> : null}
 
       {shown.has('pro') && pro ? <SessionEndPro card={pro} profit={p} hours={playedMs(s) / 3_600_000} currency={s.currency} hideMoney={hideMoney} /> : null}
 
@@ -168,18 +181,6 @@ export default function SessionSummary() {
         </Pressable>
       ) : null}
 
-      {/* Hands saved with "Guardar já": one tap opens the oldest where it stopped. */}
-      {shown.has('unfinished') ? (
-        <Banner
-          tone="warn"
-          icon="create-outline"
-          title={left.length === 1 ? t('1 mão por completar') : t('{n} mãos por completar', { n: left.length })}
-          action={t('Acabar')}
-          onPress={() => router.push({ pathname: '/hand/new', params: { edit: left[0].id } })}
-        />
-      ) : null}
-      {/* The session is over: the oldest half-saved hand can be told now, with its voice note. */}
-      {shown.has('unfinished') ? <TellByVoice handId={left[0].id} first={left.length > 1} /> : null}
 
       {shown.has('nextPlay') ? <NextPlayCard sessions={sessions} ask={askNotify} /> : null}
 
