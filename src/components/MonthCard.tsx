@@ -77,7 +77,8 @@ export function MonthCard({
         </View>
         {b ? (
           <View style={{ gap: 4 }}>
-            <Kicker>{t('Melhor sessão')}</Kicker>
+            {/* Without amounts it shows the best session's length: said, so it isn't read as the longest. */}
+            <Kicker>{hideMoney ? t('A melhor sessão durou') : t('Melhor sessão')}</Kicker>
             <FitText style={{ fontFamily: F.mono, fontSize: 40, lineHeight: 46, color: INK, letterSpacing: -1 }}>{hideMoney ? duration(playedMs(b.session)) : signed(b.profit, r.currency)}</FitText>
             <Text allowFontScaling={false} numberOfLines={2} style={{ fontFamily: ff(700), fontSize: 13, lineHeight: 18, color: DIM }}>
               {[b.session.name || b.session.venue, shortDate(b.session.startedAt)].filter(Boolean).join(' · ')}

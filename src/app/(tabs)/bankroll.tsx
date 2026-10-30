@@ -35,6 +35,7 @@ import {
   formatOf,
   inRange,
   ledger,
+  ledgerMonths,
   sameScope,
   scopeCurrency,
   scopeIds,
@@ -191,6 +192,7 @@ function BankrollTab() {
   const onlyResults = game !== 'all' || format !== 'all' || stakes.length > 0;
   const history = useMemo(() => (full ? ledger(list, onlyResults ? [] : scopedTx.filter((x) => inRange(x.at, range))) : []), [full, list, onlyResults, scopedTx, range]);
   const { shown: shownHistory, more: moreHistory } = usePaged(history);
+  const historyMonths = useMemo(() => ledgerMonths(shownHistory, history, monthKey, profit), [shownHistory, history]);
   const nFilters = activeFilters(filter);
   // Nothing played yet in this bankroll: one next action, near the top.
   const fresh = !nFilters && !scoped.some((x) => x.endedAt);
@@ -510,25 +512,40 @@ function BankrollTab() {
           )}
           {history.length ? (
             <Section title={t('Histórico')}>
-              <ListGroup>
-                {shownHistory.map((e) =>
-                  'session' in e ? (
-                    <SessionRow
-                      key={e.session.id}
-                      s={e.session}
-                      bankroll={single ? undefined : bankrollOf(e.session, bankrolls)?.name}
-                      onEdit={() => setSheet({ type: 'session', s: e.session })}
-                    />
-                  ) : (
-                    <TransferRow
-                      key={e.transfer.id}
-                      x={e.transfer}
-                      bankroll={single ? undefined : bankrolls.find((b) => b.id === e.transfer.bankrollId)?.name}
-                      onPress={() => setSheet({ type: 'transfer', x: e.transfer, isNew: false })}
-                    />
-                  ),
-                )}
-              </ListGroup>
+              {/* By month, each with its result: 30 rows in one list said nothing about how a month went. */}
+              {historyMonths.map((g) => (
+                <View key={g.key} style={{ gap: S.xs }}>
+                  <Row gap={S.sm} style={{ paddingHorizontal: S.xs }}>
+                    <T v="label" style={{ flex: 1 }}>
+                      {[monthName(g.key, g.key.slice(0, 4) !== String(new Date().getFullYear())), g.sessions === 1 ? t('1 sessão') : g.sessions ? t('{n} sessões', { n: g.sessions }) : ''].filter(Boolean).join(' · ')}
+                    </T>
+                    {g.net !== null && g.currency ? (
+                      <T v="mono" color={hidden ? C.textDim : g.net > 0 ? C.good : g.net < 0 ? C.bad : C.textDim}>
+                        {(hidden ? '' : plus(g.net)) + fmt(g.net, g.currency)}
+                      </T>
+                    ) : null}
+                  </Row>
+                  <ListGroup>
+                    {g.entries.map((e) =>
+                      'session' in e ? (
+                        <SessionRow
+                          key={e.session.id}
+                          s={e.session}
+                          bankroll={single ? undefined : bankrollOf(e.session, bankrolls)?.name}
+                          onEdit={() => setSheet({ type: 'session', s: e.session })}
+                        />
+                      ) : (
+                        <TransferRow
+                          key={e.transfer.id}
+                          x={e.transfer}
+                          bankroll={single ? undefined : bankrolls.find((b) => b.id === e.transfer.bankrollId)?.name}
+                          onPress={() => setSheet({ type: 'transfer', x: e.transfer, isNew: false })}
+                        />
+                      ),
+                    )}
+                  </ListGroup>
+                </View>
+              ))}
               {moreHistory}
             </Section>
           ) : null}

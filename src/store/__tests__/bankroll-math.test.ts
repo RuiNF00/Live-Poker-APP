@@ -15,6 +15,8 @@ import {
   dropUnusedAuto,
   emptyDuplicates,
   foldSeparated,
+  ledger,
+  ledgerMonths,
   refold,
   ensureBankrolls,
   separateBankrolls,
@@ -346,4 +348,22 @@ test('endOfDay and the 30-day range follow the calendar across DST changes', () 
   }
   assert.equal(presetRange('30d', new Date(2026, 9, 26, 0, 30).getTime()).from, new Date(2026, 8, 27).getTime());
   assert.equal(presetRange('30d', new Date(2026, 2, 29, 23, 30).getTime()).from, new Date(2026, 1, 28).getTime());
+});
+
+test('the history in months: each month with its sessions and result, mixed currencies without a total', () => {
+  const at = (m: number, d: number) => new Date(2026, m, d, 20).getTime();
+  const s = (id: string, ts: number, net: number, currency = '€') => ({ id, startedAt: ts, endedAt: ts + 3_600_000, currency, net }) as unknown as Session;
+  const list = [s('a', at(9, 20), 100), s('b', at(9, 5), -30), s('c', at(8, 12), 50), s('d', at(8, 2), 10, '$')];
+  const tx = [{ id: 'x', at: at(9, 1), amount: 500 } as unknown as Transfer];
+  const all = ledger(list, tx);
+  const key = (t: number) => `${new Date(t).getFullYear()}-${new Date(t).getMonth() + 1}`;
+  const net = (x: Session) => (x as unknown as { net: number }).net;
+  const g = ledgerMonths(all, all, key, net);
+  assert.deepEqual(g.map((x) => [x.key, x.entries.length, x.sessions, x.net, x.currency]), [
+    ['2026-10', 3, 2, 70, '€'],
+    ['2026-9', 2, 2, null, null],
+  ]);
+  // «Mostrar mais» cut October short: the month still shows its whole total.
+  const cut = ledgerMonths(all.slice(0, 1), all, key, net);
+  assert.deepEqual(cut.map((x) => [x.entries.length, x.sessions, x.net]), [[1, 2, 70]]);
 });

@@ -16,7 +16,9 @@ import { Card, Row, T } from './ui';
 
 export const signed = (n: number, fmt: (n: number) => string) => plus(n, true) + fmt(Math.abs(n));
 // A rate, not an amount: the sign stays in privacy mode, as a real minus sign (−1,8, not -1,8).
-const bb = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1, minimumFractionDigits: Math.abs(n) < 10 ? 1 : 0 }).replace('-', '−');
+// Rounded first, so a rate that shows as 0,0 has no sign (it read «+0,0» next to a negative €/h).
+const r1 = (n: number) => Math.round(n * 10) / 10 || 0;
+const bb = (n: number) => r1(n).toLocaleString(locale, { maximumFractionDigits: 1, minimumFractionDigits: Math.abs(n) < 10 ? 1 : 0 }).replace('-', '−');
 
 /** The headline: rate, 95% range, BB/h and the sample behind it. */
 export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: string; hidden: boolean; onPress?: () => void }) {
@@ -43,7 +45,7 @@ export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: stri
       <Interval lo={w.lo} hi={w.hi} mid={w.hourly} />
       <T v="small">
         {[
-          t('{bb} BB/h (entre {lo} e {hi})', { bb: (w.bbHourly > 0 ? '+' : '') + bb(w.bbHourly), lo: bb(w.bbLo), hi: bb(w.bbHi) }),
+          t('{bb} BB/h (entre {lo} e {hi})', { bb: (r1(w.bbHourly) > 0 ? '+' : '') + bb(w.bbHourly), lo: bb(w.bbLo), hi: bb(w.bbHi) }),
           t('desvio padrão {sd}/h', { sd: fmt(w.sd) }),
           w.sessions === 1 ? t('{h} h em 1 sessão', { h: Math.round(w.hours).toLocaleString(locale) }) : t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
         ].join(' · ')}

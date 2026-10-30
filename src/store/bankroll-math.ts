@@ -509,6 +509,37 @@ export function activeFilters(f: SessionFilter): number {
 /** Newest first: sessions and transfers of the scope as one history. */
 export type LedgerEntry = { t: number; session: Session } | { t: number; transfer: Transfer };
 
+/**
+ * The history in months, newest first, each with what its sessions made (from `all`, so a month cut by
+ * «Mostrar mais» still shows its whole total). `net` is null when the month mixes currencies: one
+ * total would add euros to dollars. Deposits and withdrawals are listed but not counted.
+ */
+export function ledgerMonths(shown: readonly LedgerEntry[], all: readonly LedgerEntry[], monthOf: (t: number) => string, net: (s: Session) => number) {
+  const totals = new Map<string, { net: number; sessions: number; currencies: Set<string> }>();
+  for (const e of all) {
+    if (!('session' in e)) continue;
+    const k = monthOf(e.t);
+    const m = totals.get(k) ?? { net: 0, sessions: 0, currencies: new Set<string>() };
+    m.net += net(e.session);
+    m.sessions += 1;
+    m.currencies.add(e.session.currency);
+    totals.set(k, m);
+  }
+  const groups: { key: string; entries: LedgerEntry[]; sessions: number; net: number | null; currency: string | null }[] = [];
+  for (const e of shown) {
+    const k = monthOf(e.t);
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== k) {
+      const m = totals.get(k);
+      const one = m && m.currencies.size === 1 ? [...m.currencies][0] : null;
+      g = { key: k, entries: [], sessions: m?.sessions ?? 0, net: one ? m!.net : null, currency: one };
+      groups.push(g);
+    }
+    g.entries.push(e);
+  }
+  return groups;
+}
+
 export function ledger(sessions: Session[], transfers: Transfer[]): LedgerEntry[] {
   return [
     ...sessions.filter((s) => s.endedAt).map((s) => ({ t: s.startedAt, session: s })),
