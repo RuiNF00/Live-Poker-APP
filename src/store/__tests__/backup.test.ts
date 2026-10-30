@@ -183,3 +183,14 @@ test('backup carries weekly tournaments, checked field by field', () => {
   assert.deepEqual(junk.weekly, [w]);
   assert.deepEqual(parseBackup(JSON.stringify({ app: 'sweatbook', v: 1, hands: [], sessions: [], players: [] })).weekly, []);
 });
+
+test('a restore on a new phone keeps the bet sizes hand entry learned, and only well-formed ones', () => {
+  const sizes = { cash: { open: 3, threeBet: 9 }, mtt: { open: 2.2 } };
+  const got = restoredSettings({ ...DEFAULT_SETTINGS, onboarded: true }, { sizes } as never, true);
+  assert.deepEqual(got.sizes, sizes);
+  for (const bad of [{ cash: { open: -1 } }, { poker: { open: 3 } }, { cash: 'x' }, 'x']) {
+    assert.equal(restoredSettings({ ...DEFAULT_SETTINGS, onboarded: true }, { sizes: bad } as never, true).sizes, undefined);
+  }
+  // A phone in use keeps its own.
+  assert.equal(restoredSettings({ ...DEFAULT_SETTINGS, onboarded: true }, { sizes } as never, false).sizes, undefined);
+});

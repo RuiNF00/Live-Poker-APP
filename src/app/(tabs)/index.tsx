@@ -177,7 +177,7 @@ export default function HomeScreen() {
     // The first week's steps come before news and the backup tip: they're what brings a new player back.
     <StartChecklist state={checklist} />
   ) : news.item ? (
-    <WhatsNewCard item={news.item} onDismiss={news.dismiss} />
+    <WhatsNewCard item={news.item} onDismiss={news.dismiss} onShown={news.shown} />
   ) : suggest.show ? (
     <React.Suspense fallback={null}>
       <BackupSuggestion onDone={suggest.dismiss} />

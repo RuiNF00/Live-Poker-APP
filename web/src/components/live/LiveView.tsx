@@ -180,7 +180,7 @@ export function LiveView({
       <section className="live-grid">
         <Tile label={s.level ? c.level(s.level) : c.blinds} value={`${num(s.sb)}/${num(s.bb)}`} sub={s.ante ? `ante ${num(s.ante)}` : undefined} />
         <Tile label={c.time} value={clock(played)} />
-        <Tile label={c.entries} value={`${s.entries} × ${money(s.buyIn)}`} sub={s.addOn ? `+ add-on ${money(s.addOn)}` : undefined} />
+        <Tile label={c.entries} value={`${s.entries} × ${money(s.buyIn)}`} sub={s.addOn ? `+ ${mtt ? 'add-on' : 'top-ups'} ${money(s.addOn)}` : undefined} />
         <Tile label={c.invested} value={money(s.invested)} />
         {mtt && s.stage ? <Tile label={c.stage} value={c.stages[s.stage] ?? s.stage} /> : null}
         {s.hands ? <Tile label={c.hands} value={num(s.hands)} /> : null}

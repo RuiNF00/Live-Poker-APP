@@ -339,6 +339,8 @@ export function restoredSettings(cur: Settings, incoming: Partial<Settings> | un
     ...pick('notifyAmounts', isBool),
     ...pick('notifyHoldInSession', isBool),
     ...pick('icm', isBool),
+    // The bet sizes hand entry learned (Open 3x…): only cash/mtt maps of positive numbers.
+    ...pick('sizes', (v) => isObj(v) && Object.entries(v).every(([k, m]) => (k === 'cash' || k === 'mtt') && isObj(m) && Object.values(m).every((x) => isNum(x) && x > 0))),
     ...pick('streakPauses', (v) => Array.isArray(v) && v.every((p) => isObj(p) && isNum(p.from) && (p.to === undefined || isNum(p.to)))),
     ...pick('notify', (v) => isObj(v) && Object.entries(v).every(([k, x]) => /^[a-z]{1,20}$/.test(k) && isBool(x))),
     ...(Object.keys(rates).length ? { fxManual: rates } : {}),

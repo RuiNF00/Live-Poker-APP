@@ -18,15 +18,17 @@ import { C, ff, R } from '@/theme';
 
 const KEY = 'rl.whats-new.seen.v1';
 const VERSION = Constants.expoConfig?.version ?? '0';
+const SEEN_AFTER_MS = 1500;
 
 /** The release to announce, or null. Decided once per app open. */
-export function useWhatsNewCard(): { item: { icon: string; title: string; body: string } | null; dismiss: () => void } {
+export function useWhatsNewCard(): { item: { icon: string; title: string; body: string } | null; dismiss: () => void; shown: () => void } {
   const { ready, hands, sessions, activeSession } = useStore();
   const [show, setShow] = useState(false);
   const release = releaseFor(WHATS_NEW, VERSION);
   // What is remembered as dealt with: the release (not the app version), so 1.1.0 after 1.0.1's card doesn't show it twice.
   const key = release?.version ?? VERSION;
   const decided = React.useRef(false);
+  const stamp = React.useRef<WhatsNewSeen | null>(null);
 
   useEffect(() => {
     // During a session it waits for the next opening.
@@ -39,7 +41,9 @@ export function useWhatsNewCard(): { item: { icon: string; title: string; body: 
         seen = raw ? (JSON.parse(raw) as WhatsNewSeen) : null;
       } catch {}
       const step = whatsNewStep(seen, key, !!release?.items.length, hands.length + sessions.length > 0, Date.now());
-      if (step.next) await AsyncStorage.setItem(KEY, JSON.stringify(step.next)).catch(() => {});
+      // The 7 days start when the card is on screen (shown()), not while the first week's steps hold its place.
+      if (step.show) stamp.current = step.next;
+      else if (step.next) await AsyncStorage.setItem(KEY, JSON.stringify(step.next)).catch(() => {});
       setShow(step.show);
     })();
   }, [ready, activeSession, hands.length, sessions.length, release, key]);
@@ -48,11 +52,22 @@ export function useWhatsNewCard(): { item: { icon: string; title: string; body: 
     setShow(false);
     AsyncStorage.setItem(KEY, JSON.stringify({ version: key })).catch(() => {});
   };
+  const shown = React.useCallback(() => {
+    const next = stamp.current;
+    stamp.current = null;
+    if (next) AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+  }, []);
   // A session started after the card was dealt: it steps aside until the session ends.
-  return { item: show && release && !activeSession ? release.items[0] : null, dismiss };
+  return { item: show && release && !activeSession ? release.items[0] : null, dismiss, shown };
 }
 
-export function WhatsNewCard({ item, onDismiss }: { item: { icon: string; title: string; body: string }; onDismiss: () => void }) {
+export function WhatsNewCard({ item, onDismiss, onShown }: { item: { icon: string; title: string; body: string }; onDismiss: () => void; onShown?: () => void }) {
+  // Seen once it stays on screen: a first render the first week's steps replace a moment later doesn't count.
+  useEffect(() => {
+    if (!onShown) return;
+    const id = setTimeout(onShown, SEEN_AFTER_MS);
+    return () => clearTimeout(id);
+  }, [onShown]);
   const open = () => {
     onDismiss();
     router.push('/novidades');

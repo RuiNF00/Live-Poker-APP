@@ -759,7 +759,8 @@ function Live({ s }: { s: Session }) {
                       <NumField money label={t('Gorjetas ({currency})', { currency: s.currency })} value={finish.tips} onChange={(tips) => setFinish((f) => ({ ...f, tips }))} />
                       <NumField label={t('Mãos jogadas')} value={finish.handsDealt} onChange={(handsDealt) => setFinish((f) => ({ ...f, handsDealt }))} />
                     </Row>
-                    {mtt ? <NumField money label={t('Add-ons ({currency})', { currency: s.currency })} value={s.addOn || 0} onChange={(addOn) => save({ addOn })} /> : null}
+                    {/* A cash rebuy of another size lands here too (rebuyPatch): it can be put right before saving. */}
+                    <NumField money label={t(mtt ? 'Add-ons ({currency})' : 'Top-ups ({currency})', { currency: s.currency })} value={s.addOn || 0} onChange={(addOn) => save({ addOn })} />
                     {settings.mindAsk === false ? null : <React.Suspense fallback={null}><MindAfter value={s.mind} onChange={(mind) => save({ mind })} /></React.Suspense>}
                     <StakeFields s={s} onChange={save} />
                   </View>

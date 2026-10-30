@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import { readFileSync } from 'node:fs';
 // A long live cash night as it is played: a buy-in, a top-up of another size, moving up from
 // 1/2 to 2/5 halfway, a session that runs past midnight and a stop-loss for the day.
 import assert from 'node:assert/strict';
@@ -78,4 +79,13 @@ test('a daily stop-loss holds through midnight: a night at the casino is one day
   assert.equal(stopLoss(r, [first, { ...live, endedAt: at(18, 3), cashOut: 150 }, next], next, at(18, 17))!.lost, 100);
   // Per session, as before: only the live one.
   assert.equal(stopLoss({ ...r, stopLossPer: 'session' }, [first, live], live, at(18, 2))!.lost, 350);
+});
+
+test('a cash top-up reads as a top-up wherever the session is shown, and can be put right at the end', () => {
+  const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8');
+  // The backers' live view, in the app and on the page: «+ top-ups» for cash, «+ add-on» for a tournament.
+  assert.match(read('../../app/live/[id].tsx'), /\+ \$\{mtt \? 'add-on' : 'top-ups'\}/);
+  assert.match(read('../../../web/src/components/live/LiveView.tsx'), /\+ \$\{mtt \? 'add-on' : 'top-ups'\}/);
+  // The end form's «Mais detalhes» has the field for cash too.
+  assert.match(read('../../app/(tabs)/session.tsx'), /label=\{t\(mtt \? 'Add-ons \(\{currency\}\)' : 'Top-ups \(\{currency\}\)'/);
 });

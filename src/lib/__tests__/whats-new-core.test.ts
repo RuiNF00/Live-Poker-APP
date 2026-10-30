@@ -67,3 +67,18 @@ test('the card: never over a live session, and what is remembered is the release
   assert.match(src, /JSON\.stringify\(\{ version: key \}\)/);
   assert.doesNotMatch(src, /JSON\.stringify\(\{ version: VERSION \}\)/);
 });
+
+test('the 7 days start when the card is on screen, not while the first week holds its place', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../../components/WhatsNewCard.tsx', import.meta.url), 'utf8');
+  const home = readFileSync(new URL('../../app/(tabs)/index.tsx', import.meta.url), 'utf8');
+  // Dealt but not shown: nothing written; shown(): the stamp.
+  assert.match(src, /if \(step\.show\) stamp\.current = step\.next;\s*else if \(step\.next\) await AsyncStorage\.setItem/);
+  assert.match(src, /const id = setTimeout\(onShown, SEEN_AFTER_MS\);\s*return \(\) => clearTimeout\(id\);/);
+  assert.match(home, /<StartChecklist state=\{checklist\} \/>\s*\) : news\.item \?/);
+  assert.match(home, /<WhatsNewCard item=\{news\.item\} onDismiss=\{news\.dismiss\} onShown=\{news\.shown\} \/>/);
+  // In the step itself: a 1.0.0 phone that never saw the card gets the full 7 days from the first time it shows.
+  const day = 86_400_000;
+  const first = whatsNewStep({ version: '1.0.0' }, '1.0.1', true, true, 10 * day);
+  assert.deepEqual(first, { show: true, next: { version: '1.0.0', shownFor: '1.0.1', shownAt: 10 * day } });
+});
