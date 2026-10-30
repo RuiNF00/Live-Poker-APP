@@ -97,7 +97,9 @@ export default function HandScreen() {
   // Once asked it stays a question for this visit, even after the answer moves it out of the queue.
   const [openedAt] = useState(() => Date.now());
   const [quizFor, setQuizFor] = useState<string | null>(null);
-  if (queueOf && hand && !isSample && quizFor !== hand.id && isDue(hand, drill, openedAt)) setQuizFor(hand.id);
+  // A hand where hero never acted (a walk, or saved before hero's turn) has nothing to ask: it opens as usual.
+  const asks = !!hand && hand.actions.some((a) => a.p === hand.hero);
+  if (queueOf && hand && asks && !isSample && quizFor !== hand.id && isDue(hand, drill, openedAt)) setQuizFor(hand.id);
   const quiz = !!hand && quizFor === hand.id;
   // Until answered, the header keeps hero's result to itself.
   const [quizDone, setQuizDone] = useState(false);

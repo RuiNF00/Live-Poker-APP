@@ -96,8 +96,9 @@ export function newHand(opts: {
     n = session.tableSize;
     stack = session.stack;
     names = session.roster;
-  } else if (recent && !carry && (recent.endedAt ?? recent.startedAt) > lastAt) {
+  } else if (recent && recent.bb > 0 && !carry && (recent.endedAt ?? recent.startedAt) > lastAt) {
     // Cash or tournament, blinds and table from that session; a tournament starts again on its first stack.
+    // Imported sessions can carry no blinds or stack (import/results): those don't give the game.
     game = {
       kind: recent.kind,
       name: recent.name,
@@ -110,7 +111,7 @@ export function newHand(opts: {
       buyIn: recent.buyIn,
     };
     n = recent.tableSize;
-    stack = recent.kind === 'mtt' ? (recent.stackLog[0]?.stack ?? recent.stack) : recent.buyIn;
+    stack = (recent.kind === 'mtt' ? recent.stackLog[0]?.stack || recent.stack : recent.buyIn) || 100 * recent.bb;
   } else if (last) {
     // Straddles and bomb pots belong to one hand, never carried over.
     game = { ...last.game, straddles: undefined, straddleFrom: undefined, bombPot: undefined };

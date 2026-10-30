@@ -70,3 +70,14 @@ test('a new live session opens on the last cash game; a tournament keeps only th
   assert.deepEqual(nextLive('€', [mk({ kind: 'mtt', sb: 2000, bb: 4000 })]), { kind: 'mtt' });
   assert.deepEqual(nextLive('$', [mk()]), {}, 'another currency is another game');
 });
+
+test('an imported session with no blinds or stack does not give the game (no 0/0 hand with the blinds all-in)', () => {
+  const imported = mk({ kind: 'mtt', sb: 0, bb: 0, stack: 0, buyIn: 100 });
+  const h = newHand({ id: 'n', recent: imported });
+  assert.ok(h.game.bb > 0);
+  assert.ok(h.players.every((p) => p.stack > 0));
+  const noStack = newHand({ id: 'n', recent: mk({ kind: 'mtt', sb: 100, bb: 200, stack: 0 }) });
+  assert.equal(noStack.players[0].stack, 20000, 'no stack known: 100 bb');
+  assert.deepEqual(nextLive('€', [mk({ sb: 0, bb: 0, buyIn: 0 })]), { kind: 'cash' });
+  assert.deepEqual(nextLive('€', [mk({ buyIn: 0 })]), { kind: 'cash', sb: 1, bb: 2, ante: 0, anteType: 'none' });
+});

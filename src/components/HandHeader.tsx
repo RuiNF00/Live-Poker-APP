@@ -19,7 +19,9 @@ export function HandHeader({ hand, quiz, inBB = false }: { hand: Hand; quiz?: bo
   const stage = STAGES.find((s) => s.id === g.stage)?.label;
   const hero = hand.players[hand.hero];
   const r = replay(hand);
-  const auto = (quiz ? [] : autoTags(hand, r)).filter((tg) => !hand.tags.includes(tg));
+  // In quiz mode the player's own tags go too: «Bluff» or «Hero call» would give the answer away.
+  const tags = quiz ? [] : hand.tags;
+  const auto = (quiz ? [] : autoTags(hand, r)).filter((tg) => !tags.includes(tg));
   // Hero's own result; hidden in quiz mode so it doesn't give the answer away.
   const net = !quiz && r.result?.resolved ? r.result.net[hand.hero] : undefined;
   return (
@@ -52,9 +54,9 @@ export function HandHeader({ hand, quiz, inBB = false }: { hand: Hand; quiz?: bo
           </View>
         ) : null}
       </Row>
-      {hand.tags.length + auto.length > 0 && (
+      {tags.length + auto.length > 0 && (
         <Row style={{ flexWrap: 'wrap' }} gap={6}>
-          {hand.tags.map((tg) => (
+          {tags.map((tg) => (
             <Pill key={tg} label={t(tg)} color={C.accent} />
           ))}
           {auto.map((tg) => (
