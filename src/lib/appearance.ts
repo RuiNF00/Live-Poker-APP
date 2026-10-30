@@ -50,6 +50,9 @@ export async function setAppearance(next: AppearancePref): Promise<void> {
     return;
   }
   if (Platform.OS === 'web') return void location.reload();
+  // The override outlives a reload (same process): going back to Automático has to clear it,
+  // or the phone's own look would read as the old pick until the app is closed.
+  Appearance.setColorScheme(next === 'auto' ? 'unspecified' : next);
   if (__DEV__) return DevSettings.reload();
   const Updates = await import('expo-updates');
   await Updates.reloadAsync().catch(() => {});
