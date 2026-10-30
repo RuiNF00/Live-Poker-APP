@@ -18,7 +18,7 @@ export function DictationHelp({ onTry, onBack }: { onTry: (text: string) => void
     t('Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.'),
     t('As cartas de cada rua: flop, turn e river.'),
     t('No fim, o que mostraram, se mostraram.'),
-    t('Enganaste-te? Diz logo a seguir: «900, não, 1100».'),
+    t('Enganaste-te? Diz logo a seguir: «900, não, 1100», «no cutoff, não, no botão».'),
   ];
   const notYet = [
     t('Nomes ou lugares («o João», «o lugar 3», «o da minha esquerda»): diz a posição, como UTG, cutoff ou botão.'),

@@ -11,7 +11,7 @@ import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View, type ViewProp
 import { t } from '@/i18n';
 import { useSheetAnimation } from '@/lib/motion';
 import { positions, replay, usedCards } from '@/poker/engine';
-import type { CardCode, Hand, Street } from '@/poker/types';
+import type { Hand, Street } from '@/poker/types';
 import { handFromSpeech, type VoiceNote } from '@/poker/voice';
 import { C, R, S, ff, posColor } from '@/theme';
 
@@ -20,44 +20,7 @@ import { PlayingCard } from '../PlayingCard';
 import { STREET_LABEL, spokenCard, timeline } from '../replayer/model';
 import { Button, confirmAction, Field, Row, SheetHeader, T, tap, useSheetPad } from '../ui';
 import { DictationHelp } from './DictationHelp';
-
-/** Where a card sits: hero's two, the board's five, or an opponent's two. */
-type Slot = { k: 'hero'; i: number } | { k: 'board'; i: number } | { k: 'seat'; seat: number; i: number };
-const slotKey = (s: Slot) => (s.k === 'seat' ? `s${s.seat}.${s.i}` : `${s.k[0]}${s.i}`);
-
-function cardAt(hand: Hand, s: Slot): CardCode | undefined {
-  if (s.k === 'board') return hand.board[s.i];
-  return hand.players[s.k === 'hero' ? hand.hero : s.seat].cards?.[s.i];
-}
-
-function setCard(hand: Hand, s: Slot, c: CardCode): Hand {
-  if (s.k === 'board') return { ...hand, board: hand.board.map((x, i) => (i === s.i ? c : x)) };
-  const p = s.k === 'hero' ? hand.hero : s.seat;
-  return { ...hand, players: hand.players.map((x, i) => (i === p && x.cards ? { ...x, cards: x.cards.map((y, k) => (k === s.i ? c : y)) } : x)) };
-}
-
-/** Every card slot in the hand, so a picked card already in use swaps places with the one it replaces. */
-function slots(hand: Hand): Slot[] {
-  const out: Slot[] = [];
-  hand.players.forEach((p, seat) => p.cards?.forEach((_, i) => out.push(seat === hand.hero ? { k: 'hero', i } : { k: 'seat', seat, i })));
-  hand.board.forEach((_, i) => out.push({ k: 'board', i }));
-  return out;
-}
-
-/** The player's fixes on top of what was heard. A card used elsewhere trades places with the one it replaces. */
-function withFixes(hand: Hand, fixes: Record<string, CardCode>): Hand {
-  let h = hand;
-  for (const [key, c] of Object.entries(fixes)) {
-    const s = slots(h).find((x) => slotKey(x) === key);
-    if (!s) continue;
-    const old = cardAt(h, s);
-    if (!old || old === c) continue;
-    const other = slots(h).find((x) => cardAt(h, x) === c);
-    h = setCard(h, s, c);
-    if (other) h = setCard(h, other, old);
-  }
-  return h;
-}
+import { cardAt, liveFixes, slotKey, withFixes, type CardFixes, type Slot } from './voice-fixes';
 
 function noteText(n: VoiceNote, hand: Hand): string {
   const street = n.street ? STREET_LABEL[n.street] : '';
@@ -105,7 +68,7 @@ export function VoiceHandSheet({
   const sheetAnimation = useSheetAnimation();
   const sheetPad = useSheetPad(24);
   const [text, setText] = useState('');
-  const [fixes, setFixes] = useState<Record<string, CardCode>>({});
+  const [fixes, setFixes] = useState<CardFixes>({});
   const [picking, setPicking] = useState<Slot | null>(null);
   const [help, setHelp] = useState(false);
   // Back from the help, what matters is the result: no keyboard over it (Design P3).
@@ -113,7 +76,7 @@ export function VoiceHandSheet({
   const heard = useDeferredValue(text);
   const result = useMemo(() => handFromSpeech(heard, base), [heard, base]);
   const hand = useMemo(() => withFixes(result.hand, fixes), [result.hand, fixes]);
-  const fixed = new Set(Object.keys(fixes));
+  const fixed = new Set(Object.keys(liveFixes(result.hand, fixes)));
   const guessed = (s: Slot) => {
     const c = cardAt(hand, s);
     return !!c && result.guessed.includes(c) && !fixed.has(slotKey(s));
@@ -121,8 +84,7 @@ export function VoiceHandSheet({
 
   const change = (v: string) => {
     setText(v);
-    // New words make a new hand: fixes made to the old one no longer line up.
-    if (Object.keys(fixes).length) setFixes({});
+    // More words keep the cards already fixed: only a fix whose card was said again differently goes (liveFixes).
     setPicking(null);
   };
   const close = () => {
@@ -201,7 +163,8 @@ export function VoiceHandSheet({
           used={pickUsed}
           selected={[cardAt(hand, picking) ?? '']}
           onPick={(c) => {
-            setFixes((f) => ({ ...f, [slotKey(picking)]: c }));
+            const from = cardAt(result.hand, picking);
+            if (from) setFixes((f) => ({ ...liveFixes(result.hand, f), [slotKey(picking)]: { from, to: c } }));
             setPicking(null);
           }}
         />

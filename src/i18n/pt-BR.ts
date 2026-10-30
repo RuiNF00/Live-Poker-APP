@@ -2055,7 +2055,7 @@ const ptBR: Record<string, string> = {
   'A tua posição e as tuas cartas.': 'Sua posição e suas cartas.',
   'Em PLO, começa por «PLO» ou «Omaha» e diz as quatro cartas.': 'No PLO, comece com «PLO» ou «Omaha» e diga as quatro cartas.',
   'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Cada ação na ordem, com o valor: quem abre, quem paga, quem aumenta.',
-  'Enganaste-te? Diz logo a seguir: «900, não, 1100».': 'Errou? Diga logo em seguida: «900, não, 1100».',
+  'Enganaste-te? Diz logo a seguir: «900, não, 1100», «no cutoff, não, no botão».': 'Errou? Diga logo em seguida: «900, não, 1100», «no cutoff, não, no botão».',
   'Toca num exemplo para o experimentar.': 'Toque em um exemplo para testar.',
   'Põe este exemplo na mão': 'Coloca este exemplo na mão',
   'Ainda não percebemos': 'Ainda não entendemos',

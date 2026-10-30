@@ -143,8 +143,8 @@ function verbs(kind: VerbDef['kind'], p0: string[], p1: string[], p3: string[], 
 verbs('fold', ['fold', 'folded', 'foldeo', 'tiro', 'retiro'], ['foldo', 'foldei', 'folde', 'desisto', 'desisti', 'largo', 'larguei', 'corri', 'corro', 'fujo', 'fugi'], ['folds', 'folda', 'foge', 'fugiu', 'foldou', 'desiste', 'desistiu', 'larga', 'largou', 'correu', 'corre', 'foldea', 'tira', 'retira']);
 verbs('check', ['check', 'checked', 'checko', 'chequeo', 'mesa'], ['passo', 'passei', 'checkei', 'paso', 'pase', 'chequee', 'checo', 'cheque'], ['checks', 'passa', 'passou', 'checka', 'checkou', 'chequea', 'pasa', 'mesou', 'checa']);
 verbs('call', ['call', 'called', 'limp', 'limped', 'flat', 'flatted', 'calleo'], ['pago', 'paguei', 'pague', 'igualo', 'igualei', 'iguale', 'callo', 'limpo', 'limpei', 'completo', 'completei', 'complete', 'flato'], ['calls', 'paga', 'pagou', 'iguala', 'igualou', 'calla', 'limps', 'limpa', 'limpou', 'completa', 'completou', 'completes', 'completed', 'flats', 'callea', 'limpea']);
-verbs('bet', ['bet', 'betted', 'cbet', 'donk', 'lead', 'barrel', 'beteo', 'probe'], ['aposto', 'apostei', 'apuesto', 'aposte', 'beto', 'betei', 'cbeto', 'disparo', 'disparei'], ['bets', 'aposta', 'apostou', 'apuesta', 'beta', 'betou', 'cbets', 'leads', 'barrels', 'donks', 'betea', 'dispara', 'disparou']);
-verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'resubi', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises']);
+verbs('bet', ['bet', 'betted', 'cbet', 'donk', 'lead', 'barrel', 'beteo', 'probe'], ['aposto', 'apostei', 'apuesto', 'aposte', 'beto', 'betei', 'cbeto', 'disparo', 'disparei', 'boto', 'botei'], ['bets', 'aposta', 'apostou', 'apuesta', 'beta', 'betou', 'cbets', 'leads', 'barrels', 'donks', 'betea', 'dispara', 'disparou', 'bota', 'botou']);
+verbs('raise', ['raise', 'raised', 'reraise', 'reraised', 'open', 'opened', 'iso', 'squeeze', 'squeezed', 'raiseo', 'checkraise'], ['aumento', 'aumentei', 'subo', 'subi', 'abro', 'abri', 'resubo', 'resubi', 'isolo', 'isolei', 'reraiseo', 'relanco', 'relancei'], ['raises', 'reraises', 'opens', 'squeezes', 'isos', 'aumenta', 'aumentou', 'sobe', 'subiu', 'sube', 'subio', 'resube', 'resubio', 'isola', 'isolou', 'abre', 'abriu', 'abrio', 'relanca', 'relancou', 'checkraises', 'raisea']);
 verbs('bet', ['cbet'], ['cbeto'], ['cbets'], { cbet: true });
 verbs('raise', ['3bet', '4bet', '5bet', 'treebet', 'tribet'], ['3beto', '4beto', '3betei', '4betei'], ['3bets', '4bets', '5bets', '3beta', '4beta', '3betou', '4betou'], { open: true });
 verbs('fold', [], [], ['foldam', 'foldaram', 'desistem', 'desistiram', 'largam', 'largaram', 'correm', 'correram', 'foldean', 'foldearon'], { plural: true });
@@ -278,6 +278,8 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/(\d),(\d{3})(?!\d)/g, '$1$2').replace(/(\d),(\d)/g, '$1.$2');
   // "12 500" (pt-PT groups thousands with a space), but not blinds said as "200 400".
   s = s.replace(/(?<![\d.])(\d{1,3}) (\d{3})(?![\d.])/g, (m, a: string, b: string) => (Number(b) === Number(a) * 2 ? m : a + b));
+  // «Flop K72», «flop kq7»: a board typed or dictated as one word.
+  s = s.replace(/\b(flop|flope)\s+([akqjt2-9]{3})(?![\w.])/g, (_, f: string, c: string) => `${f} ${c.split('').join(' ')}`);
   s = s.replace(/(\d+(?:\.\d+)?)\s*k\b/g, (_, n) => String(Math.round(parseFloat(n) * 1000)));
   s = s.replace(/(\d+(?:\.\d+)?)\s*%/g, '$1 %');
   s = s.replace(/(\d)\s*x\b/g, '$1 x');
@@ -285,6 +287,10 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
   s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1 / $2');
   // "Abre para 900, não, para 1100", "subo a 1000, perdón, a 1100": the amount said last stands.
   s = s.replace(/(?<![\d.])\d+(?:\.\d+)?(?: (?:mil|bb|x|%))?[\s,.]+(?:(?:nao|no|perdon|perdao|desculpa|desculpe|digo|quer dizer|ou melhor|o sea|mejor dicho|mas bien|bueno|sorry|i mean|correction|correcao)[\s,.]+)+(?:(?:para|pra|a|to|por|de) )?(?=\d)(?!\d\s*-?\s*bet)/g, '');
+  // "No cutoff, não, no hijack", "rey siete dos, perdón, rey siete tres": what follows replaces what came
+  // before (fixSaid). «Não» only between pauses: «o UTG não paga» is no correction.
+  s = s.replace(/,\s*(?:nao|no)\s*[,.]/g, ' , fixit , ');
+  s = s.replace(/(^|[\s,.])(?:quer dizer|ou melhor|alias|digo|perdon|perdao|desculpa|desculpe|o sea|mejor dicho|mas bien|i mean|correction|correcao|sorry)(?=[\s,.])/g, '$1 , fixit , ');
   const sub: [RegExp, string | ((m: string) => string)][] = [
     // "O resto foge": the rest fold, it isn't "o resto" as in all-in.
     [/\b(?:o resto|os outros|el resto|los demas|the rest|resto) (?:fold|folds|foldam|foldaram|foldaron|foldean|desiste|desistem|desistiu|desistiram|larga|largam|corre|correm|correram|foge|fogem|fugiu|fugiram|sai|saem|saiu|sairam|se van|se fueron|se retira|se retiran|se tiran)\b/g, ' foldall '],
@@ -299,6 +305,17 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     [/\bme (?:la|lo) (?=[\p{L}§])/gu, ' me '],
     [/\ble (?=[\p{L}§])/gu, ' '],
     [/\bcheck[\s-]*raise[sd]?\b|\bcheque raise\b/g, ' checkraise '],
+    // The floor and dealer heard in the background: «seat open na mesa cinco», «open seat table 12», «asiento libre».
+    [/\b(?:seat open|open seat|lugar (?:livre|vago)|asiento (?:libre|vacio)|dealer change|troca de dealer|cambio de dealer|shuffle up and deal)\b(?: (?:na|en la|en|no|on|at) (?:mesa|table) \w+)?/g, ' , '],
+    // How the phone's dictation writes the English words when it hears them in Portuguese or Spanish.
+    [/\b(?:reise|reize|reiz|reice)\b/g, ' raise '],
+    [/\b(?:faco|fiz|faz|fez|dou|dei|da|deu|hago|hace) (?:um |o |el |un )?(?:col|cal|cole|coll)\b/g, (m: string) => ` ${m.split(' ')[0]} call `],
+    [/\bxeque\b/g, ' check '],
+    [/\bbigue\b/g, ' big '],
+    [/\bblinde\b/g, ' blind '],
+    [/\b(?:esmol|esmall|smol)\b/g, ' small '],
+    [/\b(?:catofe|catof|catoff|cutofe|cat off)\b/g, ' cutoff '],
+    [/\b(?:raijack|raijeque|haijack|hai jack)\b/g, ' hijack '],
     // "PLO5", "Omaha de 5 cartas", "Omaha Hi-Lo": not dealt by the app, kept as PLO with a note.
     [/\bplo5\b|\b(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)(?: de)? (?:5|five|cinco)[\s-]*(?:cartas|card|cards)\b|\b(?:5|five|cinco)[\s-]*(?:card|cards|cartas)[\s-]*(?:pot[\s-]*limit[\s-]*omaha|plo|omaha)\b|\b(?:plo|omaha)[\s-]*(?:hi[\s-]*lo|high[\s-]*low|o8|8 or better)\b/g, ' plo plox '],
     // "PLO", "Pot-Limit Omaha", "Omaha": four hole cards (see handFromSpeech). A number after
@@ -360,6 +377,11 @@ export function normalise(text: string): { words: string[]; raw: string[] } {
     // "Pasamos los dos", "passamos": everyone checks.
     [/\b(?:pasamos|passamos|checamos|checkeamos|we (?:both )?check(?:ed)?)(?: (?:los|las|os|as) (?:dos|dois|duas|tres))?\b/g, ' todos check '],
     [/\b(?:nao (?:paga|pagou) ninguem|no (?:paga|pago) nadie)\b/g, ' foldall '],
+    // «O HJ não paga», «no pago», «ele não aposta»: the call that didn't happen is a fold, the bet a check.
+    [/\b(?:nao|no) (?:paga|pagou|iguala|igualou)\b/g, ' folds '],
+    [/\b(?:nao|no) (?:pago|paguei|igualo|igualei)\b/g, ' foldo '],
+    [/\b(?:nao|no) (?:aposta|apostou|apuesta)\b/g, ' checks '],
+    [/\b(?:nao|no) (?:aposto|apostei|apuesto)\b/g, ' passo '],
     // "Ninguém aposta", "nadie apuesta": it checks through.
     [/\b(?:ninguem|nadie|nobody|no one|noone) (?:aposta|apostou|apuesta|aposto|bets|bet)\b/g, ' todos check '],
     // "fold até mim", "checked to the button": the action passes to that seat.
@@ -403,7 +425,9 @@ type Atom =
   | { t: 'only'; at: number }
   | { t: 'everyone'; at: number }
   | { t: 'straddle'; from: 'utg' | 'btn'; at: number }
-  | { t: 'break'; at: number };
+  | { t: 'break'; at: number }
+  /** «Não», «perdón», «quer dizer» between pauses: what follows replaces what came before (fixSaid). */
+  | { t: 'fix'; at: number };
 
 function isCardWord(w: string | undefined): boolean {
   if (!w) return false;
@@ -572,6 +596,24 @@ export function atomise(text: string, hole = 2): Atom[] {
       i++;
       continue;
     }
+    if (x === 'fixit') {
+      out.push({ t: 'fix', at: i });
+      i++;
+      // Cards for cards: read the way the ones they replace were (a board as eagerly as after «flop»).
+      const said = out.filter((o) => o.t !== 'break' && o.t !== 'fix');
+      const last = said[said.length - 1];
+      if (last?.t === 'cards') {
+        let j = i;
+        while (w[j] === ',') j++;
+        const board = said[said.length - 2]?.t === 'street';
+        const c = readCards(w, j, board ? 5 : hole, true);
+        if (c.cards.length) {
+          out.push({ t: 'cards', cards: c.cards, suited: c.suited, ds: c.ds, texture: c.texture, at: j });
+          i = c.next;
+        }
+      }
+      continue;
+    }
     if (x.startsWith('§')) {
       const k = Object.keys(ES_PAST_3)[Number(x.slice(1))];
       const v = ES_PAST_3[k];
@@ -586,6 +628,13 @@ export function atomise(text: string, hole = 2): Atom[] {
       if (c.cards.length) out.push({ t: 'cards', cards: c.cards, texture: c.texture, at: i + 1 });
       i = Math.max(i + 1, c.next);
       cardMode = null;
+      continue;
+    }
+    // "Os blinds passam", "las ciegas se retiran": the two blinds, not every seat still in (a multiway flop
+    // checked to the opener lost the opener's bet).
+    if ((x === 'os' || x === 'los' || x === 'las' || x === 'the') && (w[i + 1] === 'blinds' || w[i + 1] === 'ciegas') && VERBS[w[i + 2] ?? '']?.plural) {
+      out.push({ t: 'actor', a: { k: 'pos', label: 'SB' }, at: i }, { t: 'actor', a: { k: 'pos', label: 'BB' }, at: i + 1 });
+      i += 2;
       continue;
     }
     // "Os dois pagam", "todo mundo corre", "both call": every seat still to act does it.
@@ -893,6 +942,66 @@ export function atomise(text: string, hole = 2): Atom[] {
       }
     }
     i++;
+  }
+  return fixSaid(out);
+}
+
+type ActionAtom = Extract<Atom, { t: 'actor' | 'verb' | 'amount' | 'only' }>;
+const sameActor = (a: Actor | undefined, b: Actor | undefined) => !!a && !!b && a.k === b.k && (a.k !== 'pos' || a.label === (b as typeof a).label);
+
+/**
+ * Self-corrections, the way players say them: «no cutoff, não, no hijack», «ás rei, quer dizer, ás dama»,
+ * «flop rei sete dois, não, rei sete três», «o UTG abre, perdão, o HJ abre». The words after the marker
+ * take the place of the same kind of words before it, so the hand reads as if said right the first time.
+ * Nothing like them before: the marker is only a pause.
+ */
+function fixSaid(atoms: Atom[]): Atom[] {
+  const out: Atom[] = [];
+  for (let k = 0; k < atoms.length; k++) {
+    const a = atoms[k];
+    if (a.t !== 'fix') {
+      out.push(a);
+      continue;
+    }
+    // Drop the pauses around the marker.
+    while (out.length && out[out.length - 1].t === 'break') out.pop();
+    let n = k + 1;
+    while (atoms[n]?.t === 'break' || atoms[n]?.t === 'fix') n++;
+    const next = atoms[n];
+    const prev = out[out.length - 1];
+    if (!next || !prev) continue;
+    // One thing for another of its kind: a seat, cards (hole or board).
+    // «Turn dez, aliás, turn dama»: the street said again with its card.
+    if (next.t === 'street' && prev.t === 'cards' && out[out.length - 2]?.t === 'street' && (out[out.length - 2] as Extract<Atom, { t: 'street' }>).s === next.s) {
+      out.splice(out.length - 2, 2);
+      continue;
+    }
+    if ((prev.t === 'actor' && next.t === 'actor') || (prev.t === 'cards' && next.t === 'cards') || (prev.t === 'amount' && next.t === 'amount')) {
+      out[out.length - 1] = { ...next, at: prev.at } as Atom;
+      k = n;
+      continue;
+    }
+    // An action for another: «eu pago, não, eu subo para 3000», «o UTG abre, perdão, o HJ abre».
+    // Only when the two share their seat or their verb, so «subo, no, y él paga» stays as said.
+    const clause = (from: Atom[], start: number, step: 1 | -1) => {
+      const xs: ActionAtom[] = [];
+      for (let j = start; j >= 0 && j < from.length; j += step) {
+        const x = from[j];
+        if (x.t === 'actor' || x.t === 'verb' || x.t === 'amount' || x.t === 'only') xs.push(x);
+        else break;
+      }
+      return step === 1 ? xs : xs.reverse();
+    };
+    const before = clause(out, out.length - 1, -1);
+    const after = clause(atoms, n, 1);
+    const verbOf = (xs: ActionAtom[]) => xs.find((x): x is Extract<Atom, { t: 'verb' }> => x.t === 'verb');
+    const actorOf = (xs: ActionAtom[]) => xs.find((x): x is Extract<Atom, { t: 'actor' }> => x.t === 'actor')?.a;
+    const vb = verbOf(before), va = verbOf(after);
+    if (vb && va && (vb.v.kind === va.v.kind || sameActor(actorOf(before), actorOf(after)) || (!actorOf(after) && va.v.person === vb.v.person))) {
+      out.splice(out.length - before.length, before.length);
+      // A seat said only before the marker still acts: «o UTG abre para 1000, não, para 1100».
+      if (!actorOf(after) && actorOf(before)) out.push(before.find((x) => x.t === 'actor')!);
+    }
   }
   return out;
 }

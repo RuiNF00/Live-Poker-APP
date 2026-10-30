@@ -3827,7 +3827,7 @@ const en: Record<string, string> = {
   'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Each action in order, with the amount: who opens, who calls, who raises.',
   'As cartas de cada rua: flop, turn e river.': 'The cards on each street: flop, turn and river.',
   'No fim, o que mostraram, se mostraram.': 'At the end, what was shown, if anything.',
-  'Enganaste-te? Diz logo a seguir: «900, não, 1100».': 'Got it wrong? Say so right after: “900, sorry, 1100”.',
+  'Enganaste-te? Diz logo a seguir: «900, não, 1100», «no cutoff, não, no botão».': 'Got it wrong? Say so right after: “900, sorry, 1100”, “cutoff, sorry, button”.',
   'Exemplos': 'Examples',
   'Toca num exemplo para o experimentar.': 'Tap an example to try it.',
   'Põe este exemplo na mão': 'Puts this example in the hand',

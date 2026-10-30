@@ -3821,7 +3821,7 @@ const es: Record<string, string> = {
   'Cada ação pela ordem, com o valor: quem abre, quem paga, quem sobe.': 'Cada acción en orden, con la cantidad: quién abre, quién paga, quién sube.',
   'As cartas de cada rua: flop, turn e river.': 'Las cartas de cada calle: flop, turn y river.',
   'No fim, o que mostraram, se mostraram.': 'Al final, lo que mostraron, si mostraron algo.',
-  'Enganaste-te? Diz logo a seguir: «900, não, 1100».': '¿Te equivocaste? Dilo justo después: «900, no, perdón, 1100».',
+  'Enganaste-te? Diz logo a seguir: «900, não, 1100», «no cutoff, não, no botão».': '¿Te equivocaste? Dilo justo después: «900, no, perdón, 1100», «en el cutoff, perdón, en el botón».',
   'Exemplos': 'Ejemplos',
   'Toca num exemplo para o experimentar.': 'Toca un ejemplo para probarlo.',
   'Põe este exemplo na mão': 'Pone este ejemplo en la mano',
