@@ -16,7 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Animated, KeyboardAvoidingView, Platform, useWindowDimensions, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ONBOARDING_KEY } from '@/billing/onboarding';
@@ -32,6 +32,7 @@ import { SeatSheet } from '@/components/entry/SeatSheet';
 import { VoiceCapture, VoiceNotePlayer } from '@/components/audio';
 import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
+import { useFadeOnChange } from '@/lib/motion';
 import { Button, Chip, ChipRow, confirmAction, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { entrySeconds } from '@/lib/friction';
@@ -180,6 +181,8 @@ export default function NewHand() {
   else if (s.toAct !== null) phase = 'action';
   else if (r.result && !s.foldWin) phase = 'showdown';
   else phase = 'done';
+  // The dock's buttons change with the step (cards, action, board): a short fade says it is a new one.
+  const dockFade = useFadeOnChange(phase + ':' + s.street);
 
   // Most hands fold to hero: do that automatically, at the start and after each
   // opponent who comes in before hero. Once per state, so undo or a rewind
@@ -649,7 +652,8 @@ export default function NewHand() {
       </View>
 
       {/* dock: everything the thumb needs, pinned to the bottom */}
-      <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10, gap: 10 }]}>
+      <View style={[SHADOW, { backgroundColor: C.surface, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, borderTopWidth: 1, borderColor: C.border, paddingHorizontal: S.gutter, paddingTop: S.md, paddingBottom: insets.bottom + 10 }]}>
+        <Animated.View style={{ gap: 10, opacity: dockFade }}>
         {heldBackText ? (
           <T v="small" color={C.warn} accessibilityLiveRegion="polite">
             {heldBackText}
@@ -1007,6 +1011,7 @@ export default function NewHand() {
             <Button title={t('Guardar e ver replay')} onPress={() => save()} />
           </>
         )}
+        </Animated.View>
       </View>
 
       {toldOpened ? (

@@ -49,7 +49,7 @@ import { tripToCover } from '@/store/trip-math';
 import { deleteWeekly, saveWeekly, useWeekly, weeklyFrom, weeklyLevelStart, weeklyToday } from '@/store/weekly';
 import type { Session } from '@/store/types';
 import { C, S } from '@/theme';
-import { reduceMotion, useSheetAnimation } from '@/lib/motion';
+import { reduceMotion, useSheetAnimation, useTween } from '@/lib/motion';
 import { crashProbe } from '@/lib/crash-probe';
 import { useScreenReader } from '@/lib/screen-reader';
 
@@ -441,6 +441,8 @@ function Live({ s }: { s: Session }) {
   const first = s.stackLog[0]?.stack ?? s.stack;
   // Cash: against what went in, so a rebuy's chips don't read as a win. Tournament: chips since the start.
   const delta = mtt ? s.stack - first : s.stack - cost(s);
+  // The new stack counts to its value: an update at the table reads as done without a second look.
+  const stackShown = useTween(s.stack);
 
   const bumpLevel = (dir: 1 | -1) => {
     tap();
@@ -546,7 +548,7 @@ function Live({ s }: { s: Session }) {
                 <Ionicons name="pencil" size={13} color={C.accent} />
               </Row>
               <T v="monoL" numberOfLines={1} adjustsFontSizeToFit>
-                {chips(s.stack)}
+                {chips(stackShown)}
               </T>
               <Row gap={6}>
                 <T v="monoS">{bbs(s.stack, s.bb)}</T>
