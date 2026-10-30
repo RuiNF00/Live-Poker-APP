@@ -17,7 +17,7 @@ import { track } from '@/lib/events';
 import { canSendMessages, sendMessages, sendWhatsapp } from '@/lib/direct-share';
 import { notice } from '@/lib/notice';
 import { withLang } from '@/lib/link-lang';
-import { markShared, inviteStatus, type InviteStatus } from '@/lib/referrals';
+import { inviteStatus, lapsedInviteOffer, markShared, type InviteOffer, type InviteStatus } from '@/lib/referrals';
 import { shortDate } from '@/poker/format';
 import { C, F, R, S } from '@/theme';
 
@@ -40,8 +40,11 @@ export default function InviteScreen() {
     setS(undefined);
     inviteStatus().then(got);
   };
+  // A discount that ran out unused: said here, so it doesn't just vanish from the screen.
+  const [lapsed, setLapsed] = useState<InviteOffer | null>(null);
   useEffect(() => {
     inviteStatus().then(got);
+    lapsedInviteOffer().then(setLapsed);
   }, []);
 
   // The friend's page opens in the inviter's language (the link carries ?lang=).
@@ -94,7 +97,8 @@ export default function InviteScreen() {
             {t('{pct}% no primeiro mês por amigo', { pct: INVITE.pct })}
           </T>
           <T v="callout" style={{ textAlign: 'center' }}>
-            {t('Para ti e para o teu amigo. Até 10 amigos por ano.')}
+            {/* Already Pro: the first-month discount is no use to them, so it isn't promised. */}
+            {pro.isPro ? t('O teu amigo recebe o desconto. Tu já tens o Pro, por isso o teu fica por usar.') : t('Para ti e para o teu amigo. Até 10 amigos por ano.')}
           </T>
         </View>
 
@@ -129,6 +133,12 @@ export default function InviteScreen() {
               </>
             )}
           </Card>
+        ) : null}
+
+        {lapsed && !s?.offer && !pro.isPro ? (
+          <T v="small" style={{ textAlign: 'center' }}>
+            {t('O desconto do teu convite acabou a {date}. Cada amigo que convidares e guardar a primeira mão dá-te outro.', { date: shortDate(Date.parse(lapsed.until)) })}
+          </T>
         ) : null}
 
         <ListGroup>

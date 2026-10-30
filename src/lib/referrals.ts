@@ -13,7 +13,7 @@ import { BRAND } from '@/theme';
 import { onEraseAll } from './erase-hooks';
 import { installId, refCode, setRefCode, track } from './events';
 import { shouldRegister } from './invite-code';
-import { createInviteReward, inviteStatusFrom, OFFER_KEY, openOffer, type Activation, type ClaimState, type InviteOffer, type InviteStatus } from './invite-reward';
+import { createInviteReward, inviteStatusFrom, lapsedOffer, OFFER_KEY, openOffer, type Activation, type ClaimState, type InviteOffer, type InviteStatus } from './invite-reward';
 import { isOnline } from './online';
 import { outcomeOf, queue, registerSender } from './sync';
 
@@ -166,6 +166,11 @@ export type { InviteStatus };
 /** The last invite discount the server reported, while it can still be used (for the paywall, offline too). */
 export async function savedInviteOffer(): Promise<InviteOffer | null> {
   return openOffer(await getJSON<InviteOffer>(K.offer));
+}
+
+/** The last invite discount, when it ran out lately (the invite screen tells the player). */
+export async function lapsedInviteOffer(): Promise<InviteOffer | null> {
+  return lapsedOffer(await getJSON<InviteOffer>(K.offer));
 }
 
 /** null when invites are switched off on the server. */

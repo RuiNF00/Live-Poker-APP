@@ -57,6 +57,12 @@ export function inviteStatusFrom(x: unknown): InviteStatus | null {
 
 /** The offer while it can still be used, else null. */
 export const openOffer = (o: InviteOffer | null | undefined, now = Date.now()) => (o && Date.parse(o.until) > now ? o : null);
+/** An offer that ran out in the last 30 days: the invite screen says so, instead of the card just vanishing. */
+export const lapsedOffer = (o: InviteOffer | null | undefined, now = Date.now()) => {
+  const until = o ? Date.parse(o.until) : NaN;
+  return o && until <= now && now - until < 30 * 86400000 ? o : null;
+};
+
 /** Invite news found at the table or behind the app lock, kept until the player can read it. */
 export const NEWS_KEY = 'rl.ref.news.v1';
 export type InviteSide = 'friend' | 'inviter';
@@ -103,7 +109,9 @@ export function createInviteReward(kv: KV, postActivate: ActivatePost) {
 
   async function activate(): Promise<Activation> {
     const c = await get<ClaimState>(CLAIM_KEY);
-    if (!c || c.result !== 'ok' || c.activated) return 'none';
+    // «already» from the server: this install's claim got there before (an answer lost to the signal,
+    // then the outbox sent it again). The server books it only if still open, so asking is safe.
+    if (!c || c.activated) return 'none';
     if (!c.handSaved) {
       if (!(await get<boolean>(HAND_KEY))) return 'none';
       await set(CLAIM_KEY, { ...c, handSaved: true });
@@ -126,7 +134,7 @@ export function createInviteReward(kv: KV, postActivate: ActivatePost) {
     async claimAccepted(code: string, result: ClaimState['result']): Promise<Activation> {
       const hand = !!(await get<boolean>(HAND_KEY));
       await set(CLAIM_KEY, { code, result, ...(hand ? { handSaved: true } : {}) });
-      return result === 'ok' && hand ? activate() : 'none';
+      return hand ? activate() : 'none';
     },
 
     /** A hand was saved: remember it, and turn the reward on if an invite is already claimed. */
@@ -140,7 +148,7 @@ export function createInviteReward(kv: KV, postActivate: ActivatePost) {
     /** Claimed, hand saved, reward not booked yet. */
     async pending(): Promise<boolean> {
       const c = await get<ClaimState>(CLAIM_KEY);
-      return !!c && c.result === 'ok' && !c.activated && (!!c.handSaved || !!(await get<boolean>(HAND_KEY)));
+      return !!c && !c.activated && (!!c.handSaved || !!(await get<boolean>(HAND_KEY)));
     },
   };
 }

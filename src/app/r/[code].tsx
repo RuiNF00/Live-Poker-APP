@@ -10,14 +10,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, T, Wordmark } from '@/components/ui';
 import { t } from '@/i18n';
 import { linkSource, noteSource } from '@/lib/attribution';
-import { claimInvite, type ClaimResult } from '@/lib/referrals';
+import { claimInvite, claimState, type ClaimResult } from '@/lib/referrals';
 import { C, S } from '@/theme';
 
 const COPY: Partial<Record<ClaimResult, string>> = {
   queued: 'Sem rede agora: o convite fica guardado e é ativado sozinho quando houver sinal.',
   queued_busy: 'O servidor está ocupado: o convite fica guardado e é ativado sozinho daqui a pouco.',
   ok: 'Convite ativado. Guarda a tua primeira mão e recebem os dois 50% no primeiro mês do Pro.',
-  already: 'Já tens um convite ativo. Guarda uma mão para o usares.',
+  disabled: 'Os convites ainda não funcionam.',
   self: 'Este é o teu próprio convite. Partilha-o com amigos.',
   too_late: 'Este convite já não conta: passaram mais de 7 dias desde que instalaste a app.',
   unknown_code: 'Não encontrámos este convite.',
@@ -27,13 +27,25 @@ export default function InviteLanding() {
   const { code, utm_campaign } = useLocalSearchParams<{ code: string; utm_campaign?: string }>();
   const insets = useSafeAreaInsets();
   const [res, setRes] = useState<ClaimResult | null>(null);
+  // A second invite on a phone that has one: whether the first was already used decides what to say.
+  const [used, setUsed] = useState(false);
   useEffect(() => {
     if (!code) return;
     const campaign = utm_campaign ? String(utm_campaign) : undefined;
     noteSource(linkSource('invite', { utm_campaign: campaign }), campaign);
-    claimInvite(String(code), 'link').then(setRes);
+    claimInvite(String(code), 'link').then(async (r) => {
+      if (r === 'already') setUsed(!!(await claimState())?.activated);
+      setRes(r);
+    });
   }, [code, utm_campaign]);
-  const msg = res ? COPY[res] : null;
+  const msg =
+    res === 'already'
+      ? used
+        ? t('Este telemóvel já usou um convite. Só conta o primeiro.')
+        : t('Já tens um convite ativo neste telemóvel (só conta o primeiro). Guarda uma mão para o usares.')
+      : res && COPY[res]
+      ? t(COPY[res]!)
+      : null;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, padding: S.xl, paddingTop: insets.top + 48, paddingBottom: insets.bottom + S.xl, gap: S.lg }}>
       <Wordmark size={26} />
@@ -42,7 +54,7 @@ export default function InviteLanding() {
           <Ionicons name="gift" size={30} color={C.accent} />
         </View>
         <T v="title">{t('Vens por convite')}</T>
-        <T v="callout">{msg ? t(msg) : res ? t('Não deu para ativar o convite agora. Podes escrever o código nas Definições.') : t('A ativar o convite…')}</T>
+        <T v="callout">{msg ? msg : res ? t('Não deu para ativar o convite agora. Podes escrever o código nas Definições.') : t('A ativar o convite…')}</T>
       </View>
       <Button title={t('Registar a minha primeira mão')} icon="add" onPress={() => router.replace('/hand/new')} />
       <Button kind="ghost" size="md" title={t('Ver uma mão de exemplo')} onPress={() => router.replace('/hand/sample')} />

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { canAnnounce, CLAIM_KEY, createInviteReward, inviteNewsBox, inviteStatusFrom, NEWS_KEY } from '../invite-reward';
+import { canAnnounce, CLAIM_KEY, createInviteReward, inviteNewsBox, inviteStatusFrom, lapsedOffer, NEWS_KEY } from '../invite-reward';
 
 function mem() {
   const m = new Map<string, string>();
@@ -62,15 +62,29 @@ test('booked:false and lost signal are retried until booked, then never again', 
   assert.equal(s.calls, 2);
 });
 
-test('no invite, or an already-used one: hands never call the server', async () => {
+test('no invite: hands never call the server', async () => {
   const { s, post } = server();
   s.online = true;
   const r = createInviteReward(mem(), post);
   assert.equal(await r.handSaved(), 'none');
-  assert.equal(await r.claimAccepted('k7qx4mzp', 'already'), 'none');
-  assert.equal(await r.handSaved(), 'none');
   assert.equal(await r.pending(), false);
   assert.equal(s.calls, 0);
+});
+
+test('«already» from the server (the first answer lost to the signal) still books the reward', async () => {
+  const kv = mem();
+  const { s, post } = server();
+  s.online = true;
+  const r = createInviteReward(kv, post);
+  assert.equal(await r.claimAccepted('k7qx4mzp', 'already'), 'none'); // no hand yet
+  assert.equal(await r.handSaved(), 'granted');
+  assert.equal(s.calls, 1);
+  assert.equal(await r.handSaved(), 'none');
+  // Already booked long ago (a reinstall): the server says booked, and the app finds no open offer to announce.
+  const r2 = createInviteReward(mem(), post);
+  await r2.handSaved();
+  assert.equal(await r2.claimAccepted('k7qx4mzp', 'already'), 'granted');
+  assert.equal(s.calls, 2);
 });
 
 test('a claim saved by an older version (handSaved on the claim, no hand marker) still activates', async () => {
@@ -118,4 +132,13 @@ test('invite news kept from the table is said once afterwards, and not once the 
   await box.hold({ offer, side: 'inviter' });
   assert.equal(await box.take(Date.parse('2026-12-21T00:00:00Z')), null, 'expired: dropped');
   assert.equal(await box.take(now), null);
+});
+
+test('lapsedOffer: an offer that ran out in the last 30 days, not an open or an old one', () => {
+  const now = Date.parse('2026-11-10T12:00:00Z');
+  const o = (until: string) => ({ until, iosCode: null });
+  assert.ok(lapsedOffer(o('2026-11-09T12:00:00Z'), now));
+  assert.equal(lapsedOffer(o('2026-11-11T12:00:00Z'), now), null);
+  assert.equal(lapsedOffer(o('2026-09-01T12:00:00Z'), now), null);
+  assert.equal(lapsedOffer(null, now), null);
 });
