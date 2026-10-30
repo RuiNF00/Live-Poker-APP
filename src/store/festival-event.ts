@@ -41,6 +41,20 @@ export function phoneStart(f: Festival, e: FestivalEvent, phoneOffsetMin: (ms: n
   return { ms, otherDay: phoneDay !== e.start.slice(0, 10) };
 }
 
+/**
+ * When an event starts, as the player's phone tells time: the venue's «16:00» when the phone is in the
+ * venue's zone; the phone's own hour when it isn't (still at home), with the day when that differs.
+ */
+export function startOnPhone(f: Festival, e: FestivalEvent, loc: string, phoneOffsetMin?: (ms: number) => number): string {
+  const p = phoneStart(f, e, phoneOffsetMin);
+  if (!p) return e.start.slice(11);
+  const off = (phoneOffsetMin ?? ((ms: number) => -new Date(ms).getTimezoneOffset()))(p.ms);
+  // Formatted in UTC from the phone's offset, so the result doesn't depend on where the code runs.
+  const d = new Date(p.ms + off * 60_000);
+  const o: Intl.DateTimeFormatOptions = { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
+  return d.toLocaleString(loc, p.otherDay ? { ...o, weekday: 'short' } : o);
+}
+
 /** "Flight 1A", "Dia 2", "Dia 2 · Flight 2BC"; null for a single-row tournament. */
 export function flightLabel(e: FestivalEvent): string | null {
   if (!e.flight) return null;

@@ -6,7 +6,7 @@ import { LISBOA_NOV_2026, SAO_PAULO_NOV_2026 as SP } from '../../poker/festivals
 import { BAHAMAS_DEC_2026 as F } from '../../poker/festival-data';
 import { venueTime } from '../../poker/festivals';
 import { STRUCTURES } from '../../poker/festival-structures';
-import { bigBlinds, closeLevel, entryFlights, flightLabel, hoursLabel, lateRegClose, levelStarts, phoneStart, tournamentRows } from '../festival-event';
+import { bigBlinds, closeLevel, entryFlights, flightLabel, hoursLabel, lateRegClose, levelStarts, phoneStart, startOnPhone, tournamentRows } from '../festival-event';
 import { ownEvent } from '../festival-plan';
 
 const byId = (f: typeof SP, id: string) => f.events.find((e) => e.id === id)!;
@@ -84,4 +84,15 @@ test('every published structure belongs to a hold’em or Omaha tournament and r
       for (const [after, min] of s.breaks) assert.ok(after >= 1 && after < s.levels.length && min > 0 && min <= 90, `${fid} #${num} break after ${after}`);
     }
   }
+});
+
+test('startOnPhone: the venue hour in the venue zone, the phone hour (and day) away from it', () => {
+  const e = byId(SP, '26-1B'); // 20:00 in São Paulo (UTC−3)
+  // Already in São Paulo (UTC−3): as printed.
+  assert.equal(startOnPhone(SP, e, 'pt-PT', () => -180), '20:00');
+  // Still in Lisbon (UTC+0): 23:00 the same day.
+  assert.equal(startOnPhone(SP, e, 'pt-PT', () => 0), '23:00');
+  // In Madrid (UTC+1): midnight, so the day goes with it.
+  assert.match(startOnPhone(SP, e, 'pt-PT', () => 60), /00:00/);
+  assert.notEqual(startOnPhone(SP, e, 'pt-PT', () => 60), '00:00');
 });
