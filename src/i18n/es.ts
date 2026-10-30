@@ -1785,6 +1785,7 @@ const es: Record<string, string> = {
   'Retido': 'Retenido',
   'Retido na fonte': 'Retenido en origen',
   'Se declaras impostos nos EUA': 'Si declaras impuestos en EE. UU.',
+  'Só tens formulários 1042-S: quem não é residente nos EUA, em regra, não pode deduzir perdas. Confirma com um consultor fiscal.': 'Solo tienes formularios 1042-S: quien no es residente en EE. UU., por regla general, no puede deducir pérdidas. Confírmalo con un asesor fiscal.',
   'Sem país': 'Sin país',
   'Tirar foto': 'Tomar foto',
   'Estados Unidos': 'Estados Unidos',

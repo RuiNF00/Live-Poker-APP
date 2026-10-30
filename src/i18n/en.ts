@@ -1891,6 +1891,7 @@ const en: Record<string, string> = {
   'Retido': 'Withheld',
   'Retido na fonte': 'Withheld at source',
   'Se declaras impostos nos EUA': 'If you file taxes in the US',
+  'Só tens formulários 1042-S: quem não é residente nos EUA, em regra, não pode deduzir perdas. Confirma com um consultor fiscal.': 'You only have 1042-S forms: non-residents of the US generally can\'t deduct losses. Check with a tax adviser.',
   'Sem país': 'No country',
   'Tirar foto': 'Take photo',
   'Estados Unidos': 'United States',

@@ -906,6 +906,7 @@ const ptBR: Record<string, string> = {
   'Não residentes nos EUA: 30% se o teu país não tem tratado. Pode pedir-se de volta até 3 anos depois.': 'Não residentes nos EUA: 30% se o seu país não tem tratado. Dá para pedir de volta até 3 anos depois.',
   'Recibos de buy-in e cash-out, W-2G, 1042-S. Ficam no telemóvel, não vão para a nuvem.': 'Recibos de buy-in e cash-out, W-2G, 1042-S. Ficam no celular, não vão para a nuvem.',
   'Se declaras impostos nos EUA': 'Se você declara impostos nos EUA',
+  'Só tens formulários 1042-S: quem não é residente nos EUA, em regra, não pode deduzir perdas. Confirma com um consultor fiscal.': 'Você só tem formulários 1042-S: quem não é residente nos EUA, em geral, não pode deduzir perdas. Confirme com um consultor tributário.',
   'Mónaco': 'Mônaco',
   'Chéquia': 'Tchéquia',
   'Eslovénia': 'Eslovênia',

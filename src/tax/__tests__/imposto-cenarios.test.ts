@@ -170,3 +170,18 @@ test('the PDF never shows «+0 €» or a red «0 €» for less than a cent', (
     assert.doesNotMatch(html, /class="n (pos|neg)">[+]?0/, `${p} ${cur}`);
   }
 });
+
+test('only 1042-S forms: the US block stays, with a note that non-residents as a rule cannot deduct losses', () => {
+  const win = sess({ country: 'US', currency: '$', buyIn: 1000, cashOut: 21000, startedAt: at(2026, 6, 1), endedAt: at(2026, 6, 1) + 4 * H, withheld: { amount: 6000, form: '1042-S', status: 'recover' } });
+  const loss = sess({ country: 'US', currency: '$', buyIn: 2000, cashOut: 0, startedAt: at(2026, 6, 2), endedAt: at(2026, 6, 2) + 4 * H });
+  const a = pdf([win, loss]);
+  assert.equal(a.tax.usNonResident, true);
+  assert.ok(a.tax.us?.length, 'the deduction rows are still shown');
+  assert.match(a.html, /1042-S/);
+  assert.match(a.html, /consultor fiscal/);
+  // With a W-2G too (or no form at all), no note.
+  const w2g = { ...win, id: 'w2', withheld: { amount: 4800, form: 'W-2G' as const, status: 'final' as const } };
+  assert.equal(pdf([win, w2g, loss]).tax.usNonResident, undefined);
+  assert.equal(pdf([{ ...win, withheld: undefined }, loss]).tax.usNonResident, undefined);
+  assert.doesNotMatch(pdf([w2g, loss]).html, /consultor fiscal/);
+});

@@ -46,6 +46,8 @@ export interface TaxReport {
   rows: TaxRow[];
   /** Shown when anything points at US taxes: a session in the US, or a W-2G or 1042-S. */
   us: UsLosses[] | null;
+  /** Only 1042-S forms, no W-2G: a US non-resident, who as a rule can't deduct losses (the PDF says so, with the numbers). */
+  usNonResident?: boolean;
   /** Withheld and still to recover, per currency. */
   pending: { currency: string; amount: number }[];
   /** Poker expenses per currency: trip expenses by kind, plus the expenses typed on sessions. */
@@ -143,5 +145,7 @@ export function taxReport(sessions: Session[], range: DateRange, trips: { trip: 
   const expenses = [...exp.values()].map((b) => ({ ...b, sessions: r2(b.sessions), total: r2(b.total), byKind: Object.fromEntries(EXPENSE_KINDS.map((k) => [k, r2(b.byKind[k])])) as Record<ExpenseKind, number> }));
   const sharesIncluded = list.some((s) => soldShare(s) > 0 || !!s.swapNet || !!s.makeupCut);
 
-  return { rows: out, us, pending: [...pend.entries()].map(([currency, amount]) => ({ currency, amount: r2(amount) })), expenses, sharesIncluded };
+  const forms = new Set(list.map((s) => s.withheld?.form).filter(Boolean));
+  const usNonResident = !!us && forms.has('1042-S') && !forms.has('W-2G');
+  return { rows: out, us, ...(usNonResident ? { usNonResident } : null), pending: [...pend.entries()].map(([currency, amount]) => ({ currency, amount: r2(amount) })), expenses, sharesIncluded };
 }

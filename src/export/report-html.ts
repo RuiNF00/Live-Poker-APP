@@ -196,6 +196,7 @@ function taxBlock(x: TaxReport, scoped = false): string {
         )
         .join('')}</tbody>
     </table>
+    ${x.usNonResident ? `<p class="muted"><b>${esc(t('Só tens formulários 1042-S: quem não é residente nos EUA, em regra, não pode deduzir perdas. Confirma com um consultor fiscal.'))}</b></p>` : ''}
     <p class="muted">${esc(t('A partir de 2026 só 90% das perdas são dedutíveis, e nunca mais do que os ganhos. Quem declara nos EUA precisa de cada sessão documentada: data, local, jogo, buy-ins e cash-outs.'))}${x.us.some((u) => u.lostToCap) ? ' ' + esc(t('Neste período, {amount} de perdas ficam por deduzir por causa desta regra.', { amount: x.us.filter((u) => u.lostToCap).map((u) => rawMoney(u.lostToCap, u.currency)).join(' + ') })) : ''}</p>`
     : '';
   return `
