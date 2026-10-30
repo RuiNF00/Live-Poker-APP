@@ -13,7 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
-import { stakeCost, stakePrize } from '@/store/staking';
+import { cents, stakeCost, stakeDue, stakePrize } from '@/store/staking';
 import { stakesOf } from '@/store/session-math';
 import type { Backer, Session, Stake, StakePackage } from '@/store/types';
 
@@ -179,12 +179,15 @@ export function covers(line: PackageLine, eventId: string): boolean {
   return !!line.paid && !(Array.isArray(line.paidSkipped) && line.paidSkipped.includes(eventId));
 }
 
-/** The backers' stakes for a session started from this event. Pieces not paid for it count against the backer. */
+/**
+ * The backers' stakes for a session started from this event. Pieces not paid for it count against the backer;
+ * a paid one covered one entry (`prepaid`): the backer's share of re-entries and add-on is still theirs to pay.
+ */
 export function stakesFor(offers: ActionOffer[], festivalId: string, eventId: string): Stake[] {
   const out: Stake[] = [];
   for (const o of offers) {
     if (o.festivalId !== festivalId || !o.events.includes(eventId)) continue;
-    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, ...(o.bountiesKept ? { bountiesKept: true as const } : null), unpaid: covers(l, eventId) ? undefined : true });
+    for (const l of o.lines) out.push({ backerId: l.backerId, packageId: l.packageId, share: l.pct, markup: o.markup, ...(o.bountiesKept ? { bountiesKept: true as const } : null), ...(covers(l, eventId) ? { prepaid: true as const } : { unpaid: true }) });
   }
   return out;
 }
@@ -262,6 +265,8 @@ export interface SettlementRow {
   cost: number;
   /** Their share of the prize (ended sessions). */
   prize: number;
+  /** What they still have to pay for it: the whole cost when the piece doesn't cover it, else the re-entries (stakeDue). */
+  due: number;
 }
 
 /**
@@ -271,23 +276,36 @@ export interface SettlementRow {
  * backer sends it to the player. Matches what the package adds to their staking
  * balance (pendingCost, missedRefund and the sessions' stakes).
  */
-export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, started: Record<string, string>, sessions: Session[], now = Date.now()) {
+export function lineSettlement(
+  f: Festival,
+  o: ActionOffer,
+  line: PackageLine,
+  started: Record<string, string>,
+  sessions: Session[],
+  now = Date.now(),
+  /** A session's money in the festival's currency (one logged in another currency), at that day's rate. */
+  k: (s: Session) => number = () => 1,
+) {
   const rows: SettlementRow[] = offerEvents(f, o).map((e) => {
     const s = started[e.id] ? sessions.find((x) => x.id === started[e.id]) : undefined;
     const x = s && stakesOf(s).find((y) => y.packageId === line.packageId);
     if (s && x) {
-      const prize = s.endedAt ? stakePrize(s, x) : 0;
-      return { event: e, state: !s.endedAt ? 'live' : prize > 0 ? 'cashed' : 'busted', cost: stakeCost(s, x), prize };
+      const r = s.currency && s.currency !== f.currency ? k(s) : 1;
+      const prize = s.endedAt ? cents(stakePrize(s, x) * r) : 0;
+      return { event: e, state: !s.endedAt ? 'live' : prize > 0 ? 'cashed' : 'busted', cost: cents(stakeCost(s, x) * r), prize, due: cents(stakeDue(s, x) * r) };
     }
-    if (missed(o, e, started)) return { event: e, state: 'missed', cost: 0, prize: 0 };
+    if (missed(o, e, started)) return { event: e, state: 'missed', cost: 0, prize: 0, due: 0 };
     // Gone by with no session and no answer yet: still charged, until the player says.
     const waiting = venueTime(f, e.start) + ASK_AFTER < now;
-    return { event: e, state: waiting ? 'waiting' : 'upcoming', cost: eventPiece(o, e, line.pct), prize: 0 };
+    const cost = cents(eventPiece(o, e, line.pct));
+    return { event: e, state: waiting ? 'waiting' : 'upcoming', cost, prize: 0, due: covers(line, e.id) ? 0 : cost };
   });
-  const prizes = r2(rows.reduce((a, r) => a + r.prize, 0));
-  const cost = r2(rows.reduce((a, r) => a + r.cost, 0));
-  // What the payment didn't cover: all of it unpaid, or an event skipped before paying and played after.
-  const owed = r2(rows.filter((r) => !covers(line, r.event.id)).reduce((a, r) => a + r.cost, 0));
+  // Each row to the cent, as the backer's page shows them: the totals are the sum of the rows.
+  const prizes = cents(rows.reduce((a, r) => a + r.prize, 0));
+  const cost = cents(rows.reduce((a, r) => a + r.cost, 0));
+  // What the payment didn't cover: all of it unpaid, an event skipped before paying and played after,
+  // or their share of re-entries and add-on, which one entry paid ahead never covered.
+  const owed = cents(rows.reduce((a, r) => a + r.due, 0));
   const paid = !!line.paid && owed < 0.005;
   const refund = missedRefund(f, o, line, started);
   return {
@@ -297,7 +315,7 @@ export function lineSettlement(f: Festival, o: ActionOffer, line: PackageLine, s
     cost: paid ? cost : owed,
     paid,
     refund,
-    net: r2(prizes + refund - owed),
+    net: cents(prizes + refund - owed),
     /** Every event ended or not played (as the player said): the numbers won't change. */
     done: rows.every((r) => r.state === 'cashed' || r.state === 'busted' || r.state === 'missed'),
     live: rows.filter((r) => r.state === 'live').length,
@@ -397,8 +415,8 @@ export function linesSettledWith(
   started: (festivalId: string) => Record<string, string>,
   rateOf: (o: ActionOffer, currency: string) => number | null,
   stakesDue: (line: PackageLine) => number = () => 0,
-): { offerId: string; festivalId: string; lineId: string; due: number }[] {
-  const out: { offerId: string; festivalId: string; lineId: string; due: number }[] = [];
+): { offerId: string; festivalId: string; lineId: string; packageId: string; due: number }[] {
+  const out: { offerId: string; festivalId: string; lineId: string; packageId: string; due: number }[] = [];
   for (const o of offers) {
     const f = festival(o.festivalId);
     if (!f || !o.lines.some((l) => l.backerId === backerId)) continue;
@@ -410,7 +428,7 @@ export function linesSettledWith(
       // A refund for events not played is in the balance too: settled, it is paid back (QA P2, 19 Oct).
       const back = missedRefund(f, o, l, st);
       const due = (pendingCost(f, o, l, st) - back) * x + stakesDue(l);
-      if (Math.abs(due) > 0.005 || back > 0) out.push({ offerId: o.id, festivalId: f.id, lineId: l.id, due });
+      if (Math.abs(due) > 0.005 || back > 0) out.push({ offerId: o.id, festivalId: f.id, lineId: l.id, packageId: l.packageId, due });
     }
   }
   return out;
@@ -442,10 +460,46 @@ export function offerPackageIds(offers: ActionOffer[]): Set<string> {
 
 /**
  * Puts the offer's stakes on a session, replacing the ones it put there before
- * (same package) and keeping any the player added by hand.
+ * (same package) and keeping any the player added by hand. A piece already paid in full
+ * (re-entries settled, or from before they were charged) stays paid when its line is paid.
  */
 export function withOfferStakes(existing: Stake[] | undefined, fromOffer: Stake[], packageIds: Set<string>): Stake[] {
-  return [...(existing ?? []).filter((x) => !x.packageId || !packageIds.has(x.packageId)), ...fromOffer];
+  const had = new Map((existing ?? []).filter((x) => x.packageId).map((x) => [x.packageId, x]));
+  const inFull = (x: Stake) => {
+    const h = x.prepaid && had.get(x.packageId);
+    return !!h && !h.unpaid && !h.prepaid;
+  };
+  return [
+    ...(existing ?? []).filter((x) => !x.packageId || !packageIds.has(x.packageId)),
+    ...fromOffer.map((x) => {
+      if (!inFull(x)) return x;
+      const y = { ...x };
+      delete y.prepaid;
+      return y;
+    }),
+  ];
+}
+
+/**
+ * Festival pieces paid in full with a settlement: their stakes on sessions lose «por pagar» and
+ * the re-entries still due, so the line's stakes rebuilt after (offerStakeChanges) stay paid.
+ */
+export function paidInFull(sessions: Session[], packageIds: Set<string>): Session[] {
+  const out: Session[] = [];
+  for (const s of sessions) {
+    if (!s.stakes?.some((x) => x.packageId && packageIds.has(x.packageId) && (x.unpaid || x.prepaid))) continue;
+    out.push({
+      ...s,
+      stakes: s.stakes.map((x) => {
+        if (!x.packageId || !packageIds.has(x.packageId)) return x;
+        const y = { ...x };
+        delete y.unpaid;
+        delete y.prepaid;
+        return y;
+      }),
+    });
+  }
+  return out;
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────

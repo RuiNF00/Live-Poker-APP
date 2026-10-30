@@ -66,7 +66,7 @@ test('sessions from the package events carry each backer, unpaid until marked pa
     { id: 'l2', backerId: 'b2', packageId: 'p2', pct: 5 },
   ]);
   assert.deepEqual(stakesFor([o], F.id, '2'), [
-    { backerId: 'b1', packageId: 'p1', share: 10, markup: 1.2, unpaid: undefined },
+    { backerId: 'b1', packageId: 'p1', share: 10, markup: 1.2, prepaid: true },
     { backerId: 'b2', packageId: 'p2', share: 5, markup: 1.2, unpaid: true },
   ]);
   assert.deepEqual(stakesFor([o], F.id, '1-A'), []);
@@ -292,11 +292,11 @@ test('«Marcar como pago» on the backer pays their festival pieces too, and kee
   const fest = (id: string) => (id === F.id ? F : undefined);
   const due = pendingCost(F, o, line, {});
   // In the deal's currency, as the balance converted it.
-  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', due: due * 0.5 }]);
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', packageId: 'p1', due: due * 0.5 }]);
   // No rate: it stays apart (settleApart's job).
   assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => null), []);
   // Under way: the events not started, plus what its stakes on sessions still owe (Bankroll P2).
-  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({ '2': 's1' }), () => 1, () => 3120), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', due: pendingCost(F, o, line, { '2': 's1' }) + 3120 }]);
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({ '2': 's1' }), () => 1, () => 3120), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', packageId: 'p1', due: pendingCost(F, o, line, { '2': 's1' }) + 3120 }]);
   // Already paid: nothing left to pay.
   assert.deepEqual(linesSettledWith([pkg([{ ...line, paid: true }])], 'b1', fest, () => ({}), () => 1), []);
   // Once marked, the package says paid: nothing owed, no refund.
@@ -364,7 +364,7 @@ test('«Marcar como pago» with a refund owed for an event not played: paid back
   const back = missedRefund(F, o, line, {});
   assert.equal(back, 6000);
   // In the balance as +6000 × x (you owe them): settling takes it out.
-  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', due: -3000 }]);
+  assert.deepEqual(linesSettledWith([o], 'b1', fest, () => ({}), () => 0.5), [{ offerId: 'o1', festivalId: F.id, lineId: 'l1', packageId: 'p1', due: -3000 }]);
   // Marked with the events started now: event 3 is no longer covered, so nothing more goes back.
   const settled = { ...line, paidSkipped: paidSkippedNow(o, {}) };
   assert.equal(missedRefund(F, o, settled, {}), 0);

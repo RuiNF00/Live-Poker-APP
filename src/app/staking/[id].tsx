@@ -27,14 +27,14 @@ import { isOnline } from '@/lib/online';
 import { maybeAskForReview } from '@/lib/review';
 import { notice } from '@/lib/notice';
 import { money, num, shortDate } from '@/poker/format';
-import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
+import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, paidInFull, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
 import { currentDeleted } from '@/store/deleted';
 import { getPlan, planFestival } from '@/store/festival-plan';
 import { allFestivals, loadShippedFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
-import { carriedTo, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, settleUp, unconverted, withPackageBounties, yearStatement, type BackerLedgerRow } from '@/store/staking';
+import { carriedTo, cents, closePackage, headlineOf, ledgerYears, offerRatesNow, packageDefaults, savedOfferRate, settleUp, unconverted, withPackageBounties, yearStatement, type BackerLedgerRow } from '@/store/staking';
 import { currentTrip } from '@/store/trip-math';
 import type { Backer, Session, StakePackage } from '@/store/types';
 import { C, S } from '@/theme';
@@ -123,7 +123,8 @@ function BackerScreen() {
 
   const togglePaid = (r: BackerLedgerRow) => {
     const s: Session = r.session;
-    const stakes = (s.stakes ?? []).map((x) => (x === r.stake ? { ...x, unpaid: !x.unpaid || undefined } : x));
+    // Paid: nothing left to pay, re-entries of a festival piece included. Not paid after all: the whole piece.
+    const stakes = (s.stakes ?? []).map((x) => (x === r.stake ? { ...x, unpaid: r.due > 0.005 ? undefined : true, prepaid: undefined } : x));
     saveSession({ ...s, stakes });
     tap('medium');
     setPiece(null);
@@ -139,13 +140,13 @@ function BackerScreen() {
       (fid) => planFestival(allFestivals(), fid),
       (fid) => getPlan(fid).sessions,
       (o, c) => (c === cur ? 1 : (rate(fx.table, c, cur, o.createdAt, fx.manual) ?? savedOfferRate(payments, backer.id, o.id, cur))),
-      // Its unpaid stakes on sessions already started, at each session's rate, as the ledger counted them.
+      // What its stakes on sessions already started still owe (unpaid, or re-entries), at each session's rate, as the ledger counted them.
       (line) =>
         l.rows
-          .filter((r) => r.stake.unpaid && r.stake.packageId === line.packageId)
+          .filter((r) => r.due > 0 && r.stake.packageId === line.packageId)
           .reduce((a, r) => {
             const c = r.session.currency;
-            return a + Math.round(r.cost * (!c || c === cur ? 1 : (rate(fx.table, c, cur, r.session.startedAt, fx.manual) ?? 1)) * 100) / 100;
+            return a + cents(r.due * (!c || c === cur ? 1 : (rate(fx.table, c, cur, r.session.startedAt, fx.manual) ?? 1)));
           }, 0),
     );
   // Settle the whole balance in one payment, the way Splitwise's "settle up" does. A session or payment
@@ -166,18 +167,24 @@ function BackerScreen() {
         const settle = settleUp(
           l,
           (s) => (!s.currency || s.currency === cur ? 1 : (rate(fx.table, s.currency, cur, s.startedAt, fx.manual) ?? 1)),
-          (r) => (r.session.stakes ?? []).some((x) => !!x.packageId && before.has(x.packageId)),
+          // Only the festival piece itself: a piece sold by hand on the same session is still paid here.
+          (r) => !!r.stake.packageId && before.has(r.stake.packageId),
         );
         const loose = settle.paid;
-        const rest = Math.round((settle.amount + pieces.reduce((a, x) => a + x.due, 0)) * 100) / 100;
+        const rest = cents(settle.amount + pieces.reduce((a, x) => a + x.due, 0));
         if (Math.abs(rest) >= 0.01) savePayment({ id: uid('y_'), backerId: backer.id, amount: rest, at: now, note: '', createdAt: now, fx: ratesNow(), currency: cur });
+        // Every change to a session in one save: two saves from the same old copy, the second undid the first.
+        const next = new Map<string, Session>();
         for (const s of new Set(loose.map((r) => r.session))) {
           const paidNow = new Set(loose.filter((r) => r.session === s).map((r) => r.stake));
-          saveSession({ ...s, stakes: (s.stakes ?? []).map((x) => (paidNow.has(x) ? { ...x, unpaid: undefined } : x)) });
+          next.set(s.id, { ...s, stakes: (s.stakes ?? []).map((x) => (paidNow.has(x) ? { ...x, unpaid: undefined, prepaid: undefined } : x)) });
         }
-        // Skipped events with no session stay unpaid for (never refunded); the started ones' stakes become paid.
+        const current = () => sessions.map((s) => next.get(s.id) ?? s);
+        // Festival pieces paid in full, re-entries included; skipped events with no session stay unpaid for (never refunded).
+        for (const s of paidInFull(current(), new Set(pieces.map((x) => x.packageId)))) next.set(s.id, s);
         for (const x of pieces) setLinePaid(x.offerId, x.lineId, true, getPlan(x.festivalId).sessions);
-        for (const fid of new Set(pieces.map((x) => x.festivalId))) for (const s of offerStakeChanges(sessions, getOffers(), fid, getPlan(fid).sessions, before)) saveSession(s);
+        for (const fid of new Set(pieces.map((x) => x.festivalId))) for (const s of offerStakeChanges(current(), getOffers(), fid, getPlan(fid).sessions, before)) next.set(s.id, s);
+        for (const s of next.values()) saveSession(s);
         tap('medium');
         // Store-review moment C (design/pedido-avaliacao.md): the balance is now "Acertado".
         if (!apart.length) void maybeAskForReview('settled');
@@ -498,7 +505,7 @@ function BackerScreen() {
                           {[shortDate(s.startedAt), `${num(r.stake.share)}%`, r.stake.markup !== 1 ? markupLabel(r.stake.markup) : '', pkgName(r.stake.packageId) ?? ''].filter(Boolean).join(' · ')}
                         </T>
                         {!s.endedAt ? <Pill label={t('A decorrer')} color={C.good} icon="ellipse" /> : null}
-                        {r.stake.unpaid ? <Pill label={t('Por pagar {amount}', { amount: money(r.cost, s.currency || cur) })} color={C.warn} /> : null}
+                        {r.due > 0.005 ? <Pill label={t('Por pagar {amount}', { amount: money(r.due, s.currency || cur) })} color={C.warn} /> : null}
                       </Row>
                     }
                     right={s.endedAt ? <Amount value={net} text={money(net, s.currency || cur)} style={{ fontSize: 14 }} /> : undefined}

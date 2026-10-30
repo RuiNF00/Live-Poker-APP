@@ -8,7 +8,7 @@
 
 import { dayOf, isBagged } from '@/store/multi-day';
 import { bountiesOf, pieceOf } from '@/store/session-math';
-import { backerLedger, packageStates, type BackerLedger, type YearStatement } from '@/store/staking';
+import { backerLedger, cents, packageStates, type BackerLedger, type YearStatement } from '@/store/staking';
 import type { Backer, BackerPayment, Session, StakePackage } from '@/store/types';
 import { BRAND } from '@/theme';
 
@@ -85,7 +85,8 @@ export interface Statement {
   nx?: { n: string; s: string };
 }
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
+// Half cents away from zero, as the app shows them: 0.5 × 157.45 rounded down without the epsilon.
+const r2 = cents;
 
 /** The statement for one backer, from the player's data. */
 export function buildStatement(
@@ -116,7 +117,7 @@ export function buildStatement(
     rows: l.rows.slice(0, MAX_ROWS).map((r) => {
       const s = r.session;
       const row: StatementRow = { d: s.startedAt, e: s.endedAt ?? null, n: (s.name || '').slice(0, 60), k: s.kind, sh: r.stake.share, mu: r.stake.markup || 1, c: r2(r.cost), o: r2(r.owed) };
-      if (r.stake.unpaid) row.u = 1;
+      if (r.due > 0.005) row.u = 1;
       const p = r.stake.packageId ? pkgName.get(r.stake.packageId) : undefined;
       if (p) row.p = p.slice(0, 40);
       if (s.live?.id && !s.endedAt) row.l = s.live.id;

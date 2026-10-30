@@ -144,9 +144,9 @@ function PieceSteps({ row, name, pkgName, currency, onTogglePaid }: { row: Backe
         )}
       </Card>
 
-      {row.stake.unpaid ? (
+      {row.due > 0.005 ? (
         <Card tone="inset" style={{ gap: S.md }}>
-          <T v="small">{t('{name} ainda não te pagou {amount} por esta parte.', { name, amount: m(row.cost) })}</T>
+          <T v="small">{t('{name} ainda não te pagou {amount} por esta parte.', { name, amount: m(row.due) })}</T>
           <Button icon="checkmark-circle-outline" title={t('Marcar como pago')} onPress={() => onTogglePaid(row)} />
         </Card>
       ) : (

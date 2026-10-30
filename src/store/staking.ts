@@ -9,11 +9,21 @@ import type { BackerPayment, Session, Stake, StakePackage } from './types';
 const byEnd = (a: Session, b: Session) => (a.endedAt ?? a.startedAt) - (b.endedAt ?? b.startedAt);
 /** To the cent: what the player and the backer see, and what they add up. */
 // Half cents always away from zero: 0.5 × 157.45 and 157.45 × 0.5 are not the same float.
-const cents = (n: number) => Math.round(n * 100 + (n >= 0 ? 1e-7 : -1e-7)) / 100;
+export const cents = (n: number) => Math.round(n * 100 + (n >= 0 ? 1e-7 : -1e-7)) / 100;
 
 /** The backer's money in one piece: action at markup, or their share of the buy-ins in a makeup deal. */
 export function stakeCost(s: Session, x: Stake): number {
   return pieceOf(s, x) * cost(s) * (x.markup || 1);
+}
+
+/**
+ * What the backer still has to pay for their piece: all of it when unpaid. A festival piece paid ahead
+ * (`prepaid`) covered one entry at the event's buy-in: their share of the re-entries and add-on is still
+ * due, as it is in an unpaid piece and in their share of the prize (two re-entries were free for them).
+ */
+export function stakeDue(s: Session, x: Stake): number {
+  if (x.unpaid) return stakeCost(s, x);
+  return x.prepaid ? Math.max(0, pieceOf(s, x) * (cost(s) - s.buyIn) * (x.markup || 1)) : 0;
 }
 
 /** The backer's share of the prize (without the bounties when they stay with you), before any makeup cut. */
@@ -199,6 +209,8 @@ export interface BackerLedgerRow {
   cut: number;
   /** What they get back from this session (prize share, less your makeup cut). 0 while it runs. */
   owed: number;
+  /** What they still have to pay for it (stakeDue): the whole cost when unpaid, re-entries of a piece paid ahead. */
+  due: number;
 }
 
 /**
@@ -330,8 +342,8 @@ export interface BackerLedger {
  * counted it twice: «Acertado» became «Deves 100 €». `skip` keeps out pieces another flow pays (festival lines).
  */
 export function settleUp(l: BackerLedger, toDeal: (s: Session) => number, skip: (r: BackerLedgerRow) => boolean = () => false): { amount: number; paid: BackerLedgerRow[] } {
-  const paid = l.rows.filter((r) => r.stake.unpaid && !skip(r));
-  return { amount: cents(l.balance + paid.reduce((a, r) => a + cents(r.cost * toDeal(r.session)), 0)), paid };
+  const paid = l.rows.filter((r) => r.due > 0 && !skip(r));
+  return { amount: cents(l.balance + paid.reduce((a, r) => a + cents(r.due * toDeal(r.session)), 0)), paid };
 }
 
 export function backerLedger(
@@ -353,7 +365,7 @@ export function backerLedger(
       const prize = s.endedAt ? cents(stakePrize(s, x)) : 0;
       // In a makeup deal your cut comes out of what they get back.
       const cut = pieceCut(pk.byPackage, s, x, pkg);
-      rows.push({ session: s, stake: x, cost: stakeCost(s, x), prize, cut, owed: prize - cut });
+      rows.push({ session: s, stake: x, cost: stakeCost(s, x), prize, cut, owed: prize - cut, due: stakeDue(s, x) });
     }
   rows.sort((a, b) => byEnd(b.session, a.session));
   const currency = dealCurrency(rows) ?? fx.deal ?? fx.fallback;
@@ -371,7 +383,7 @@ export function backerLedger(
   const prizes = cents(done.reduce((a, r) => a + cents(r.prize * k(r)), 0));
   const cut = cents(done.reduce((a, r) => a + cents(r.cut * k(r)), 0));
   const owed = cents(prizes - cut);
-  const unpaid = cents(rows.filter((r) => r.stake.unpaid).reduce((a, r) => a + cents(r.cost * k(r)), 0));
+  const unpaid = cents(rows.filter((r) => r.due > 0).reduce((a, r) => a + cents(r.due * k(r)), 0));
   // Each payment in its own currency, at that day's rate: a bigger session in another currency later
   // moves the deal, never what was paid (QA P1, 19 Oct: «Deve-te 5090,91$» for a 909,09€ payment).
   const payCurrency: Record<string, string> = {};
@@ -463,8 +475,8 @@ export function ledgerYears(l: BackerLedger): number[] {
 
 /**
  * Everything with one backer in one year, package by package: their buy-ins, what
- * they got back, their result and the makeup left. Sessions count in the year they
- * started. `k` converts a session's money to the ledger's currency.
+ * they got back, their result and the makeup left. Sessions count in the year of their
+ * result, on the clock they were played on (resultDay). `k` converts a session's money to the ledger's currency.
  */
 export function yearStatement(
   l: BackerLedger,
@@ -486,16 +498,20 @@ export function yearStatement(
     const y = by.get(key) ?? { id, name: p?.name ?? '', sessions: 0, cost: 0, prizes: 0, net: 0, makeup: p && !p.closedAt ? makeupOf(pk, p.id, l.currency, km) : 0 };
     const x = k(s);
     y.sessions++;
-    y.cost += r.cost * x;
+    // To the cent per row, as the ledger adds them: the year's total is the sum of the sessions shown.
+    const c = cents(r.cost * x);
+    y.cost += c;
     if (s.endedAt) {
-      y.prizes += r.owed * x;
-      y.net += (r.owed - r.cost) * x;
+      const o = cents(r.owed * x);
+      y.prizes += o;
+      y.net += o - c;
     }
     by.set(key, y);
   }
   // Packages in the order they started; pieces outside a package last.
   const rows = [...by.values()].sort((a, b) => (a.id ? (pkgOf.get(a.id)?.createdAt ?? 0) : Infinity) - (b.id ? (pkgOf.get(b.id)?.createdAt ?? 0) : Infinity));
-  const sum = (f: (y: YearPackage) => number) => rows.reduce((a, y) => a + f(y), 0);
+  for (const y of rows) Object.assign(y, { cost: cents(y.cost), prizes: cents(y.prizes), net: cents(y.net) });
+  const sum = (f: (y: YearPackage) => number) => cents(rows.reduce((a, y) => a + f(y), 0));
   return {
     year,
     currency: l.currency,
@@ -646,11 +662,11 @@ export function withCuts(sessions: Session[], packages: StakePackage[], fx?: Pac
  * prize. A makeup package's cut depends on it, so it is worked out as the store will once saved,
  * and kept back from the backers' amount (2000 prize, 500 cut: 1500 to pay, +500 for me).
  */
-export function endPreview(running: Session, sessions: Session[], packages: StakePackage[], now = Date.now()): { owed: number; profit: number } {
+export function endPreview(running: Session, sessions: Session[], packages: StakePackage[], now = Date.now(), fx?: PackageFx): { owed: number; profit: number } {
   // Ended as of now: only ended sessions count in a package.
   const ended = { ...running, endedAt: running.endedAt ?? now };
-  const end = ended.stakes?.some((x) => x.packageId) ? (withCuts(sessions.map((x) => (x.id === ended.id ? ended : x)), packages).find((x) => x.id === ended.id) ?? ended) : ended;
-  return { owed: Math.round((owedToBackers(end) - (end.makeupCut ?? 0)) * 100) / 100, profit: profit(end) };
+  const end = ended.stakes?.some((x) => x.packageId) ? (withCuts(sessions.map((x) => (x.id === ended.id ? ended : x)), packages, fx).find((x) => x.id === ended.id) ?? ended) : ended;
+  return { owed: cents(owedToBackers(end) - (end.makeupCut ?? 0)), profit: profit(end) };
 }
 
 /**
@@ -674,7 +690,9 @@ export function pieceSteps(r: BackerLedgerRow) {
     owed: r.owed,
     net: r.owed - r.cost,
     /** What this piece adds to the balance: what they get back, less what they haven't paid. */
-    balance: r.owed - (r.stake.unpaid ? r.cost : 0),
+    /** Still to pay for it: the whole cost, or the re-entries of a festival piece paid ahead. */
+    due: r.due,
+    balance: r.owed - r.due,
   };
 }
 

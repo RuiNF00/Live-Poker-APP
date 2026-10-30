@@ -228,6 +228,8 @@ export interface Stake {
   markup: number;
   /** The backer hasn't paid for this piece yet: it counts against their balance. */
   unpaid?: boolean;
+  /** A festival piece paid ahead: one entry at the event's buy-in. Re-entries and add-on are still due (stakeDue). */
+  prepaid?: true;
   /** Your makeup cut out of this piece, kept when its package (or backer) was deleted: no package works it out any more. */
   cut?: number;
   /** The deleted makeup package's rule for this piece: its cut % and its running result before this session (session currency). */

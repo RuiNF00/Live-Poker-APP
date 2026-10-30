@@ -36,6 +36,7 @@ import { bagDay, dayOf, isBagged, resumeDay } from '@/store/multi-day';
 import { liveResult } from '@/store/rules-math';
 import { cost, endCashOut, isPaused, playedMs, profit, type EndForm } from '@/store/session-math';
 import { endPreview } from '@/store/staking';
+import { useRates } from '@/lib/fx';
 import { eventDay } from '@/poker/festivals';
 import { afterSession, updatePlan, useFestivalPlans } from '@/store/festival-plan';
 import { dayKey, notOver, soon, useFestivals } from '@/store/my-festivals';
@@ -350,6 +351,8 @@ function Live({ s }: { s: Session }) {
   // A browser may refuse the wake lock; ending the session must not throw because of it.
   useKeepAwake(undefined, { suppressDeactivateWarnings: true });
   const { saveSession, hands, settings, sessions, packages } = useStore();
+  // The makeup of a package with sessions in two currencies, as the store will work it out once saved.
+  const rates = useRates(null);
   const [pad, setPad] = useState<null | 'stack' | 'addon' | 'bag'>(null);
   const [ending, setEnding] = useState(false);
   // Android back while closing the session works like «Voltar»: the form closes, the session stays.
@@ -686,7 +689,7 @@ function Live({ s }: { s: Session }) {
                   </View>
                 </View>
                 {(() => {
-                  const { owed, profit: p } = endPreview({ ...s, cashOut: total, bounties: mtt ? finish.bounties : undefined, tips: finish.tips || undefined }, sessions, packages);
+                  const { owed, profit: p } = endPreview({ ...s, cashOut: total, bounties: mtt ? finish.bounties : undefined, tips: finish.tips || undefined }, sessions, packages, undefined, { table: rates, manual: settings.fxManual });
                   return (
                     <View style={{ gap: 6, paddingTop: S.xs }}>
                       {owed > 0 ? (

@@ -95,13 +95,14 @@ export const fixSession: Fix<Session> = (x) => {
   // A kept makeup cut (Stake.cut, cutPct, cumBefore) goes straight into the result: one that isn't a number is dropped.
   // "Bounties ficam comigo" changes what the backer gets: only a real true counts.
   const KEPT = ['cut', 'cutPct', 'cumBefore'] as const;
-  const badStake = (x: Obj) => KEPT.some((k) => x[k] !== undefined && !isNum(x[k])) || (x.bountiesKept !== undefined && x.bountiesKept !== true);
+  const badStake = (x: Obj) => KEPT.some((k) => x[k] !== undefined && !isNum(x[k])) || (x.bountiesKept !== undefined && x.bountiesKept !== true) || (x.prepaid !== undefined && x.prepaid !== true);
   if (Array.isArray(s.stakes) && (s.stakes as Obj[]).some(badStake))
     patch.stakes = (s.stakes as Obj[]).map((x) => {
       if (!badStake(x)) return x;
       const y = { ...x };
       for (const k of KEPT) if (y[k] !== undefined && !isNum(y[k])) y[k] = undefined;
       if (y.bountiesKept !== undefined && y.bountiesKept !== true) delete y.bountiesKept;
+      if (y.prepaid !== undefined && y.prepaid !== true) delete y.prepaid;
       return y;
     });
   return (Object.keys(patch).length ? { ...s, ...patch } : s) as unknown as Session;

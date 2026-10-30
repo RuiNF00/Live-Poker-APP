@@ -20,6 +20,7 @@ import { Button, Card, Chip, ChipRow, Empty, Field, IconButton, ListGroup, Pill,
 import { t, variant } from '@/i18n';
 import { withLang } from '@/lib/link-lang';
 import { track } from '@/lib/events';
+import { useRates } from '@/lib/fx';
 import { agreementUpdateWaiting, fetchConfirmation, OfferFailure, publishAgreement, queueAgreementDelete, queueAgreementUpdate, updateAgreement } from '@/lib/offer-api';
 import { eventTitle, venueTime, type Festival, type FestivalEvent } from '@/poker/festivals';
 import { money, num, shortDate } from '@/poker/format';
@@ -48,6 +49,7 @@ import {
   type PackageLine,
   type SettlementState,
 } from '@/store/action-offer';
+import { rate } from '@/store/fx-math';
 import { festivalName, planFestival, updatePlan, useFestivalPlan } from '@/store/festival-plan';
 import { useFestivals, useFestivalsReady } from '@/store/my-festivals';
 import { uid, useStore } from '@/store/store';
@@ -80,6 +82,7 @@ export default function ActionPackageScreen() {
   const f = planFestival(useFestivals(), o?.festivalId, () => plan);
   const ready = useFestivalsReady();
   const { settings, setSettings, backers, saveBacker, packages, savePackage, deletePackage, sessions, saveSession, trips, saveTrip } = useStore();
+  const rates = useRates(null);
   const pro = usePro();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +137,7 @@ export default function ActionPackageScreen() {
     return [...backers].sort((a, b) => (last.get(b.id) ?? b.createdAt) - (last.get(a.id) ?? a.createdAt)).map((b) => b.name).filter((n) => !inOffer.has(n.trim().toLowerCase()));
   })();
   // Once the first event is played (or goes by), where each backer stands on the festival.
-  const settled = o.lines.map((l) => ({ l, st: lineSettlement(f, o, l, plan.sessions, sessions) }));
+  const settled = o.lines.map((l) => ({ l, st: lineSettlement(f, o, l, plan.sessions, sessions, undefined, (s) => rate(rates, s.currency, f.currency, s.startedAt, settings.fxManual) ?? 1) }));
   const underway = settled.some(({ st }) => st.rows.some((r) => r.state !== 'upcoming'));
   // Gone by with no session: asked, never assumed (a forgotten session would leave the accounts wrong).
   const ask = o.lines.length ? unanswered(f, o, plan.sessions) : [];
