@@ -1,21 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-  askOnSummary,
-  becameAllowed,
-  holdNow,
-  kindInfo,
-  kindOn,
-  KINDS,
-  outOfQuiet,
-  pickDaily,
-  SOFT_ASK_COOLDOWN,
-  softAskAllowed,
-  SUMMARY_ASK_WITHIN,
-  SUMMARY_ASKS_MAX,
-  SUMMARY_SECOND_ASK_FROM,
-} from '../notify-policy';
+import { askOnSummary, becameAllowed, holdNow, kindInfo, kindOn, KINDS, outOfQuiet, pickDaily, SOFT_ASK_COOLDOWN, softAskAllowed, SUMMARY_ASK_WITHIN, SUMMARY_ASKS_MAX, SUMMARY_SECOND_ASK_FROM, quietUntil } from '../notify-policy';
 
 const at = (h: number, m = 0, day = 17) => new Date(2026, 9, day, h, m).getTime();
 
@@ -110,4 +96,19 @@ test('«A tua semana» starts as «Lembretes» was, then has its own switch', ()
   assert.equal(kindOn({ notify: { tips: false } }, 'week'), false);
   assert.equal(kindOn({ notify: { tips: false, week: true } }, 'week'), true);
   assert.equal(kindOn({ notify: { week: false } }, 'tips'), true);
+});
+
+test('quietUntil: a notice found at night waits for 12:00; by day, or one the player asked for, goes now', () => {
+  const night = new Date(2026, 9, 30, 3, 10).getTime();
+  assert.equal(quietUntil('coach', night), new Date(2026, 9, 30, 12).getTime());
+  assert.equal(quietUntil('coach', new Date(2026, 9, 30, 23, 30).getTime()), new Date(2026, 9, 31, 12).getTime());
+  assert.equal(quietUntil('coach', new Date(2026, 9, 30, 15).getTime()), null);
+  assert.equal(quietUntil('levels', night), null);
+});
+
+test('the coach notice found by the night check keeps the quiet hours', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(require.resolve('../coach-api.ts'), 'utf8');
+  assert.match(src, /const later = quietUntil\('coach', Date\.now\(\)\)/);
+  assert.match(src, /trigger: later \? \{ type: N\.SchedulableTriggerInputTypes\.DATE, date: later, channelId: CHANNEL \}/);
 });

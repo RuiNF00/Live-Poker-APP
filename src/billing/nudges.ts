@@ -199,7 +199,9 @@ export function playNotices(plan: PlayPlan | null | undefined, sessions: { start
   if (arrive > soon) {
     out.push({ id: 'play-arrive', at: arrive, title: t('Chegaste à mesa?'), body: t('Abre a sessão com um toque: o jogo e as blinds já vêm preenchidos.'), url: 'sweatbook://session' });
   }
-  const log = atHour(addDays(plan.day, 1), NUDGE_HOUR);
+  // On the 1st an hour before the month's recap (13:00), so the session they log is in it.
+  const next = addDays(plan.day, 1);
+  const log = atHour(next, new Date(next).getDate() === 1 ? NUDGE_HOUR - 1 : NUDGE_HOUR);
   if (log > soon) {
     out.push({ id: 'play-log', at: log, title: t('Jogaste ontem?'), body: t('Regista a sessão em 20 segundos, enquanto te lembras de tudo.'), url: 'sweatbook://bankroll?add=session' });
   }
@@ -231,8 +233,12 @@ export function planNudges(p: NudgeInput): Nudge[] {
   const week = p.sessionActive ? null : weekNotice(p);
   if (week && !p.festivalAt?.(week.at) && !out.some((n) => Math.abs(n.at - week.at) < 12 * HOUR)) out.push(week);
 
-  // The day the player said they play next: the notices they asked for.
+  // The day the player said they play next: the notices they asked for. «Jogaste ontem?» on the
+  // week's Sunday takes its place: one notice that day, and the one that gets the session logged.
   const play = p.sessionActive ? [] : playNotices(p.plan, p.sessions, p.now);
+  const log = play.find((n) => n.id === 'play-log');
+  const wi = out.findIndex((n) => n.id === 'week');
+  if (log && wi >= 0 && new Date(log.at).toDateString() === new Date(out[wi].at).toDateString()) out.splice(wi, 1);
   out.push(...play);
 
   // Back after a few days away, only for someone who has logged something to come back to. It

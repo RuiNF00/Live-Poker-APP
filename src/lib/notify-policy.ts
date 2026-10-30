@@ -72,6 +72,12 @@ export function outOfQuiet(at: number, k: NotifyKind): number {
   return out.getTime();
 }
 
+/** For a notice that would go out now: the time it waits for, in the quiet hours; null to post now. */
+export function quietUntil(k: NotifyKind, now: number): number | null {
+  const at = outOfQuiet(now, k);
+  return at > now ? at : null;
+}
+
 /**
  * Wait for the end of the live session? Only what belongs to the session
  * (levels, breaks, planned tournaments) goes out during one, unless the player

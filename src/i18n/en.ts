@@ -3827,7 +3827,7 @@ const en: Record<string, string> = {
   '{a} esta semana.': '{a} this week.',
   'Tens 1 mão para rever: toca para começar.': 'You have 1 hand to review: tap to start.',
   'Tens {n} mãos para rever: toca para começar.': 'You have {n} hands to review: tap to start.',
-  '{n} semanas seguidas a registar.': '{n} weeks in a row logging.',
+  '{n} semanas seguidas a registar.': 'Logged {n} weeks in a row.',
   'Toca para veres as tuas mãos.': 'Tap to see your hands.',
   'A tua semana no póquer': 'Your week in poker',
   'Tens notas sobre 1 regular daqui': 'You have notes on 1 regular here',

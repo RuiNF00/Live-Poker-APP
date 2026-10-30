@@ -29,6 +29,7 @@ import {
 import { onEraseAll } from './erase-hooks';
 import { notifications, setup } from './lock-screen/reminder';
 import { notifyOrHold } from './notify-gate';
+import { quietUntil } from './notify-policy';
 import { outcomeOf, queue, registerSender } from './sync';
 
 const API = (process.env.EXPO_PUBLIC_API_URL as string | undefined) ?? BRAND.webUrl;
@@ -203,6 +204,8 @@ async function notify(n: number) {
 
 async function post(N: NonNullable<ReturnType<typeof notifications>>, n: number) {
   try {
+    // The background check often runs at night: what it finds waits for the end of the quiet hours.
+    const later = quietUntil('coach', Date.now());
     await N.scheduleNotificationAsync({
       identifier: 'coach-comments',
       content: {
@@ -211,7 +214,7 @@ async function post(N: NonNullable<ReturnType<typeof notifications>>, n: number)
         data: { url: 'sweatbook://coach' },
         sound: true,
       },
-      trigger: Platform.OS === 'android' ? { channelId: CHANNEL } : null,
+      trigger: later ? { type: N.SchedulableTriggerInputTypes.DATE, date: later, channelId: CHANNEL } : Platform.OS === 'android' ? { channelId: CHANNEL } : null,
     });
   } catch (e) {
     console.warn('[coach] notify', e);

@@ -219,3 +219,18 @@ test('mondayFrom: that Monday at 13:00, or the next one; Mondays on the 1st are 
   const cb = planNudges({ ...base, now, isPro: false, trial: null, hands: [{ createdAt: new Date(2026, 11, 1).getTime() }] }).find((x) => x.id === 'comeback');
   assert.equal(cb?.at, new Date(2027, 1, 8, 13).getTime());
 });
+
+test('«Jogaste ontem?» on the week\'s Sunday replaces the week notice; on the 1st it comes before the recap', () => {
+  // Tuesday 13 Oct; the player said Saturday 17: «Jogaste ontem?» is Sunday 18 at 13:00, the week notice's slot.
+  const now = new Date(2026, 9, 13, 20).getTime();
+  const p: NudgeInput = { ...base, now, isPro: false, trial: null, hands: [{ createdAt: new Date(2026, 9, 12, 21).getTime() }], sessions: [], plan: { day: new Date(2026, 9, 17).getTime() } };
+  const ids = planNudges(p).map((n) => n.id);
+  assert.ok(ids.includes('play-log') && !ids.includes('week'));
+  const sunday = new Date(2026, 9, 18).toDateString();
+  assert.equal(planNudges(p).filter((n) => new Date(n.at).toDateString() === sunday).length, 1);
+  // Without a plan the week notice stays.
+  assert.ok(planNudges({ ...p, plan: null }).some((n) => n.id === 'week'));
+  // Played Saturday 31 Oct: «Jogaste ontem?» on Sunday 1 Nov at 12:00, an hour before the month's recap.
+  const log = playNotices({ day: new Date(2026, 9, 31).getTime() }, [], new Date(2026, 9, 29, 20).getTime()).find((n) => n.id === 'play-log')!;
+  assert.equal(log.at, new Date(2026, 10, 1, 12).getTime());
+});
