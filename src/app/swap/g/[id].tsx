@@ -219,7 +219,7 @@ function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
   function onEntry(e: GroupEntry) {
     if (e.seat !== g.seat) return;
     confirmAction(t('Apagar registo?'), t('O grupo deixa de o ver. Usa isto só para corrigir um erro.'), t('Apagar'), async () => {
-      if (!(await removeGroupEntryHere(g.id, e))) notice(t('Não deu para apagar'), t('Tenta outra vez.'));
+      if (!(await removeGroupEntryHere(g.id, e))) notice(t('Não deu para apagar'), t('Nada foi apagado. Tenta outra vez daqui a pouco.'));
     });
   }
 
@@ -388,7 +388,7 @@ function OwnGroup({ g, pay }: { g: SwapGroup; pay?: boolean }) {
                 creator && !g.gone ? t('Apagar') : t('Sair'),
                 async () => {
                   if (await leaveGroupEverywhere(g.id)) router.back();
-                  else notice(t('Não deu para apagar'), t('Tenta outra vez.'));
+                  else notice(t('Não deu para apagar'), t('Nada foi apagado. Tenta outra vez daqui a pouco.'));
                 },
               )
             }

@@ -212,7 +212,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
   function onEntry(e: SwapEntry) {
     if (e.side !== s.side) return;
     confirmAction(t('Apagar registo?'), t('{name} deixa de o ver. Usa isto só para corrigir um erro.', { name: them }), t('Apagar'), async () => {
-      if (!(await removeEntry(s.id, e))) notice(t('Não deu para apagar'), t('Tenta outra vez.'));
+      if (!(await removeEntry(s.id, e))) notice(t('Não deu para apagar'), t('Nada foi apagado. Tenta outra vez daqui a pouco.'));
     });
   }
 
@@ -344,7 +344,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
                 t('Apagar'),
                 async () => {
                   if (await deleteSwapEverywhere(s.id)) router.back();
-                  else notice(t('Não deu para apagar'), t('Tenta outra vez.'));
+                  else notice(t('Não deu para apagar'), t('Nada foi apagado. Tenta outra vez daqui a pouco.'));
                 },
               )
             }

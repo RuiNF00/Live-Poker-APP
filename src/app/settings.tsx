@@ -116,7 +116,7 @@ export default function SettingsScreen() {
     try {
       await saveTextFile(`sweatbook-${stamp}.json`, JSON.stringify(buildBackup(store)), 'application/json');
     } catch {
-      note(t('Não deu para exportar'), t('Tenta outra vez.'));
+      note(t('Não deu para exportar'), t('Os teus dados continuam neste telemóvel. Tenta outra vez.'));
     }
   };
   // Every session and bankroll move in the CSV the import screen reads back: free, it's the player's data.
@@ -125,7 +125,7 @@ export default function SettingsScreen() {
     try {
       await saveTextFile(`sweatbook-sessoes-${stamp}.csv`, sessionsCsv(store.allSessions, store.bankrolls, store.transfers, store.trips.flatMap((trip) => trip.expenses.map((x) => ({ trip, x }))), csvSep()), 'text/csv');
     } catch {
-      note(t('Não deu para exportar'), t('Tenta outra vez.'));
+      note(t('Não deu para exportar'), t('Os teus dados continuam neste telemóvel. Tenta outra vez.'));
     }
   };
   const eraseAll = () => {

@@ -206,7 +206,7 @@ export default function Paywall() {
       takeResume();
       close();
     } else if (res === 'unavailable') notice(t('Não deu para ligar à {store}', { store }), t('Tenta outra vez.'));
-    else buyNotice(res, store);
+    else buyNotice(res, store, PLANS[plan].tier === 'plus' ? 'plus' : 'pro');
   };
 
   const onRestore = async () => {

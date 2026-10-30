@@ -371,10 +371,16 @@ export function useWelcomeOffer(handsSaved: number) {
 
 /** What a restore found, in the same words wherever it is tapped. Offline is not "no purchases". */
 /** What to say when a purchase didn't go through. Nothing for ok, cancelled, pending or a second tap; the caller says those. */
-export function buyNotice(res: store.BuyResult, storeName: string) {
-  if (res === 'network') notice(t('Sem resposta da {store}', { store: storeName }), t('Se a {store} confirmou o pagamento, o Pro liga-se sozinho. Se não, tenta outra vez.', { store: storeName }));
+/** `tier`: the plan being bought, so a Plus buyer isn't told about «o Pro». */
+export function buyNotice(res: store.BuyResult, storeName: string, tier: 'pro' | 'plus' = 'pro') {
+  const plus = tier === 'plus';
+  if (res === 'network')
+    notice(
+      t('Sem resposta da {store}', { store: storeName }),
+      plus ? t('Se a {store} confirmou o pagamento, o Plus liga-se sozinho. Se não, tenta outra vez.', { store: storeName }) : t('Se a {store} confirmou o pagamento, o Pro liga-se sozinho. Se não, tenta outra vez.', { store: storeName }),
+    );
   else if (res === 'blocked') notice(t('Compras desligadas'), t('Este telemóvel não deixa fazer compras (Tempo de ecrã ou controlo parental).'));
-  else if (res === 'owned') notice(t('Já tens esta compra'), t('Toca em Restaurar compras para ligar o Pro neste telemóvel.'));
+  else if (res === 'owned') notice(t('Já tens esta compra'), plus ? t('Toca em Restaurar compras para ligar o Plus neste telemóvel.') : t('Toca em Restaurar compras para ligar o Pro neste telemóvel.'));
   else if (res === 'error') notice(t('Não deu para concluir'), t('Não foi cobrado nada. Tenta outra vez daqui a pouco.'));
 }
 
@@ -385,6 +391,6 @@ export function restoreNotice(res: store.RestoreResult, storeName: string) {
   else if (res === 'lifetime') notice(t('Compras restauradas'), t('O teu Pro para sempre está ativo nesta conta da loja.'));
   else if (res === 'none') notice(t('Sem compras'), t('Não encontrámos nenhuma compra do Plus nem do Pro nesta conta da loja.'));
   else if (res === 'busy') return;
-  else if (res === 'slow') notice(t('A {store} ainda está a responder', { store: storeName }), t('Se encontrar a compra, o Pro liga-se sozinho.'));
+  else if (res === 'slow') notice(t('A {store} ainda está a responder', { store: storeName }), t('Se encontrar a compra, o teu plano liga-se sozinho.'));
   else notice(t('Não deu para ligar à {store}', { store: storeName }), t('Verifica a rede e tenta outra vez daqui a pouco.'));
 }

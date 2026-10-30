@@ -73,7 +73,7 @@ export default function ExportScreen() {
       try {
         await fn();
       } catch {
-        note(t('Não deu para exportar'), t('Tenta outra vez.'));
+        note(t('Não deu para exportar'), t('Os teus dados continuam neste telemóvel. Tenta outra vez.'));
       } finally {
         setBusy(null);
       }
