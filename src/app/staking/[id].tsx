@@ -12,6 +12,7 @@ import { ensureBackerPage, pushBackerPage, statementFor } from '@/components/sta
 import { BackerSheet, blankPackage, markupLabel, PackageSheet, packageTerms, PaymentSheet } from '@/components/staking/sheets';
 import { PieceSheet, SettlementCard } from '@/components/staking/Settlement';
 import { Sheet } from '@/components/BankrollSheets';
+import { Help } from '@/components/Help';
 import { ManualRatesForm } from '@/components/ManualRatesForm';
 import { apartLines, balanceLabel, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { headerRightWithBadge } from '@/components/NetStatus';
@@ -397,7 +398,7 @@ function BackerScreen() {
           ) : null}
         </Card>
 
-        <Section title={t('Como chegámos aqui')}>
+        <Section title={t('Como chegámos aqui')} help={<Help k="settle" />}>
           <SettlementCard l={l} name={backer.name} currency={cur} />
         </Section>
 

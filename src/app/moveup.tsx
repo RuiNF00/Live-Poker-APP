@@ -9,6 +9,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { Help } from '@/components/Help';
 import { ProBlur, useLocked } from '@/components/ProGate';
 import { Button, Card, Chip, ChipRow, Empty, Row, Section, T, tap } from '@/components/ui';
 import { WinRateSample } from '@/components/WinRate';
@@ -97,7 +98,7 @@ export default function MoveUpScreen() {
           </ChipRow>
         </Section>
 
-        <Section title={t('Risco de ruína')}>
+        <Section title={t('Risco de ruína')} help={<Help k="ruin" />}>
           <ProBlur feature="moveUpPlan" locked={locked} title={t('Vê o teu risco de ruína com os teus números')}>
             {w ? <Risk w={w} m={m} balance={balance} masked={locked} /> : <Card tone="inset"><T v="small">{t('Com 3 sessões de cash terminadas calculamos o teu risco de ruína.')}</T></Card>}
           </ProBlur>

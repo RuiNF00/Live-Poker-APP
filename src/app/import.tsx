@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE } from '@/billing/plans';
 import { usePro } from '@/billing/pro';
+import { Help } from '@/components/Help';
 import { ImportSupport } from '@/components/ImportSupport';
 import { Amount, Banner, Button, Card, Chip, ChipRow, ListGroup, ListItem, Row, Section, Segmented, SheetHeader, Stat, StatGrid, T, ToggleItem } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -220,7 +221,7 @@ export default function ImportScreen() {
                 </View>
               ))}
             </Row>
-            <Section title={t('De onde vem')}>
+            <Section title={t('De onde vem')} help={<Help k="import" />}>
               <ListGroup>
                 {SOURCES.map((s) => (
                   <ListItem

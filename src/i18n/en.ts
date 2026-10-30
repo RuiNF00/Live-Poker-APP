@@ -4024,6 +4024,32 @@ const en: Record<string, string> = {
   'Equity mais precisa e mais rápida, e um chip chop que nunca paga mais do que o 1.º prémio.': 'More precise and faster equity, and a chip chop that never pays more than 1st place.',
   'Mais rápida com anos de mãos': 'Faster with years of hands',
   'O Resumo, a lista de Mãos e a pesquisa respondem logo, mesmo com milhares de mãos.': 'Summary, the Hands list and search respond right away, even with thousands of hands.',
+
+  // Ajuda: o «?» ao lado do ICM, staking, contas, variância, intervalo, risco de ruína e importar
+  'Como funciona o staking': 'How staking works',
+  'Ajuda: {topic}': 'Help: {topic}',
+  'O ICM converte as fichas em dinheiro, tendo em conta os prémios que faltam. Metade das fichas vale menos do que metade do prize pool.': 'ICM turns chips into money, given the prizes still to pay. Half the chips are worth less than half the prize pool.',
+  'O chip chop dá a cada um o último prémio que falta pagar e divide o resto pelas fichas. Nunca passa do 1.º prémio.': 'Chip chop gives everyone the last prize still to pay and splits the rest by chips. It never pays more than 1st place.',
+  'Um deal justo costuma ficar entre os dois. É só uma referência: vale o que a mesa aceitar.': 'A fair deal usually lands between the two. It is only a guide: what counts is what the table agrees to.',
+  'Um backer paga uma % do teu buy-in e recebe a mesma % do prémio. Com markup paga mais pela ação: 1,10 quer dizer 10% acima.': 'A backer pays a % of your buy-in and gets the same % of the prize. With markup they pay more for the action: 1.10 means 10% over.',
+  'Num pacote com makeup, as perdas vão-se somando e só há lucro a dividir depois de as recuperares.': 'In a package with makeup, losses add up and there is only profit to split once you have won them back.',
+  'Os pagamentos fazem-se fora da app: aqui só registas quem pagou e quem deve.': 'Payments happen outside the app: here you only record who paid and who owes.',
+  'O saldo junta a parte do backer em cada prémio, menos a ação que ainda não te pagou e o que já pagaram um ao outro.': 'The balance adds up the backer\'s share of each prize, minus action they haven\'t paid you yet and what you\'ve already paid each other.',
+  '«Marcar como pago» regista um só pagamento que deixa o saldo a zero. Toca numa sessão para ver as contas dela passo a passo.': '«Mark as paid» records one payment that brings the balance to zero. Tap a session to see its numbers step by step.',
+  'O desvio padrão mede quanto um resultado costuma fugir da tua média. Quanto maior, mais longas as fases boas e as más.': 'Standard deviation measures how far a result usually strays from your average. The bigger it is, the longer the good and bad runs.',
+  'Com o win rate e o desvio padrão, mostramos onde fica o resultado 2 em cada 3 vezes e 19 em cada 20 vezes.': 'With the win rate and standard deviation, we show where the result lands 2 times in 3 and 19 times in 20.',
+  'Uma fase má dentro destes valores pode ser só variância, mesmo para quem ganha.': 'A bad run inside these ranges can be just variance, even for a winning player.',
+  'Intervalo de 95%': '95% range',
+  'O teu win rate é uma estimativa feita com as sessões que jogaste. O valor verdadeiro está dentro do intervalo de 95% em 19 de cada 20 casos.': 'Your win rate is an estimate from the sessions you\'ve played. The true value is inside the 95% range in 19 cases out of 20.',
+  'Com poucas horas o intervalo é largo. Se ainda passa pelo zero, ainda não se sabe se ganhas.': 'With few hours the range is wide. If it still crosses zero, it isn\'t known yet whether you win.',
+  'Encolhe com mais horas: para ficar com metade da largura são precisas 4 vezes mais horas.': 'It narrows with more hours: to halve its width you need 4 times as many hours.',
+  'A probabilidade de perderes o bankroll todo se jogares sempre nessa stake, sem nunca descer.': 'The chance of losing your whole bankroll if you always play this stake and never move down.',
+  'Usamos o limite de baixo do teu win rate e o teu desvio padrão: é a conta prudente.': 'We use the low end of your win rate and your standard deviation: the prudent count.',
+  'Mais buy-ins baixam o risco. Usamos 5% como referência para subir de stake.': 'More buy-ins lower the risk. We use 5% as the mark for moving up.',
+  'Que ficheiros entram': 'Which files work',
+  'CSV de outras apps ou de uma folha de cálculo, com vírgulas ou ponto e vírgula. Do Excel, guarda primeiro como CSV.': 'CSV from other apps or a spreadsheet, with commas or semicolons. From Excel, save as CSV first.',
+  'Lemos as colunas sozinhos. Se alguma ficar mal, tocas em «Rever» e escolhes a certa.': 'We read the columns ourselves. If one comes out wrong, tap «Review» and pick the right one.',
+  'Importar o mesmo ficheiro outra vez não repete sessões. Uma cópia do Sweatbook (.json) traz tudo, incluindo as mãos.': 'Importing the same file again does not repeat sessions. A Sweatbook backup (.json) brings everything, hands included.',
 };
 
 export default en;

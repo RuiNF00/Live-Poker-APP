@@ -30,7 +30,7 @@ const PT_WORD = /(?<!\p{L})(de|da|do|das|dos|em|no|na|para|com|sem|um|uma|os|as|
 const looksLikeText = (s: string) =>
   /\p{L}/u.test(s) && (/[À-ÖØ-öø-ÿ]/.test(s) || (s.includes(' ') && PT_WORD.test(s))) && !/^(https?:|\/|\.|@|rl\.)/.test(s) && !/[{}=<>;]|=>/.test(s.replace(/\{\w+\}/g, ''));
 /** Data modules whose Portuguese text is all t() keys, wherever it sits (pushed to a list, in a ternary). */
-const KEY_FILES = new Set(['billing/onboarding.ts', 'billing/cancel.ts', 'billing/plans.ts', 'data/glossary.ts', 'data/whats-new.ts', 'lib/notify-policy.ts']);
+const KEY_FILES = new Set(['billing/onboarding.ts', 'billing/cancel.ts', 'billing/plans.ts', 'data/glossary.ts', 'data/help.ts', 'data/whats-new.ts', 'lib/notify-policy.ts']);
 /** Festival and event data: venue, city and event names are proper names, shown as the organiser writes them. */
 const PROPER_NAMES = /^poker\/festivals/;
 

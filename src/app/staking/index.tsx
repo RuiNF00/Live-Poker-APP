@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
+import { Help } from '@/components/Help';
 import { BackerSheet, blankBacker } from '@/components/staking/sheets';
 import { apartLines, balanceLabel, splitMoney, useHasBackers, useStaking } from '@/components/staking/use-staking';
 import { Button, Card, Empty, ListGroup, ListItem, Pill, Row, Screen, Section, T } from '@/components/ui';
@@ -49,7 +50,7 @@ function StakingScreen() {
             {readOnly ? <ReadOnlyNote feature="staking" body={t('Os teus backers, pacotes e contas ficam aqui. Para mudar alguma coisa, é com o Pro.')} /> : null}
             <BalanceHeadline totals={totals} makeup={makeup} live={live} />
 
-            <Section title="Backers" action={t('+ Novo')} onAction={add}>
+            <Section title="Backers" help={<Help k="staking" />} action={t('+ Novo')} onAction={add}>
               <ListGroup>
                 {sorted.map((b) => {
                   const l = ledgers.get(b.id);

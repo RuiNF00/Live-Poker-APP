@@ -6,6 +6,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { Help } from '@/components/Help';
 import { Term } from '@/components/Term';
 import { Card, Chip, ChipRow, Divider, NumField, Row, Section, T } from '@/components/ui';
 import { locale, t } from '@/i18n';
@@ -50,7 +51,7 @@ export default function ChopScreen() {
             ))}
           </ChipRow>
         </Section>
-        <Section title={t('Stacks e prémios ({currency})', { currency: cur })}>
+        <Section title={t('Stacks e prémios ({currency})', { currency: cur })} help={<Help k="icm" />}>
           <Card style={{ gap: S.md }}>
             {st.map((_, i) => (
               <Row key={i} gap={S.sm} style={{ alignItems: 'flex-end' }}>

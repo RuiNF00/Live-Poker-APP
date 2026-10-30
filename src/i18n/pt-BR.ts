@@ -2197,6 +2197,26 @@ const ptBR: Record<string, string> = {
   'Não deu para enviar as contas': 'Não foi possível enviar as contas',
   'Tenta outra vez daqui a pouco.': 'Tente de novo daqui a pouco.',
   'Não deu para criar o link agora. Tenta outra vez daqui a pouco.': 'Não foi possível criar o link agora. Tente de novo daqui a pouco.',
+
+  // Ajuda: o «?» ao lado do ICM, staking, contas, variância, intervalo, risco de ruína e importar
+  'O ICM converte as fichas em dinheiro, tendo em conta os prémios que faltam. Metade das fichas vale menos do que metade do prize pool.': 'O ICM converte as fichas em dinheiro, levando em conta os prêmios que faltam. Metade das fichas vale menos do que metade do prize pool.',
+  'O chip chop dá a cada um o último prémio que falta pagar e divide o resto pelas fichas. Nunca passa do 1.º prémio.': 'O chip chop dá a cada um o último prêmio que falta pagar e divide o resto pelas fichas. Nunca passa do 1º prêmio.',
+  'Um backer paga uma % do teu buy-in e recebe a mesma % do prémio. Com markup paga mais pela ação: 1,10 quer dizer 10% acima.': 'Um backer paga uma % do seu buy-in e recebe a mesma % do prêmio. Com markup, paga mais pela ação: 1,10 quer dizer 10% acima.',
+  'Num pacote com makeup, as perdas vão-se somando e só há lucro a dividir depois de as recuperares.': 'Num pacote com makeup, as perdas vão se somando e só há lucro para dividir depois que você as recupera.',
+  'Os pagamentos fazem-se fora da app: aqui só registas quem pagou e quem deve.': 'Os pagamentos são feitos fora do app: aqui você só registra quem pagou e quem deve.',
+  'O saldo junta a parte do backer em cada prémio, menos a ação que ainda não te pagou e o que já pagaram um ao outro.': 'O saldo soma a parte do backer em cada prêmio, menos a ação que ele ainda não pagou e o que vocês já pagaram um ao outro.',
+  '«Marcar como pago» regista um só pagamento que deixa o saldo a zero. Toca numa sessão para ver as contas dela passo a passo.': '«Marcar como pago» registra um único pagamento que zera o saldo. Toque numa sessão para ver as contas dela passo a passo.',
+  'O desvio padrão mede quanto um resultado costuma fugir da tua média. Quanto maior, mais longas as fases boas e as más.': 'O desvio padrão mede o quanto um resultado costuma fugir da sua média. Quanto maior, mais longas as fases boas e as ruins.',
+  'Uma fase má dentro destes valores pode ser só variância, mesmo para quem ganha.': 'Uma fase ruim dentro desses valores pode ser só variância, mesmo para quem ganha.',
+  'O teu win rate é uma estimativa feita com as sessões que jogaste. O valor verdadeiro está dentro do intervalo de 95% em 19 de cada 20 casos.': 'Seu win rate é uma estimativa feita com as sessões que você jogou. O valor verdadeiro está dentro do intervalo de 95% em 19 de cada 20 casos.',
+  'Com poucas horas o intervalo é largo. Se ainda passa pelo zero, ainda não se sabe se ganhas.': 'Com poucas horas o intervalo é largo. Se ainda passa pelo zero, ainda não dá para saber se você ganha.',
+  'Encolhe com mais horas: para ficar com metade da largura são precisas 4 vezes mais horas.': 'Ele encolhe com mais horas: para ficar com metade da largura, são necessárias 4 vezes mais horas.',
+  'A probabilidade de perderes o bankroll todo se jogares sempre nessa stake, sem nunca descer.': 'A probabilidade de você perder todo o bankroll se jogar sempre nesse stake, sem nunca descer.',
+  'Usamos o limite de baixo do teu win rate e o teu desvio padrão: é a conta prudente.': 'Usamos o limite de baixo do seu win rate e o seu desvio padrão: é a conta prudente.',
+  'Que ficheiros entram': 'Que arquivos entram',
+  'CSV de outras apps ou de uma folha de cálculo, com vírgulas ou ponto e vírgula. Do Excel, guarda primeiro como CSV.': 'CSV de outros apps ou de uma planilha, com vírgulas ou ponto e vírgula. No Excel, salve primeiro como CSV.',
+  'Lemos as colunas sozinhos. Se alguma ficar mal, tocas em «Rever» e escolhes a certa.': 'Lemos as colunas sozinhos. Se alguma ficar errada, toque em «Revisar» e escolha a certa.',
+  'Importar o mesmo ficheiro outra vez não repete sessões. Uma cópia do Sweatbook (.json) traz tudo, incluindo as mãos.': 'Importar o mesmo arquivo de novo não repete sessões. Uma cópia do Sweatbook (.json) traz tudo, inclusive as mãos.',
 };
 
 export default ptBR;

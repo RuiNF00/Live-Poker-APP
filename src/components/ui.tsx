@@ -318,6 +318,7 @@ export function Section({
   children,
   style,
   hint,
+  help,
 }: {
   title?: string;
   action?: string;
@@ -325,14 +326,25 @@ export function Section({
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   hint?: string;
+  /** A <Help k="…" /> shown beside the title. */
+  help?: React.ReactNode;
 }) {
   return (
     <View style={[{ gap: S.sm + 2 }, style]}>
       {title ? (
         <Row style={{ paddingHorizontal: 4, minHeight: 20 }}>
-          <T v="label" style={{ flex: 1 }}>
-            {title}
-          </T>
+          {help ? (
+            <Row gap={6} style={{ flex: 1 }}>
+              <T v="label" style={{ flexShrink: 1 }}>
+                {title}
+              </T>
+              {help}
+            </Row>
+          ) : (
+            <T v="label" style={{ flex: 1 }}>
+              {title}
+            </T>
+          )}
           {action ? (
             <Pressable onPress={onAction} hitSlop={12} accessibilityRole="button">
               <T v="small" color={C.accent} style={{ fontFamily: ff(700) }}>

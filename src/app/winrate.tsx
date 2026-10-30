@@ -6,6 +6,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { Help } from '@/components/Help';
 import { ProBlur, useLocked } from '@/components/ProGate';
 import { Card, Row, Section, Segmented, T } from '@/components/ui';
 import { Interval, signed, WinRateCard, WinRateSample } from '@/components/WinRate';
@@ -43,7 +44,7 @@ export default function WinRateScreen() {
           <>
             <WinRateCard w={w} cur={cur} hidden={hidden} />
             <Section title={t('Quantas horas até saberes')}>{lock(t('Vê quantas horas faltam para o teu win rate ser fiável'), <HoursCard w={w} />)}</Section>
-            <Section title={t('Onde ganhas')} hint={t('Só grupos com 2 ou mais sessões. A barra é o intervalo de 95%; o traço é o win rate.')}>
+            <Section title={t('Onde ganhas')} help={<Help k="interval" />} hint={t('Só grupos com 2 ou mais sessões. A barra é o intervalo de 95%; o traço é o win rate.')}>
               <Segmented
                 options={[
                   { key: 'stake', label: t('Stake') },
