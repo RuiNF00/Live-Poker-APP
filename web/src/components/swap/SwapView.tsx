@@ -92,6 +92,8 @@ export function SwapView({ locale, initial, accounts: initialAccounts, invite }:
       if (j.swap) setSwap(j.swap);
       if (j.token && onToken) onToken(j.token);
       if (!res.ok) setError(c.errors[j.error ?? ''] ?? c.errors.generic);
+      // Maybe deleted while this page was open: a fresh read shows «apagado» instead of «try again».
+      if (res.status === 404) await load(token);
       return res.ok;
     } catch {
       setError(c.errors.generic);

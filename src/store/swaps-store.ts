@@ -17,7 +17,7 @@ import { currentDeleted, loadDeleted, markDeleted } from './deleted';
 import { entryId, liveSwaps, reclaimDeleted } from './deleted-math';
 import { createWriter, loadCollection, type CollectionSpec, type KV } from './persist';
 import { fixSwap } from './swap-validate';
-import { MAX_SWAP_ENTRIES, mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
+import { justConfirmed, MAX_SWAP_ENTRIES, mergeRemote, mergeSwaps, newFromOther, seenTag, type RemoteSwap, type Swap, type SwapEntry } from './swaps';
 
 const SPEC: CollectionSpec = { index: 'rl.swaps.v1', prefix: 'rl.swap.v1.' };
 const kv = AsyncStorage as unknown as KV;
@@ -93,10 +93,11 @@ export function saveSwap(s: Swap) {
   emit(i < 0 ? [s, ...state.swaps] : state.swaps.map((x, j) => (j === i ? s : x)));
 }
 
-type News = (swap: Swap, entries: SwapEntry[]) => void;
+/** `confirmed`: this sync is the one that brought the other player's confirmation (only the proposer gets it). */
+type News = (swap: Swap, entries: SwapEntry[], confirmed: boolean) => void;
 const newsListeners = new Set<News>();
 
-/** Told when a sync brings in prizes or payments the other player added. */
+/** Told when a sync brings in prizes or payments the other player added, or their confirmation. */
 export function onSwapNews(l: News): () => void {
   newsListeners.add(l);
   return () => newsListeners.delete(l);
@@ -108,7 +109,8 @@ function applyRemote(id: string, remote: RemoteSwap) {
   const next = reclaimDeleted(mergeRemote(cur, remote), currentDeleted(), (e) => e.side === cur.side, (e) => e.side);
   saveSwap(next);
   const news = newFromOther(cur, next);
-  if (news.length) newsListeners.forEach((l) => l(next, news));
+  const confirmed = justConfirmed(cur, next);
+  if (news.length || confirmed) newsListeners.forEach((l) => l(next, news, confirmed));
 }
 
 /**

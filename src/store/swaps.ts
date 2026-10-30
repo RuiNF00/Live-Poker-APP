@@ -424,6 +424,11 @@ export function newFromOther(before: Swap | undefined, after: Swap): SwapEntry[]
 }
 
 /** Swaps and groups where money is still owed either way ("Delete all my data" warns about them). */
+/** The proposer's copy just took the other player's confirmation: the moment to tell them it counts. */
+export function justConfirmed(before: Swap | undefined, after: Swap): boolean {
+  return !!before && before.side === 'a' && !before.confirmedAt && !!after.confirmedAt && !after.gone;
+}
+
 export function unsettledSwaps(swaps: Swap[], groups: SwapGroup[]): number {
   const pairs = swaps.filter((s) => s.confirmedAt && !s.gone && !s.archived && !s.left && !settled(swapLedger(s))).length;
   const grps = groups.filter((g) => groupReady(g) && !g.gone && !g.archived && Math.abs(groupLedger(g).balance) >= HALF_CENT).length;

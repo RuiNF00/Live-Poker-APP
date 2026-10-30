@@ -52,6 +52,7 @@ const pt = {
   copied: 'Copiado',
   openApp: 'Abrir na app Sweatbook',
   errors: {
+    full: 'Este swap já tem o máximo de registos. Faz um swap novo para os próximos torneios.',
     offensive: 'Esse texto não é permitido.',
     already_confirmed: 'Este swap já foi confirmado.',
     seat_taken: 'Esse lugar já foi escolhido.',
@@ -152,6 +153,7 @@ const en: Copy = {
   copied: 'Copied',
   openApp: 'Open in the Sweatbook app',
   errors: {
+    full: 'This swap is full. Make a new swap for the next tournaments.',
     offensive: 'That text is not allowed.',
     already_confirmed: 'This swap was already confirmed.',
     seat_taken: 'That seat was already taken.',
@@ -250,6 +252,7 @@ const ptBR: Copy = {
   copied: 'Copiado',
   openApp: 'Abrir no app Sweatbook',
   errors: {
+    full: 'Este swap já tem o máximo de registros. Faça um swap novo para os próximos torneios.',
     offensive: 'Esse texto não é permitido.',
     already_confirmed: 'Este swap já foi confirmado.',
     rate_limited: 'Muitos pedidos. Tente daqui a pouco.',
@@ -348,6 +351,7 @@ const es: Copy = {
   copied: 'Copiado',
   openApp: 'Abrir en la app Sweatbook',
   errors: {
+    full: 'Este swap ya tiene el máximo de registros. Haz un swap nuevo para los próximos torneos.',
     offensive: 'Ese texto no está permitido.',
     already_confirmed: 'Este swap ya fue confirmado.',
     rate_limited: 'Demasiadas solicitudes. Inténtalo en un momento.',

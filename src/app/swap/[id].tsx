@@ -70,14 +70,14 @@ export default function SwapScreen() {
           <Empty icon="swap-horizontal" title={t('Swap não encontrado')} body={t('O link pode ter sido apagado por um dos jogadores, ou estás sem rede.')} />
         </Screen>
       ) : (
-        <Incoming remote={remote} />
+        <Incoming remote={remote} setGone={() => setRemote(null)} />
       )}
     </>
   );
 }
 
-/** Someone's proposal: read the terms, put your name, confirm. */
-function Incoming({ remote }: { remote: RemoteSwap }) {
+/** Someone's proposal: read the terms, put your name, confirm. `setGone`: it was deleted while open. */
+function Incoming({ remote, setGone }: { remote: RemoteSwap; setGone: () => void }) {
   const { settings, setSettings } = useStore();
   const [name, setName] = useState(settings.nickname || remote.terms.b.name);
   const [busy, setBusy] = useState(false);
@@ -104,9 +104,22 @@ function Incoming({ remote }: { remote: RemoteSwap }) {
         setBusy(false);
         return;
       }
+      // Gone meanwhile: the page says so, not a notice about the signal.
+      if (code === 'not_found') {
+        setGone();
+        return;
+      }
       notice(
         t('Não foi possível confirmar'),
-        code === 'already_confirmed' ? t('Este swap já foi confirmado.') : code === 'offensive' ? t('Esse nome não é permitido.') : t('Precisa de rede. Tenta de novo quando tiveres sinal.'),
+        code === 'already_confirmed'
+          ? t('Este swap já foi confirmado.')
+          : code === 'offensive'
+          ? t('Esse nome não é permitido.')
+          : code === 'invalid_name'
+          ? t('Esse nome não serve. Experimenta outro.')
+          : code === 'rate_limited'
+          ? t('Demasiadas tentativas. Tenta daqui a pouco.')
+          : t('Precisa de rede. Tenta de novo quando tiveres sinal.'),
       );
       setBusy(false);
     }
@@ -344,7 +357,7 @@ function OwnSwap({ s, pay }: { s: Swap; pay?: boolean }) {
                 t('Apagar'),
                 async () => {
                   if (await deleteSwapEverywhere(s.id)) router.back();
-                  else notice(t('Não deu para apagar'), t('Nada foi apagado. Esta entrada já não se pode apagar daqui.'));
+                  else notice(t('Não deu para apagar'), t('Nada foi apagado. Este telemóvel já não tem acesso a este swap; fica cá como registo.'));
                 },
               )
             }

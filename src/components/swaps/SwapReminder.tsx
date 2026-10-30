@@ -57,7 +57,8 @@ export function SwapReminder() {
       .catch(() => setAsked([]));
   }, []);
 
-  const live = useMemo(() => swaps.some((s) => s.confirmedAt && !s.gone && !s.archived) || groups.some((g) => !g.gone && !g.archived), [swaps, groups]);
+  // A proposal still waiting counts too: its confirmation only reaches this phone by syncing.
+  const live = useMemo(() => swaps.some((s) => !s.gone && !s.archived) || groups.some((g) => !g.gone && !g.archived), [swaps, groups]);
 
   // Their side only reaches this phone by syncing: at launch and when the app comes back.
   const lastSync = useRef(0);
@@ -76,7 +77,7 @@ export function SwapReminder() {
 
   // Amounts only when allowed on the lock screen and the accounts are open to me.
   const amounts = (x: { accounts?: boolean }) => notifyAmountsOn() && !(noProRef.current && !x.accounts);
-  useEffect(() => onSwapNews((s, news) => void notify(s, news, amounts(s))), []);
+  useEffect(() => onSwapNews((s, news, confirmed) => void notify(s, news, amounts(s), confirmed)), []);
   useEffect(() => onGroupNews((g, news) => void notifyGroup(g, news, amounts(g))), []);
 
   // The tournament to ask about: finished recently, in a swap, not asked before. Shown a
@@ -264,8 +265,8 @@ function postMoney(n: NonNullable<ReturnType<typeof notifications>>, id: string,
   });
 }
 
-/** What their new entries mean for me, as one notification per swap (only if already allowed). */
-async function notify(sw: Swap, news: SwapEntry[], amounts: boolean) {
+/** What their new entries (or their confirmation) mean for me, as one notification per swap (only if already allowed). */
+async function notify(sw: Swap, news: SwapEntry[], amounts: boolean, confirmed = false) {
   const n = notifications();
   if (!n) return;
   try {
@@ -273,15 +274,19 @@ async function notify(sw: Swap, news: SwapEntry[], amounts: boolean) {
     await setup(n);
     const name = swapNames(sw)[other(sw.side)];
     const cur = sw.terms.currency;
-    const lines = !amounts ? [t('Há novidades no swap. Toca para veres as contas.')] : news.map((e) =>
+    const said = (e: SwapEntry) =>
       e.kind === 'payment'
-        ? t('{name} registou um pagamento de {amount}.', { name, amount: money(e.amount, cur) })
+        ? t('{name} registou que te pagou {amount}.', { name, amount: money(e.amount, cur) })
         : e.kind === 'received'
           ? t('{name} registou que recebeu {amount} teus.', { name, amount: money(e.amount, cur) })
           : e.amount > 0
           ? t('{name} cobrou {amount}: deve-te {owed}.', { name, amount: money(e.amount, cur), owed: money(owedOn(sw.terms, e), cur) })
-          : t('{name} não cobrou no {event}.', { name, event: e.event || sw.terms.title }),
-    );
+          : t('{name} não cobrou no {event}.', { name, event: e.event || sw.terms.title });
+    // A confirmation carries no amounts: who and what, so the proposer knows it counts from now.
+    const lines = [
+      ...(confirmed ? [t('{name} confirmou o swap no {title}. A partir de agora conta.', { name, title: sw.terms.title })] : []),
+      ...(!news.length ? [] : !amounts ? [t('Há novidades no swap. Toca para veres as contas.')] : news.map(said)),
+    ];
     const waiting = sw.terms.scope === 'event' && news.some((e) => e.kind === 'result') && !sw.entries.some((e) => e.side === sw.side && e.kind === 'result');
     if (waiting) lines.push(t('E tu, como acabaste?'));
     postMoney(n, sw.id, t('Swap com {name}', { name }), lines.join(' '), `sweatbook://swap/${sw.id}`);

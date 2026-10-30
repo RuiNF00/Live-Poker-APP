@@ -6,7 +6,7 @@ import { buildBackup, parseBackup } from '../backup';
 import { DEFAULT_SETTINGS } from '../types';
 import { profit } from '../session-math';
 import type { Session } from '../types';
-import { assignSwaps, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, settled, settleGroups, settleNet, seenTag, settleSteps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
+import { assignSwaps, justConfirmed, newFromOther, swapsToSettle, swapsForSession, mergeRemote, mergeSwaps, swapDeleteJobs, withSwaps, settled, settleGroups, settleNet, seenTag, settleSteps, swapLedger, swapsTotal, type RemoteSwap, type Swap, type SwapEntry, type SwapTerms } from '../swaps';
 
 const terms: SwapTerms = {
   v: 1, scope: 'series', title: 'WSOP Paradise', venue: 'Atlantis', currency: '$',
@@ -337,4 +337,17 @@ test('«Paguei» and «Recebi» merge only when neither phone had seen the other
   assert.equal(swapLedger(swap({ terms: t75, entries: again })).iPaid, 185.18);
   assert.equal(seenTag(atTable, 'b', 'received', 92.59), '~1');
   assert.equal(seenTag(atTable, 'a', 'result', 10), '');
+});
+
+test('justConfirmed: the proposer hears once, when the confirmation first arrives', () => {
+  const waiting = swap({ confirmedAt: undefined });
+  assert.equal(justConfirmed(waiting, swap()), true);
+  // Already confirmed before this sync, or nothing yet: no news.
+  assert.equal(justConfirmed(swap(), swap()), false);
+  assert.equal(justConfirmed(waiting, waiting), false);
+  // The one who confirmed doesn't need telling.
+  assert.equal(justConfirmed(swap({ side: 'b', confirmedAt: undefined }), swap({ side: 'b' })), false);
+  // Deleted on the other side: not a confirmation to announce.
+  assert.equal(justConfirmed(waiting, swap({ gone: true })), false);
+  assert.equal(justConfirmed(undefined, swap()), false);
 });
