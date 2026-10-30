@@ -151,7 +151,7 @@ async function uploadNow(c: CloudState, data: BackupData, opts: UploadOpts): Pro
     // It reached the server: no longer waiting on the network; the card shows the real reason.
     setWaiting(false);
     // Remembered for the backup warning (would_shrink is the player's call, not a failure).
-    const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden', 'gone'].includes(msg) ? msg : 'network';
+    const reason = msg && ['would_shrink', 'too_big', 'quota', 'disabled', 'forbidden', 'gone', 'invalid', 'newer'].includes(msg) ? msg : 'network';
     if (reason !== 'would_shrink') {
       const now = await loadCloud();
       if (now && now.id === c.id) await saveCloud({ ...now, failedAt: Date.now(), failure: reason, ...(reason === 'gone' ? { gone: true } : {}) }).catch(() => {});

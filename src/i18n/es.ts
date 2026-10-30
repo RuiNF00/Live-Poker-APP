@@ -1103,6 +1103,7 @@ const es: Record<string, string> = {
   'Stack': 'Stack',
   'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.': 'La copia en la nube tiene más que este teléfono. No la reemplazamos.',
   'Substituir a cópia na nuvem?': '¿Reemplazar la copia en la nube?',
+  'A cópia na nuvem está danificada e não se consegue ler. Substitui-a pela deste telemóvel para voltares a ter cópias.': 'La copia en la nube está dañada y no se puede leer. Sustitúyela por la de este móvil para volver a tener copias.',
   'A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.': 'La copia en la nube tiene más manos, sesiones o jugadores que este teléfono. Si los borraste a propósito, reemplázala. Si no, recupérala primero con el código.',
   'Substituir': 'Reemplazar',
   'desde {time}': 'desde {time}',

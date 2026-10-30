@@ -8,7 +8,7 @@ import type { Session, Withholding } from '@/store/types';
 
 import { finish, readTable, readTableAsync, type Steps, type Table } from './csv';
 import { type DecimalMark, NO_VALUE, parseNum } from './num';
-import { detectSource, FIELDS, knownHeader, mappingFor, TIME_ONLY, type Field, type Mapping, type SourceId } from './mapping';
+import { detectSource, FIELDS, idx, knownHeader, mappingFor, TIME_ONLY, type Field, type Mapping, type SourceId } from './mapping';
 
 export type DateOrder = 'dmy' | 'mdy';
 
@@ -88,13 +88,23 @@ function prepared(text: string, table: Table): Prepared {
 }
 
 /** "Lugar" is the finishing place in Portuguese and the venue in Spanish: the column's values decide. */
-function byValues(table: Table, m: Mapping): Mapping {
+function byValues(table: Table, m0: Mapping): Mapping {
+  const m = netAsProfit(table, m0);
   const col = m.finish;
   if (col === undefined || m.venue !== undefined) return m;
   const vals = table.rows.map((r) => (r[col] ?? '').trim()).filter(Boolean);
   if (!vals.length || vals.filter((v) => /^\d+(º|ª|st|nd|rd|th|°)?$/i.test(v)).length * 2 > vals.length) return m;
   const { finish, ...rest } = m;
   return { ...rest, venue: finish };
+}
+
+/** A cash-out is never negative: a column read as one ("Gewinn" alone) that has losses in it is the net result. */
+function netAsProfit(table: Table, m: Mapping): Mapping {
+  const col = m.cashOut;
+  if (col === undefined || m.profit !== undefined) return m;
+  if (!table.rows.some((r) => (parseNum(r[col]) ?? 0) < 0)) return m;
+  const { cashOut, ...rest } = m;
+  return { ...rest, profit: cashOut };
 }
 
 const CURRENCY: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', BRL: 'R$', CHF: 'CHF', HKD: 'HK$', AUD: 'A$', '€': '€', $: '$', '£': '£', R$: 'R$', US$: '$' };
@@ -244,6 +254,11 @@ export function parseHours(raw: string | undefined): number | null {
   if (m) return Number(m[1]) + Number(m[2]) / 60;
   m = s.match(/^(\d+)\s*min/);
   if (m) return Number(m[1]) / 60;
+  // "1 hr 30 min", "2 hrs 15 mins", "45m", "30 m", "1h 5m".
+  m = s.match(/^(?:(\d+(?:[.,]\d+)?)\s*h[a-z]*\.?)?\s*(?:(\d+)\s*m[a-z]*\.?)?$/);
+  if (m && (m[1] || m[2])) return Number((m[1] ?? '0').replace(',', '.')) + Number(m[2] ?? 0) / 60;
+  // Any other letters (seconds, a word): not a length read as hours.
+  if (/[a-z]/.test(s.replace(/h(ours?|oras?)?$/, ''))) return null;
   const n = parseNum(s.replace(/h(ours?|oras?)?$/, ''));
   return n !== null && n >= 0 ? n : null;
 }
@@ -253,6 +268,17 @@ export function parseHours(raw: string | undefined): number | null {
 const TRANSFER = /deposit|withdraw|payout|cash ?in\b|transfer|transac|bonus|rakeback|dep[oó]sito|levantamento|retirada|transfer[eê]ncia|bankroll/i;
 const MTT = /tourn|torn|torne|mtt|sng|sit ?[&n]|sit\s*(and|e|y)\s*go|spin|freeze|freeroll|bounty|\bko\b|satell?it|sat[eé]lit|turnier|tournoi/i;
 const CASH = /cash|ring|dinheiro|efectivo|cashgame/i;
+
+const MOVE_START = new RegExp(`^[\\s\\W]*(?:${TRANSFER.source})`, 'i');
+const GAME = /hold.?em|\bnlh?\b|\bplo|omaha|stud|razz|\d+\s*\/\s*\d+/i;
+
+/**
+ * With no type column, a name or game that opens with "Deposit", "Rakeback"… is money moved, but a tournament
+ * or a game that only has the word in it ("$5 Bankroll Builder", "Rakeback Race Freeroll", "Bonus Hold'em") is poker.
+ */
+export function looksLikeMove(cell: string): boolean {
+  return MOVE_START.test(cell) && !MTT.test(cell) && !GAME.test(cell);
+}
 
 export function kindOf(raw: string): 'mtt' | 'cash' | 'transfer' | null {
   if (!raw.trim()) return null;
@@ -419,6 +445,17 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     return x === 'mtt' || x === 'cash' ? x : null;
   };
   const gameAsKind = !kindUseful && mapping.game !== undefined && table.rows.some((r) => gameKind(r) !== null);
+  // Sweatbook's own CSV: buy_in × entries + add_on is total_cost, so re-entries and the add-on come back as they were.
+  const own3 = opt.source === 'sweatbook' ? (['buyin', 'entries', 'addon'] as const).map((h) => idx(table.headers, h)) : [];
+  const parts = (r: string[], total: number, money: (v: string) => number | null) => {
+    const [bi, ei, ai] = own3;
+    if (bi === undefined || ei === undefined) return null;
+    const per = money(r[bi] ?? '');
+    const n = Number((r[ei] ?? '').trim());
+    const ao = ai === undefined ? 0 : (money(r[ai] ?? '') ?? 0);
+    if (!per || per <= 0 || !Number.isInteger(n) || n < 1 || n > 1000 || ao < 0) return null;
+    return Math.abs(round2(per * n + ao) - round2(total)) < 0.01 ? { buyIn: round2(per), entries: n, addOn: round2(ao) } : null;
+  };
   const sessions: Session[] = [];
   const seen = new Map<string, number>();
   let transfers = 0;
@@ -450,7 +487,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     const own = opt.source === 'sweatbook' && /^[\w.-]{1,80}$/.test(get(r, 'id')) ? get(r, 'id') : '';
     const k = kindUseful ? kindOf(get(r, 'kind')) : gameAsKind ? gameKind(r) : null;
     const nameRaw = get(r, 'name');
-    const isMove = k === 'transfer' || (!k && TRANSFER.test(get(r, 'game') + ' ' + nameRaw));
+    const isMove = k === 'transfer' || (!k && (looksLikeMove(get(r, 'game')) || looksLikeMove(nameRaw)));
     const startP = parseDate(get(r, 'start'), order);
     if (isMove) {
       const m = startP && moveOf(r, get, startP.t, opt, money);
@@ -601,6 +638,7 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
     const withheld = withheldOf(money(get(r, 'taxWithheld')), get(r, 'taxForm'), get(r, 'taxStatus'));
     // Bounties are part of the prize: never more than it, and only in tournaments.
     const bounties = kind === 'mtt' ? round2(Math.min(Math.abs(money(get(r, 'bounties')) ?? 0), Math.max(0, out))) : 0;
+    const split = !addOn ? parts(r, cost, money) : null;
     sessions.push({
       id,
       kind,
@@ -610,9 +648,9 @@ function* convert(table: Table, mapping: Mapping, opt: ImportOptions): Generator
       startedAt: start,
       endedAt: end,
       breaks,
-      buyIn: round2(cost),
-      entries: 1,
-      addOn: round2(Math.abs(addOn)),
+      buyIn: split?.buyIn ?? round2(cost),
+      entries: split?.entries ?? 1,
+      addOn: split?.addOn ?? round2(Math.abs(addOn)),
       cashOut: round2(out),
       finish: kind === 'mtt' && finish && finish > 0 ? Math.round(finish) : undefined,
       field: kind === 'mtt' && field && field > 0 ? Math.round(field) : undefined,

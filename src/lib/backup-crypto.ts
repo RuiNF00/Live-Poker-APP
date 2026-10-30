@@ -129,8 +129,11 @@ export async function sealAsync(plain: string, key: Uint8Array, nonce: Uint8Arra
  * their own. Files the player imports by hand may still be plain JSON.
  */
 export async function unseal(raw: Uint8Array, key: Uint8Array, sealedOnly = false): Promise<string> {
-  const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? gunzipSync(raw) : raw;
-  if (isV2(bytes)) return strFromU8(gunzipSync(await openV2(bytes, key)));
+  const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? damaged(() => gunzipSync(raw)) : raw;
+  if (isV2(bytes)) {
+    const zipped = await openV2(bytes, key);
+    return strFromU8(damaged(() => gunzipSync(zipped)));
+  }
   const text = strFromU8(bytes);
   let env: Partial<Sealed>;
   try {
@@ -143,11 +146,13 @@ export async function unseal(raw: Uint8Array, key: Uint8Array, sealedOnly = fals
     if (sealedOnly) throw new Error('forbidden');
     return text;
   }
+  let zipped: Uint8Array;
   try {
-    return strFromU8(gunzipSync(await gcmDecrypt(key, fromB64(env.n), fromB64(env.c))));
+    zipped = await gcmDecrypt(key, fromB64(env.n), fromB64(env.c));
   } catch {
     throw new Error('forbidden');
   }
+  return strFromU8(damaged(() => gunzipSync(zipped)));
 }
 
 function join(parts: Uint8Array[], size: number): Uint8Array {
@@ -180,11 +185,11 @@ async function gunzipSliced(raw: Uint8Array, pause: () => Promise<void>): Promis
 /** Same as unseal, with both gunzips sliced so a restore keeps the screen alive. */
 /** Same as unseal, in slices. */
 export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () => Promise<void> = breathe, sealedOnly = false): Promise<string> {
-  const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? await gunzipSliced(raw, pause) : raw;
+  const bytes = raw[0] === 0x1f && raw[1] === 0x8b ? await damagedAsync(() => gunzipSliced(raw, pause)) : raw;
   if (isV2(bytes)) {
     const zipped = await openV2(bytes, key);
     await pause();
-    return strFromU8(await gunzipSliced(zipped, pause));
+    return strFromU8(await damagedAsync(() => gunzipSliced(zipped, pause)));
   }
   const text = strFromU8(bytes);
   let env: Partial<Sealed>;
@@ -205,5 +210,24 @@ export async function unsealAsync(raw: Uint8Array, key: Uint8Array, pause: () =>
     throw new Error('forbidden');
   }
   await pause();
-  return strFromU8(await gunzipSliced(zipped, pause));
+  return strFromU8(await damagedAsync(() => gunzipSliced(zipped, pause)));
+}
+
+/**
+ * A cut-off or damaged file fails inside gunzip ("unexpected EOF"): that is 'invalid' (can't be read), not a wrong
+ * code and not a lost connection, so the cloud copy can be replaced instead of every copy failing as «Sem ligação».
+ */
+function damaged<T>(fn: () => T): T {
+  try {
+    return fn();
+  } catch {
+    throw new Error('invalid');
+  }
+}
+async function damagedAsync<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch {
+    throw new Error('invalid');
+  }
 }

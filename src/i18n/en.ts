@@ -1190,6 +1190,7 @@ const en: Record<string, string> = {
   'Stack': 'Stack',
   'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.': "The cloud backup holds more than this phone, so we didn't replace it.",
   'Substituir a cópia na nuvem?': 'Replace the cloud backup?',
+  'A cópia na nuvem está danificada e não se consegue ler. Substitui-a pela deste telemóvel para voltares a ter cópias.': 'The cloud copy is damaged and can\'t be read. Replace it with this phone\'s to have backups again.',
   'A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.': 'The cloud backup has more hands, sessions or players than this phone. If you deleted them on purpose, replace it. If not, restore with your code first.',
   'Substituir': 'Replace',
   // Lock screen (Live Activity, Android notification, level reminder)

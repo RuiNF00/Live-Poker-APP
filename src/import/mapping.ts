@@ -147,7 +147,7 @@ export function autoMap(headers: string[], rows: string[][] = []): Mapping {
   return m;
 }
 
-function idx(headers: string[], ...names: string[]): number | undefined {
+export function idx(headers: string[], ...names: string[]): number | undefined {
   const n = headers.map(norm);
   for (const name of names) {
     const i = n.indexOf(name);

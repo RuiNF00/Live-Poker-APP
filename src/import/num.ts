@@ -26,7 +26,9 @@ export function parseNum(raw: string | undefined, mark?: DecimalMark): number | 
   }
   // "1.5k" in a sheet typed by hand.
   const k = /\d\s*k$/i.test(s) ? 1000 : 1;
-  s = s.replace(/[^\d.,\-+eE]/g, '');
+  // "100 EUR", "SEK 100", "100,-": the currency code and the ",-" go; an E stays only in "1e3".
+  s = s.replace(/,-$/, '').replace(/(?<!\p{L})\p{L}{3}(?!\p{L})/gu, ' ');
+  s = s.replace(/[^\d.,\-+eE]/g, '').replace(/(?<!\d)[eE]|[eE](?![\d+-])/g, '');
   if (s.startsWith('-')) {
     neg = !neg;
     s = s.slice(1);

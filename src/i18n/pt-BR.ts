@@ -531,6 +531,7 @@ const ptBR: Record<string, string> = {
   'Termina sessões para filtrar por stakes.': 'Finalize sessões para filtrar por stakes.',
   'A cópia na nuvem tem mais do que este telemóvel. Não a substituímos.': 'O backup na nuvem tem mais do que este celular. Não o substituímos.',
   'Substituir a cópia na nuvem?': 'Substituir o backup na nuvem?',
+  'A cópia na nuvem está danificada e não se consegue ler. Substitui-a pela deste telemóvel para voltares a ter cópias.': 'A cópia na nuvem está danificada e não dá para ler. Substitua pela deste celular para voltar a ter cópias.',
   'A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.': 'O backup na nuvem tem mais mãos, sessões ou jogadores do que este celular. Se você excluiu de propósito, substitua. Se não, recupere primeiro com o código.',
   'Nível {n}: blinds {blinds}. Toca para atualizar a sessão.': 'Nível {n}: blinds {blinds}. Toque para atualizar a sessão.',
   'A tua parte do pacote {amount}': 'Sua parte do pacote {amount}',

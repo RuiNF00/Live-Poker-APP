@@ -174,9 +174,10 @@ export function CloudBackup({ onExport }: { onExport?: () => void } = {}) {
     } catch (e) {
       // No signal: the card says it waits and copies when the signal is back.
       if ((e as Error)?.message === 'offline') return;
-      if ((e as Error)?.message !== 'would_shrink' || Platform.OS === 'web') note(t('Não deu para fazer a cópia'), errText(e));
+      const msg = (e as Error)?.message;
+      if ((msg !== 'would_shrink' && msg !== 'invalid') || Platform.OS === 'web') note(t('Não deu para fazer a cópia'), errText(e));
       else
-        Alert.alert(t('Substituir a cópia na nuvem?'), t('A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.'), [
+        Alert.alert(t('Substituir a cópia na nuvem?'), msg === 'invalid' ? t('A cópia na nuvem está danificada e não se consegue ler. Substitui-a pela deste telemóvel para voltares a ter cópias.') : t('A cópia na nuvem tem mais mãos, sessões ou jogadores do que este telemóvel. Se apagaste de propósito, substitui. Se não, recupera primeiro com o código.'), [
           { text: t('Cancelar'), style: 'cancel' },
           { text: t('Substituir'), style: 'destructive', onPress: () => backupNow(true) },
         ]);
@@ -540,7 +541,8 @@ export function BackupHealthBanner({ health, onSnooze }: { health: Exclude<Healt
     } catch (e) {
       // Fewer things here than in the cloud: the choice (replace or restore) is in Settings.
       if ((e as Error)?.message === 'offline') return;
-      if ((e as Error)?.message === 'would_shrink') router.push('/settings');
+      // A damaged cloud copy: replacing it is offered in Settings too.
+      if ((e as Error)?.message === 'would_shrink' || (e as Error)?.message === 'invalid') router.push('/settings');
       else note(t('Não deu para fazer a cópia'), errText(e));
     } finally {
       setBusy(false);

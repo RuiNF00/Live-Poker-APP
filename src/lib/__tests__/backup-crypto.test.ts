@@ -116,3 +116,16 @@ test('the cloud copy only opens encrypted: a plain copy put on the server is ref
   assert.equal(await unsealAsync(await sealAsync(plain, key, new Uint8Array(12)), key, undefined, true), plain);
   assert.equal(await unseal(raw, key), plain);
 });
+
+test("a cut-off cloud copy is 'invalid' (replaceable), never a lost connection; a wrong code stays 'forbidden'", async () => {
+  const { enc: key } = deriveKeys('ABCDEFGHJKMNPQRS');
+  const body = JSON.stringify({ app: 'sweatbook', v: 1, big: 'x'.repeat(200000) });
+  const sealed = await sealAsync(body, key, new Uint8Array(12).fill(7), async () => {});
+  const err = async (p: Promise<unknown>) => p.then(() => 'opened', (e: Error) => e.message);
+  for (const cut of [sealed.length >> 1, sealed.length - 10]) {
+    assert.equal(await err(unsealAsync(sealed.subarray(0, cut), key, async () => {}, true)), 'invalid');
+    assert.equal(await err(unseal(sealed.subarray(0, cut), key, true)), 'invalid');
+  }
+  assert.equal(await err(unsealAsync(sealed, deriveKeys('ZZZZZZZZZZZZZZZZ').enc, async () => {}, true)), 'forbidden');
+  assert.equal(await unsealAsync(sealed, key, async () => {}, true), body);
+});

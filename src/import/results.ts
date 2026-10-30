@@ -123,7 +123,9 @@ function moneyIn(s: string): Money[] {
 
 const PLACE_LABEL = /\b(?:place[d]?|position|pos\.?|posi[cç][aã]o|posici[oó]n|puesto|lugar|finish(?:ed)?|rank|classifica[cç][aã]o|clasificaci[oó]n)\s*[:#]?\s*(\d{1,5})(?![\d.,])/iu;
 // "23rd", "1st", "5º", "5.º", "3ª", "1er", "2do", "3ro", "4to", "7mo", "8vo", "9no".
-const ORDINAL_ALL = /(?<![\p{L}\d#.,/-])(\d{1,5})(?:st|nd|rd|th|er|ro|do|to|mo|vo|no|\s?\.?[ºª°])(?![\p{L}\d])/giu;
+const ORDINAL_ALL = /(?<![\p{L}\d#.,/-])(\d{1,5})(?:st|nd|rd|th|er|ro|do|to|mo|vo|no|[èe]me|ᵉ|\s?\.?[ºª°])(?![\p{L}\d])/giu;
+// French "3e": only when nothing else reads as a place, and only the first one ("100e" can be euros).
+const ORDINAL_FR_E = /(?<![\p{L}\d#.,/-])(\d{1,4})e(?=\s)/u;
 const PLACE_OF = /(?<![\p{L}\d#.,/-])(\d{1,5})\s?\/\s?(\d{1,3}(?:[.,]\d{3})+|\d{1,6})(?![\d.,/])/u;
 const WINNER = /(?<!\p{L})(winner|champion|vencedor|campe[aã]o|ganador|campe[oó]n)(?!\p{L})/iu;
 const FIELD_AFTER = /^\s*(?:\/|of|out of|de|em|en|sur)\s*(\d{1,3}(?:[.,\s]\d{3})+|\d{1,6})(?![\d.,])/i;
@@ -309,7 +311,7 @@ function readRecord(r: Rec, header: (Col | undefined)[] | null, order: DateOrder
     placeSpan = [starts[i], starts[i] + r.cells[i].length];
   } else {
     // The last ordinal: "2nd Chance" in a name comes before the place.
-    const m = PLACE_LABEL.exec(masked) ?? [...masked.matchAll(ORDINAL_ALL)].pop() ?? null;
+    const m = PLACE_LABEL.exec(masked) ?? [...masked.matchAll(ORDINAL_ALL)].pop() ?? ORDINAL_FR_E.exec(masked) ?? null;
     const of = m ? null : PLACE_OF.exec(masked);
     if (m) {
       finish = Number(m[1]);
