@@ -30,7 +30,7 @@ import { money, num, shortDate } from '@/poker/format';
 import { getOffers, inFestivalPackage, linesSettledWith, offerPackageIds, offerStakeChanges, setLinePaid, unpaidLinesIn, useOffers, type ActionOffer } from '@/store/action-offer';
 import { currentDeleted } from '@/store/deleted';
 import { getPlan, planFestival } from '@/store/festival-plan';
-import { allFestivals } from '@/store/my-festivals';
+import { allFestivals, loadShippedFestivals } from '@/store/my-festivals';
 import { CURRENCY_INFO, isoOf, symbolOf } from '@/store/currencies';
 import { uid, useStore } from '@/store/store';
 import { rate } from '@/store/fx-math';
@@ -247,6 +247,8 @@ function BackerScreen() {
     // It carries only this backer's own pieces (see lib/backing-link).
     const key = backer.shareKey ?? uid('k');
     const ref = await shareRef().catch(() => '');
+    // The next festival event goes in the statement: the schedules have to be here (web, after a failed load).
+    await loadShippedFestivals();
     const data = { sessions, packages, payments, offers, home: settings.currency };
     let next: Backer = { ...backer, shareKey: key };
     let url = '';

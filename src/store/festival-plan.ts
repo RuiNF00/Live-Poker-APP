@@ -61,6 +61,14 @@ export function planFestival(festivals: Festival[], id: string | undefined, plan
   return f && withPlanEvents(f, plan(f.id));
 }
 
+/**
+ * Settlement reminders wait while the schedules haven't come (their chunk failed on the web without signal) and
+ * some package is for a festival not found yet: cancelling and planning again then would drop its reminder.
+ */
+export function remindersWait(schedulesLoaded: boolean, offers: { festivalId: string }[], festivals: Festival[]): boolean {
+  return !schedulesLoaded && offers.some((o) => !festivals.some((f) => f.id === o.festivalId));
+}
+
 export interface OwnEventInput {
   name: string;
   /** 'YYYY-MM-DDTHH:MM', venue wall clock. */

@@ -4,12 +4,12 @@ import { test } from 'node:test';
 
 import { LISBOA_NOV_2026, PRAGUE_DEC_2026, PUNTA_CANA_JAN_2027, PUNTA_DEL_ESTE_DEC_2026, SAO_PAULO_NOV_2026, TORRELODONES_NOV_2026 } from '../../poker/festivals-nov-2026';
 import { BAHAMAS_DEC_2026 as F, FESTIVALS, LAS_VEGAS_DEC_2026 as LV } from '../../poker/festival-data';
-import { eventDay, festivalSpan, venueTime } from '../../poker/festivals';
+import { eventDay, festivalSpan, venueTime, type Festival } from '../../poker/festivals';
 import { fitPlan, planDays, planText } from '../../share/festival-plan';
 import { nextLevelAt } from '../../lib/lock-screen/live-state';
 import { bagDay, resumeDay } from '../multi-day';
 import type { Session } from '../types';
-import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, festivalResult, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, planTotals, removeOwnEvent, stampPlan, togglePicked, withPlanEvents } from '../festival-plan';
+import { afterSession, buyInCaps, buyInsLeft, clashes, cleanPlans, entryBuyIn, isKind, lateRegOf, levelStart, bankrollShare, EMPTY_PLAN, eventAction, festivalName, festivalResult, mergePlan, nextOwnNumber, ownEvent, plannedNow, planReminders, remindersWait, planTotals, removeOwnEvent, stampPlan, togglePicked, withPlanEvents } from '../festival-plan';
 
 test('schedule matches wsop.com: 20 events, 30 rows, unique ids, one buy-in per event', () => {
   assert.equal(F.events.length, 30);
@@ -567,4 +567,13 @@ test('festival result: a bagged tournament is not lost yet, and counts again onc
   const playing = resumeDay(bagged, 20);
   assert.equal(festivalResult(F, plan, [playing], net), null, 'Day 2 in progress');
   assert.deepEqual(festivalResult(F, plan, [{ ...playing, endedAt: 30, cashOut: 9000 }], net), { played: 1, cashed: 1, net: -2750 });
+});
+
+test('settlement reminders wait for late schedules only when a package needs them', () => {
+  const own = { id: 'own-1' } as Festival;
+  const offers = [{ festivalId: 'wsop-2027' }, { festivalId: 'own-1' }];
+  assert.equal(remindersWait(false, offers, [own]), true, 'schedules missing, a package for a shipped festival: wait');
+  assert.equal(remindersWait(false, [{ festivalId: 'own-1' }], [own]), false, 'only own festivals: go ahead');
+  assert.equal(remindersWait(true, offers, [own]), false, 'schedules here: go ahead (a festival gone from them is gone)');
+  assert.equal(remindersWait(false, [], []), false);
 });

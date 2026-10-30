@@ -3,7 +3,7 @@
 // the store's lists.
 
 import { rate, type ManualRates, type RateTable } from './fx-math';
-import { backedReturn, bountiesOf, cost, owedToBackers, pieceOf, profit, stakesOf, type Cuts } from './session-math';
+import { backedReturn, bountiesOf, cost, owedToBackers, pieceOf, profit, resultDay, stakesOf, type Cuts } from './session-math';
 import type { BackerPayment, Session, Stake, StakePackage } from './types';
 
 const byEnd = (a: Session, b: Session) => (a.endedAt ?? a.startedAt) - (b.endedAt ?? b.startedAt);
@@ -453,9 +453,12 @@ export interface YearPackage {
   makeup: number;
 }
 
+/** The year a session counts in for a backer: the same as in the tax report (resultDay: where it was played, a Day 2 when it ended). */
+const playedYear = (s: Session) => new Date(resultDay(s)).getFullYear();
+
 /** The years with sessions for this backer, newest first. */
 export function ledgerYears(l: BackerLedger): number[] {
-  return [...new Set(l.rows.map((r) => new Date(r.session.startedAt).getFullYear()))].sort((a, b) => b - a);
+  return [...new Set(l.rows.map((r) => playedYear(r.session)))].sort((a, b) => b - a);
 }
 
 /**
@@ -476,7 +479,7 @@ export function yearStatement(
   const by = new Map<string, YearPackage>();
   for (const r of l.rows) {
     const s = r.session;
-    if (new Date(s.startedAt).getFullYear() !== year) continue;
+    if (playedYear(s) !== year) continue;
     const id = r.stake.packageId && pkgOf.has(r.stake.packageId) ? r.stake.packageId : null;
     const key = id ?? '';
     const p = id ? pkgOf.get(id)! : null;

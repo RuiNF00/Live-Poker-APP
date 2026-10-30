@@ -691,3 +691,13 @@ test('a backer gets the same cents on the player\'s app as on their page: 10% of
   assert.equal(l.rows[0].prize, 16.05);
   assert.equal(owedToBackers(s), 16.05);
 });
+
+test("a backer's year is the one where the session was played, as in the tax report, on any phone", () => {
+  const ms = Date.UTC(2027, 0, 1, 7); // 31 Dec 23:00 in Las Vegas
+  const sessions = [mk({ startedAt: ms, endedAt: ms + 3 * 3600000, buyIn: 1000, cashOut: 3000, tz: 'America/Los_Angeles', stakes: [{ backerId: 'b1', share: 50, markup: 1 }] })];
+  const pk = packageStates(sessions, []);
+  const l = backerLedger('b1', sessions, [], [], pk);
+  assert.deepEqual(ledgerYears(l), [2026]);
+  assert.equal(yearStatement(l, 2026, [], pk).sessions, 1);
+  assert.equal(yearStatement(l, 2027, [], pk).sessions, 0);
+});

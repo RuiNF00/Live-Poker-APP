@@ -13,8 +13,8 @@ import { t } from '@/i18n';
 import { notifications, onNotificationsAllowed, setup } from '@/lib/lock-screen/reminder';
 import { notifyAt, notifyKindOn } from '@/lib/notify-gate';
 import { getOffers, settleReminders, useOffers } from '@/store/action-offer';
-import { festivalName, getPlan, planFestival } from '@/store/festival-plan';
-import { allFestivals, loadOwnFestivals } from '@/store/my-festivals';
+import { festivalName, getPlan, planFestival, remindersWait } from '@/store/festival-plan';
+import { allFestivals, loadOwnFestivals, loadShippedFestivals, shippedFestivals, useFestivals } from '@/store/my-festivals';
 import { isPaused } from '@/store/session-math';
 import { useStore } from '@/store/store';
 
@@ -27,6 +27,10 @@ async function sync(names: Map<string, string>, playing: boolean) {
   const n = notifications();
   if (!n) return;
   try {
+    // The schedules come in a chunk of their own: on the web without signal it can fail at launch.
+    // Until they come, the reminders already planned stay as they are instead of being cancelled.
+    await Promise.all([loadShippedFestivals(), loadOwnFestivals()]);
+    if (remindersWait(shippedFestivals().length > 0, getOffers(), allFestivals())) return;
     if (!(await n.getPermissionsAsync()).granted) return;
     await setup(n);
     if (Platform.OS === 'android')
@@ -72,6 +76,8 @@ export function SettleReminder() {
   // Allowed after a package was planned (the ask came later, or turned on in the phone's settings): planned now.
   const [allowed, setAllowed] = useState(0);
   useEffect(() => onNotificationsAllowed(() => setAllowed((n) => n + 1)), []);
+  // A late chunk of schedules plans the reminders it held back.
+  const festivals = useFestivals();
   useEffect(() => {
     const names = new Map(backers.map((b) => [b.id, b.name]));
     void sync(names, playing);
@@ -80,8 +86,8 @@ export function SettleReminder() {
       if (s === 'active') void sync(names, playing);
     });
     return () => sub.remove();
-    // Re-sync when packages, sessions (and so the plan's links), backer names, playing, the switch or the permission change.
+    // Re-sync when packages, sessions (and so the plan's links), backer names, playing, the switch, the permission or the schedules change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offers, sessions, key, playing, on, allowed]);
+  }, [offers, sessions, key, playing, on, allowed, festivals]);
   return null;
 }
