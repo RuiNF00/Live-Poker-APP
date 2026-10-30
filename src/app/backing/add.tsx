@@ -10,6 +10,7 @@ import { backedLabel } from '@/components/staking/use-backing';
 import { Button, Card, Field, Row, Screen, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { noteSource } from '@/lib/attribution';
+import { readBackerPage, sealedPageRef } from '@/lib/backer-page-read';
 import { decodeStatement, type Statement } from '@/lib/backing-link';
 import { track } from '@/lib/events';
 import { claimInvite } from '@/lib/referrals';
@@ -23,6 +24,36 @@ export default function AddBacking() {
   const [text, setText] = useState('');
   const [st, setSt] = useState<Statement | null>(() => (d ? decodeStatement(String(d)) : null));
   const [bad, setBad] = useState(false);
+  // The player's one fixed link (…/b#s=<id>.<key>) carries no data, only where the page is: it's fetched.
+  const [pageRaw, setPageRaw] = useState<string | null>(() => (d && sealedPageRef(String(d)) ? String(d) : null));
+  const [page, setPage] = useState<'loading' | 'gone' | 'empty' | 'offline' | null>(() => (pageRaw ? 'loading' : null));
+  const [tries, setTries] = useState(0);
+  const retry = () => {
+    setPage('loading');
+    setBad(false);
+    setTries((n) => n + 1);
+  };
+  useEffect(() => {
+    const ref = pageRaw ? sealedPageRef(pageRaw) : null;
+    if (!ref) return;
+    let live = true;
+    readBackerPage(ref)
+      .then((x) => {
+        if (!live) return;
+        if (x === 'bad') {
+          setPage(null);
+          setBad(true);
+        } else if (x === 'gone' || x === 'empty') setPage(x);
+        else {
+          setPage(null);
+          setSt(x);
+        }
+      })
+      .catch(() => live && setPage('offline'));
+    return () => {
+      live = false;
+    };
+  }, [pageRaw, tries]);
 
   useEffect(() => {
     if (r) claimInvite(String(r), 'link');
@@ -33,6 +64,12 @@ export default function AddBacking() {
   }, [d, r]);
 
   const read = (raw: string) => {
+    if (sealedPageRef(raw)) {
+      setPageRaw(raw);
+      retry();
+      return;
+    }
+    setPage(null);
     const x = decodeStatement(raw);
     setSt(x);
     setBad(!x);
@@ -86,6 +123,11 @@ export default function AddBacking() {
           </>
         ) : (
           <>
+            {page === 'loading' ? <T v="body">{t('A carregar…')}</T> : null}
+            {page === 'gone' ? <T v="small">{t('O jogador apagou estas contas. Pede-lhe o link novo.')}</T> : null}
+            {page === 'empty' ? <T v="small">{t('O jogador ainda está a preparar estas contas. Tenta daqui a pouco.')}</T> : null}
+            {page === 'offline' ? <T v="small">{t('Sem ligação')}</T> : null}
+            {page === 'empty' || page === 'offline' ? <Button kind="secondary" title={t('Tentar outra vez')} onPress={retry} /> : null}
             <T v="body">{t('Cola o link das contas que o jogador te enviou.')}</T>
             <Button icon="clipboard-outline" title={t('Colar o link')} onPress={paste} />
             <Field

@@ -30,7 +30,7 @@ import { shareDelay } from '@/lib/friction';
 import { markShared, readyRef } from '@/lib/referrals';
 import { lastShare, rememberShare } from '@/lib/share-last';
 import { isRateLimited } from '@/lib/net';
-import { isNetworkError, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
+import { isNetworkError, ownGoneShares, queueShare, takeDirectShare, useQueuedShare } from '@/lib/share-queue';
 import { commentPushAvailable, openedOwnHand, turnOnCommentPush } from '@/lib/comment-push';
 import { commentPushReady } from '@/lib/comment-push-ready';
 import { markCommentsSeen } from '@/lib/friend-hands';
@@ -74,7 +74,7 @@ export default function HandScreen() {
   // `q`: opened from a review queue (a session id, "all", or "train" for «Treino da semana» with `k`
   // hands still to go); once reviewed, the next one is offered.
   const { id, c: fresh, f: justFinished, q: queueOf, k: trainLeft } = useLocalSearchParams<{ id: string; c?: string; f?: string; q?: string; k?: string }>();
-  const { hands, saveHand, deleteHand, settings, setSettings, activeSession } = useStore();
+  const { hands, saveHand, dropGoneLinks, deleteHand, settings, setSettings, activeSession } = useStore();
   const pro = usePro();
   // The example hand is never stored, so it can't leak into lists, stats or the next hand's defaults.
   const isSample = id === 'sample';
@@ -161,6 +161,11 @@ export default function HandScreen() {
     fetchVotes(hand.shareId).then(setVotes).catch(() => {});
   }, [hand?.shareId]);
   useEffect(loadComments, [loadComments]);
+  // A link the server deleted: the hand stops showing as shared, so «Partilhar» makes a new one instead of sending a dead link.
+  useEffect(() => {
+    if (hand?.shareId && !sample) void ownGoneShares([hand]).then(dropGoneLinks).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hand?.shareId]);
   // Opened: the next comment may send a notice again.
   const [sid, stok] = [hand?.shareId, hand?.shareToken];
   useEffect(() => {

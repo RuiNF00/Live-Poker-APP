@@ -66,6 +66,8 @@ interface StoreValue {
   /** Where a new session goes: the last one picked, else the first in the player's currency. */
   defaultBankroll: Bankroll;
   saveHand: (h: Hand) => void;
+  /** Hands whose link is gone (handId → that shareId): they stop showing as shared, and «Partilhar» makes a new link. */
+  dropGoneLinks: (gone: Map<string, string>) => void;
   deleteHand: (id: string) => void;
   saveSession: (s: Session) => void;
   deleteSession: (id: string) => void;
@@ -390,6 +392,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [allSessions, settings.currency]);
 
   const saveHand = useCallback((h: Hand) => setHands((l) => upsert(l, { ...h, updatedAt: Date.now() })), []);
+  // Only while the hand still has that link: one made again meanwhile stays.
+  const dropGoneLinks = useCallback((gone: Map<string, string>) => {
+    if (gone.size) setHands((l) => l.map((x) => (x.shareId && gone.get(x.id) === x.shareId ? unshared(x) : x)));
+  }, []);
   // A deleted hand or session takes its public page with it (queued, so it also works
   // without signal). The queue is keyed, so a second run of the updater changes nothing.
   const deleteHand = useCallback(
@@ -572,7 +578,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const linked = b.hands.filter((x) => x.shareId && mine.get(x.id) !== x.shareId);
       if (linked.length)
         void restoredGoneShares(linked)
-          .then((gone) => gone.size && setHands((l) => l.map((x) => (x.shareId && gone.get(x.id) === x.shareId ? unshared(x) : x))))
+          .then(dropGoneLinks)
           .catch(() => {});
       // A separated copy that lands next to its bankroll in the same currency folds into it
       // (bankroll-math.ts): worked out on what's loaded now, so sessions and transfers move with it.
@@ -632,7 +638,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       return { hands: h.added, sessions: s.added, players: p.added, backers: bk.added, bankrolls: bankrollsBack((b.bankrolls ?? []).filter((x) => stays.has(x.id)), { bankrolls, sessions: rawSessions, transfers }), transfers: tx.added, trips: tr.added, packages: pk.added, payments: pay.added, backing: bc.added, swaps: sw, removed };
     },
-    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, quarantine, settings.bankrollId],
+    [hands, rawSessions, players, bankrolls, transfers, backers, packages, payments, trips, backing, quarantine, settings.bankrollId, dropGoneLinks],
   );
 
   const eraseAll = useCallback(async () => {
@@ -711,6 +717,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       activeSession,
       defaultBankroll,
       saveHand,
+      dropGoneLinks,
       deleteHand,
       saveSession,
       deleteSession,

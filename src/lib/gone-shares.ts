@@ -30,6 +30,20 @@ export async function goneShares(hands: readonly Pick<Hand, 'id' | 'shareId'>[],
   return out;
 }
 
+/**
+ * Your own links to check now: those not checked in the last day, newest first, at most `max`. A link
+ * deleted on the server (taken down after reports, removed from another phone) stayed under «As tuas»
+ * and «Partilhar» sent it again; this finds it without a request per hand on every visit.
+ */
+export function linksToCheck<T extends Pick<Hand, 'id' | 'shareId' | 'createdAt'>>(hands: readonly T[], checked: Map<string, number>, now: number, max = 20): T[] {
+  const due = hands
+    .filter((h) => h.shareId && now - (checked.get(h.shareId) ?? 0) >= 24 * 3600 * 1000)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, max);
+  for (const h of due) checked.set(h.shareId!, now);
+  return due;
+}
+
 /** The hand without its link (a newer copy, so the next backup carries it too). */
 export function unshared<T extends Pick<Hand, 'shareId' | 'shareToken' | 'updatedAt'>>(h: T, now = Date.now()): T {
   const { shareId: _id, shareToken: _token, ...rest } = h;

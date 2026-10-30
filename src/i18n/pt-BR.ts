@@ -76,6 +76,8 @@ const ptBR: Record<string, string> = {
   'Leva as mãos todas para o solver': 'Leve todas as mãos para o solver',
   'Com Pro, exportas várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.': 'Com o Pro, você exporta várias mãos de uma vez para GTO Wizard, PioSolver ou PokerTracker.',
   'Os {n} torneios já jogados neste pacote passam a contar com o acordo novo, e o saldo com o backer muda.': 'Os {n} torneios já jogados neste pacote passam a contar com o novo acordo, e o saldo com o backer muda.',
+  'O jogador apagou estas contas. Pede-lhe o link novo.': 'O jogador apagou estas contas. Peça o link novo a ele.',
+  'O jogador ainda está a preparar estas contas. Tenta daqui a pouco.': 'O jogador ainda está preparando estas contas. Tente daqui a pouco.',
   'Seleciona as mãos e exporta para o solver.': 'Selecione as mãos e exporte para o solver.',
   'Os solvers só leem mãos completas. Acaba a mão primeiro.': 'Os solvers só leem mãos completas. Termine a mão primeiro.',
   'Não conseguimos guardar o ficheiro. Tenta outra vez.': 'Não conseguimos salvar o arquivo. Tente de novo.',

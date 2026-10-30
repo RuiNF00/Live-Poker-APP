@@ -9,7 +9,7 @@ import type { ShareOptions } from '@/poker/privacy';
 import type { Hand } from '@/poker/types';
 
 import { onEraseAll } from './erase-hooks';
-import { goneShares } from './gone-shares';
+import { goneShares, linksToCheck } from './gone-shares';
 import { API, deleteMyComments, deleteShare, forgetAuthorId, storedAuthorId, uploadHand } from './share-api';
 import { takeSlot, type Slot } from './share-slot';
 import { outcomeOf, queue, queued, registerSender, unqueue } from './sync';
@@ -144,6 +144,12 @@ export function restoredGoneShares(hands: readonly Pick<Hand, 'id' | 'shareId'>[
     deleteWaiting: (id) => queued('share-delete', id),
     status: async (id) => (await fetch(`${API}/api/hands/${encodeURIComponent(id)}`)).status,
   });
+}
+
+const ownChecked = new Map<string, number>();
+/** Your shared hands whose link the server no longer has (see linksToCheck): handId → shareId. */
+export function ownGoneShares(hands: readonly Pick<Hand, 'id' | 'shareId' | 'createdAt'>[], now = Date.now()): Promise<Map<string, string>> {
+  return restoredGoneShares(linksToCheck(hands, ownChecked, now));
 }
 
 /**

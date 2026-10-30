@@ -1278,6 +1278,8 @@ const en: Record<string, string> = {
   'Tirar da lista': 'Remove from list',
   'Tirar': 'Remove',
   'Tirar {name}': 'Remove {name}',
+  'O jogador ainda está a preparar estas contas. Tenta daqui a pouco.': 'The player is still preparing these accounts. Try again in a little while.',
+  'O jogador apagou estas contas. Pede-lhe o link novo.': 'The player deleted these accounts. Ask them for the new link.',
   'Os {n} torneios já jogados neste pacote passam a contar com o acordo novo, e o saldo com o backer muda.': 'The {n} tournaments already played in this package will count under the new deal, and the balance with the backer changes.',
   'Mudar o acordo?': 'Change the deal?',
   'Contas enviadas por {name} a {date}': 'Statement sent by {name} on {date}',

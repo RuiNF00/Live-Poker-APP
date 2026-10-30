@@ -11,6 +11,7 @@ import { Badge, Button, Card, Empty, ListItem, Section, T } from '@/components/u
 import { locale, t } from '@/i18n';
 import { refreshCommentPush } from '@/lib/comment-push';
 import { useSharedHands } from '@/lib/friend-hands';
+import { ownGoneShares } from '@/lib/share-queue';
 import { kindOn } from '@/lib/notify-policy';
 import { useStore } from '@/store/store';
 import { comboLabel } from '@/poker/cards';
@@ -34,7 +35,12 @@ export default function SharedHands() {
   const { friends, mine, counts, fresh } = useSharedHands({ refresh: true });
   // From the "Novo comentário na tua mão" notice: straight on to that hand, on the newest comment's street.
   const { open } = useLocalSearchParams<{ open?: string }>();
-  const { settings } = useStore();
+  const { settings, hands, dropGoneLinks } = useStore();
+  // «As tuas»: a link the server deleted (reports, another phone) leaves the list, checked at most once a day each.
+  useEffect(() => {
+    void ownGoneShares(hands).then(dropGoneLinks).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const commentsOn = kindOn(settings, 'comments');
   // Tells the server the notices are still wanted (unused tokens are deleted after 180 days).
   useEffect(() => {

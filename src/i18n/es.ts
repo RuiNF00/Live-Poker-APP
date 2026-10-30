@@ -1187,6 +1187,8 @@ const es: Record<string, string> = {
   'Tirar da lista': 'Quitar de la lista',
   'Tirar': 'Quitar',
   'Tirar {name}': 'Quitar {name}',
+  'O jogador ainda está a preparar estas contas. Tenta daqui a pouco.': 'El jugador aún está preparando estas cuentas. Inténtalo dentro de un rato.',
+  'O jogador apagou estas contas. Pede-lhe o link novo.': 'El jugador borró estas cuentas. Pídele el enlace nuevo.',
   'Os {n} torneios já jogados neste pacote passam a contar com o acordo novo, e o saldo com o backer muda.': 'Los {n} torneos ya jugados en este paquete pasan a contar con el acuerdo nuevo, y el saldo con el backer cambia.',
   'Mudar o acordo?': '¿Cambiar el acuerdo?',
   'Contas enviadas por {name} a {date}': 'Cuentas enviadas por {name} el {date}',
