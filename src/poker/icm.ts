@@ -1,12 +1,26 @@
 // Deal-making at a final table: ICM (Malmuth–Harville) and chip-chop equities.
 
-/** ICM equity of each stack for the given payouts (1st, 2nd, …). Exact, for up to ~12 players. */
+/**
+ * ICM equity of each stack for the given payouts (1st, 2nd, …). Exact; quick up to ~15 players
+ * (a final table), slower past that.
+ * Payouts typed out of order count from the largest down. A stack at zero finishes below every
+ * stack with chips (several at zero share those bottom places).
+ */
 export function icm(stacks: number[], payouts: number[]): number[] {
   const n = stacks.length;
-  const pays = payouts.slice(0, n);
+  const pays = payouts.slice().sort((a, b) => b - a).slice(0, n);
+  const alive = stacks.map((s, i) => (s > 0 ? i : -1)).filter((i) => i >= 0);
+  if (alive.length < n) {
+    const out = new Array<number>(n).fill(0);
+    const bottom = pays.slice(alive.length).reduce((a, b) => a + b, 0) / (n - alive.length);
+    const eq = alive.length ? icm(alive.map((i) => stacks[i]), pays.slice(0, alive.length)) : [];
+    stacks.forEach((_, i) => (out[i] = bottom));
+    alive.forEach((i, k) => (out[i] = eq[k]));
+    // With nobody holding chips, everyone shares every place.
+    return alive.length ? out : stacks.map(() => pays.reduce((a, b) => a + b, 0) / n);
+  }
   const out = new Array<number>(n).fill(0);
   const total = stacks.reduce((a, b) => a + b, 0);
-  if (!total) return stacks.map(() => pays.reduce((a, b) => a + b, 0) / n);
   // memo[mask] = probability that exactly the players in `mask` have already finished above the rest.
   const memo = new Map<number, number>([[0, 1]]);
   const order: number[] = [0];
@@ -43,15 +57,34 @@ function popcount(x: number) {
   return c;
 }
 
-/** Chip chop: everyone locks the lowest remaining payout, the rest is split by chips. */
+/**
+ * Chip chop: everyone locks the lowest remaining payout, the rest is split by chips. Nobody is
+ * paid more than first place: a big chip lead's share above it goes to the others, by chips
+ * (no one would agree to pay the leader more than winning the tournament pays).
+ */
 export function chipChop(stacks: number[], payouts: number[]): number[] {
   const n = stacks.length;
-  const pays = payouts.slice(0, n);
+  const pays = payouts.slice().sort((a, b) => b - a).slice(0, n);
   while (pays.length < n) pays.push(0);
   const pool = pays.reduce((a, b) => a + b, 0);
-  const floor = Math.min(...pays);
-  const total = stacks.reduce((a, b) => a + b, 0) || 1;
-  return stacks.map((s) => floor + ((pool - floor * n) * s) / total);
+  const floor = pays[n - 1];
+  const first = pays[0];
+  const out = new Array<number>(n).fill(floor);
+  const capped = new Set<number>();
+  // Each round caps whoever the split puts above first place and splits the rest again.
+  for (;;) {
+    const open = stacks.map((_, i) => i).filter((i) => !capped.has(i));
+    const left = pool - floor * open.length - first * capped.size;
+    const chips = open.reduce((a, i) => a + Math.max(0, stacks[i]), 0);
+    open.forEach((i) => (out[i] = floor + (chips > 0 ? (left * Math.max(0, stacks[i])) / chips : left / open.length)));
+    const over = open.filter((i) => out[i] > first + 1e-9);
+    if (!over.length) break;
+    over.forEach((i) => {
+      capped.add(i);
+      out[i] = first;
+    });
+  }
+  return out;
 }
 
 /**
@@ -90,18 +123,6 @@ export function payoutPreset(preset: PayoutPreset, places: number): number[] {
   return tilted.map((x) => x / sum);
 }
 
-/** ICM equities when one stack may be at zero: the busted player takes the next place down. */
-function icmAfter(stacks: number[], payouts: number[]): number[] {
-  const alive = stacks.map((s, i) => (s > 0 ? i : -1)).filter((i) => i >= 0);
-  const out = new Array<number>(stacks.length).fill(0);
-  const eq = icm(alive.map((i) => stacks[i]), payouts.slice(0, alive.length));
-  alive.forEach((i, k) => (out[i] = eq[k]));
-  stacks.forEach((s, i) => {
-    if (s <= 0) out[i] = payouts[alive.length] ?? 0;
-  });
-  return out;
-}
-
 export interface IcmCall {
   /** Equity needed by chips alone: pot odds. */
   chipEq: number;
@@ -129,9 +150,9 @@ export function icmCall(o: { stacks: number[]; payouts: number[]; hero: number; 
   const lose = stacks.slice();
   lose[hero] -= call;
   lose[villain] += pot + call;
-  const evFold = icmAfter(fold, payouts)[hero];
-  const evWin = icmAfter(win, payouts)[hero];
-  const evLose = icmAfter(lose, payouts)[hero];
+  const evFold = icm(fold, payouts)[hero];
+  const evWin = icm(win, payouts)[hero];
+  const evLose = icm(lose, payouts)[hero];
   const chipEq = call / (pot + call);
   const span = evWin - evLose;
   const icmEq = span > 0 ? Math.min(1, Math.max(0, (evFold - evLose) / span)) : chipEq;

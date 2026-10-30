@@ -305,6 +305,7 @@ const ptBR: Record<string, string> = {
   'Quando passar o limite, a nuvem guarda a última cópia que coube. Exporta para ficheiro para guardar tudo.': 'Quando passar do limite, a nuvem guarda o último backup que coube. Exporte para um arquivo para guardar tudo.',
   'Na tua mesa': 'Na sua mesa',
   'Escolhe as cartas': 'Escolha as cartas',
+  'Repor': 'Redefinir',
   'Toca num lugar para o mudar.': 'Toque em um lugar para mudá-lo.',
   'Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.': 'Toque em um lugar para mudá-lo. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.',
   'Escolhe as tuas duas cartas.': 'Escolha suas duas cartas.',

@@ -145,7 +145,7 @@ export default function OddsScreen() {
                   ? t('Completa o flop (ou tira o turn e o river).')
                   : n === 4 ? t('Escolhe as quatro cartas do vilão.') : t('Escolhe as duas cartas do vilão.')
             }
-            label={mode === 'range' ? `vs top ${rangePct}%` : t('vs cartas do vilão')} street={street} fmt={pctLabel} />
+            label={mode === 'cards' ? t('vs cartas do vilão') : rangePct === 100 ? t('vs qualquer mão') : `vs top ${rangePct}%`} street={street} fmt={pctLabel} />
         </Card>
 
         <Section title={t('Jogo')}>

@@ -628,6 +628,7 @@ const en: Record<string, string> = {
   'Cartas': 'Cards',
   'Qualquer': 'Any hand',
   'vs cartas do vilão': "vs villain's cards",
+  'vs qualquer mão': 'vs any hand',
   'Escolhe as cartas': 'Pick the cards',
   'Toca num lugar para o mudar.': 'Tap a slot to change it.',
   'Toca num lugar para o mudar. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.': 'Tap a slot to change it. Range: 4-bet ≈ top 4%, 3-bet ≈ top 8%, open ≈ top 20%, call ≈ top 40%.',
