@@ -194,7 +194,7 @@ export async function getSubscription(): Promise<{ plan: PlanId; willRenew: bool
     if (!e || e.store === 'PROMOTIONAL') return null;
     const planOf = planOfProduct;
     const plan = planOf(e.productIdentifier);
-    if (plan) return { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null };
+    if (plan) return { plan, willRenew: e.willRenew, product: e.productIdentifier, ends: e.expirationDateMillis ?? null, trial: e.periodType === 'TRIAL' };
     // «Pagar uma vez» bought while a subscription still runs: the entitlement shows the lifetime
     // (it lasts longest), but the subscription keeps renewing until it is cancelled in the store.
     const sub = Object.values(info.subscriptionsByProductIdentifier ?? {}).find((x) => x.isActive && planOf(x.productIdentifier));
