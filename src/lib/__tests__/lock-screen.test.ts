@@ -7,7 +7,7 @@ import { lockAction, lockActionPatch, parseTarget } from '../lock-screen/live-st
 import { askForLockScreen, sessionNoticePreview } from '../lock-screen/live-state';
 
 import type { Session } from '../../store/types';
-import { breakEndMessage, breakLabel, breakOf, caughtUp, levelAfter, levelsDue, levelUpMessage, liveProps, nextLevelAt, sessionPLO, withLevelClock } from '../lock-screen/live-state';
+import { breakEndMessage, breakLabel, breakOf, caughtUp, levelAfter, levelsDue, nameForStakes, levelUpMessage, liveProps, nextLevelAt, sessionPLO, withLevelClock } from '../lock-screen/live-state';
 
 const MIN = 60_000;
 
@@ -53,6 +53,21 @@ test('levelAfter walks the blinds ladder and keeps the ante type', () => {
   assert.deepEqual(levelAfter(mk(), -1), { sb: 300, bb: 600, ante: 600, level: 5 });
   assert.deepEqual(levelAfter(mk({ sb: 100, bb: 200, level: 1 }), -1), { sb: 100, bb: 200, ante: 200, level: 1 });
   assert.deepEqual(levelAfter(mk({ kind: 'cash', sb: 1, bb: 2, anteType: 'none', level: undefined }), 1), { sb: 1, bb: 3, ante: 0, level: undefined });
+});
+
+test('a cash game named after its stakes follows them; other names stay as typed', () => {
+  const cash = (name: string, sb: number, bb: number) => mk({ kind: 'cash', name, sb, bb, ante: 0, anteType: 'none', level: undefined });
+  // 2/5 → 5/5 on the ladder, and back down.
+  assert.deepEqual(levelAfter(cash('NLH 2/5', 2, 5), 1), { sb: 5, bb: 5, ante: 0, level: undefined, name: 'NLH 5/5' });
+  assert.deepEqual(levelAfter(cash('2/5 Casino Lisboa', 2, 5), -1), { sb: 2, bb: 3, ante: 0, level: undefined, name: '2/3 Casino Lisboa' });
+  assert.deepEqual(levelAfter(cash('NLH 0,5/1', 0.5, 1), 1), { sb: 1, bb: 2, ante: 0, level: undefined, name: 'NLH 1/2' });
+  // No stakes in the name, other numbers, or a tournament: nothing changes.
+  assert.equal('name' in levelAfter(cash('Quinta com a malta', 2, 5), 1), false);
+  assert.equal('name' in levelAfter(cash('Mesa 12/5', 2, 5), 1), false);
+  assert.equal('name' in levelAfter(mk({ name: 'Main 400/800' }), 1), false);
+  assert.equal(nameForStakes('NLH 1/2', { sb: 1, bb: 2 }, { sb: 1, bb: 2 }), undefined);
+  assert.equal(nameForStakes('NLH 0.5/1', { sb: 0.5, bb: 1 }, { sb: 1, bb: 2 }), 'NLH 1/2');
+  assert.equal(nameForStakes('1 / 2 deep', { sb: 1, bb: 2 }, { sb: 1, bb: 3 }), '1/3 deep');
 });
 
 test('lock-screen props: clock without breaks, stack in bb, level and next blinds', () => {

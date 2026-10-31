@@ -41,7 +41,8 @@ test('rebuys of any size: the usual buy-in is an entry, another amount a top-up,
 
 test('moving stakes in cash: no level number, and blinds off the ladder step to the next stake', () => {
   // 1/2 up is 1/3, with no «Nível 2» on the card (it showed one).
-  assert.deepEqual(levelAfter(cash(), 1), { sb: 1, bb: 3, ante: 0, level: undefined });
+  // The name «NLH 1/2» follows the stakes (lock-screen.test.ts has the cases).
+  assert.deepEqual(levelAfter(cash(), 1), { sb: 1, bb: 3, ante: 0, level: undefined, name: 'NLH 1/3' });
   // 2/4 is not on the ladder: up went to 1/3 (down a stake); now 2/5, and down 2/3.
   assert.deepEqual(levelAfter(cash({ sb: 2, bb: 4 }), 1), { sb: 2, bb: 5, ante: 0, level: undefined });
   assert.deepEqual(levelAfter(cash({ sb: 2, bb: 4 }), -1), { sb: 2, bb: 3, ante: 0, level: undefined });

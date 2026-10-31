@@ -63,7 +63,23 @@ export interface LiveProps {
 }
 
 /** The blinds `dir` levels away from the current ones, on the same ladder the session screen uses. */
-export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 'level' | 'tourney'>, dir: 1 | -1) {
+/**
+ * A cash game named after its stakes («NLH 2/5», «2/5 Casino») follows them when the blinds move, so
+ * the title on the session, the lock screen and the backers' link doesn't keep saying «2/5» at 5/10.
+ * Any other name, or one with other numbers, is left as typed. Undefined when nothing changes.
+ */
+export function nameForStakes(name: string | undefined, from: { sb: number; bb: number }, to: { sb: number; bb: number }): string | undefined {
+  if (!name || (from.sb === to.sb && from.bb === to.bb)) return undefined;
+  const num = (n: number) => String(n).replace('.', '[.,]');
+  const re = new RegExp(`(?<![\\d.,])${num(from.sb)}\\s*/\\s*${num(from.bb)}(?![\\d.,])`);
+  const m = name.match(re);
+  if (!m) return undefined;
+  const comma = m[0].includes(',');
+  const show = (n: number) => (comma ? String(n).replace('.', ',') : String(n));
+  return name.replace(re, `${show(to.sb)}/${show(to.bb)}`);
+}
+
+export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 'level' | 'tourney'> & { name?: string }, dir: 1 | -1) {
   const level = (s.level ?? 1) + dir > 0 ? (s.level ?? 1) + dir : 1;
   // A tournament with its structure entered: the next row of it, with that level's length.
   const st = s.kind === 'mtt' ? s.tourney?.structure : undefined;
@@ -82,7 +98,8 @@ export function levelAfter(s: Pick<Session, 'kind' | 'sb' | 'bb' | 'anteType' | 
   const [sb, bb] = j >= 0 && j < levels.length ? levels[j] : !(s.bb > 0) ? levels[0] : dir > 0 ? [s.sb * 2, s.bb * 2] : [s.sb, s.bb];
   const ante = s.anteType === 'bb' ? bb : s.anteType === 'all' ? Math.round(bb / 8) : 0;
   // Cash has stakes, not levels: moving up from 1/2 to 2/5 is no «Nível 2».
-  return { sb, bb, ante, level: s.kind === 'mtt' ? level : undefined };
+  const name = s.kind === 'cash' ? nameForStakes(s.name, s, { sb, bb }) : undefined;
+  return { sb, bb, ante, level: s.kind === 'mtt' ? level : undefined, ...(name !== undefined ? { name } : null) };
 }
 
 /**
