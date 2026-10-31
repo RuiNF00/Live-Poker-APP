@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, replay } from '../engine';
-import { callerCandidates, onlyCaller, skipTo } from '../entry';
+import { callerCandidates, onlyCaller, sizePresets, sizeText, skipTo } from '../entry';
 import type { Hand } from '../types';
 
 function mk(over: Partial<Hand> = {}): Hand {
@@ -81,4 +81,22 @@ test('stepBack walks a saved hand back one step at a time', async () => {
   assert.deepEqual(b2.board, ['2c', '7d', 'Ts']);
   assert.equal(b2.actions.length, n);
   assert.equal(stepBack(mk()), null);
+});
+
+test('a small blind as big as the bb (5/5) is not a limper: opens count in bb from zero', () => {
+  const cash = (sb: number, bb: number) => mk({ game: { kind: 'cash', name: `${sb}/${bb}`, sb, bb, ante: 0, anteType: 'none', currency: '$' } });
+  for (const [sb, bb] of [[2, 5], [5, 5]]) {
+    let h = cash(sb, bb);
+    h = { ...h, actions: skipTo(h, replay(h).final, h.hero) };
+    const s = replay(h).final;
+    assert.deepEqual(sizePresets(h, s).filter((x) => !x.allIn).map((x) => x.to), [3 * bb, 4 * bb, 5 * bb], `${sb}/${bb}`);
+    assert.equal(sizeText(h, s, 5 * bb), '5x', `${sb}/${bb}`);
+  }
+  // A real limper still adds one bb.
+  let h = cash(5, 5);
+  const s0 = replay(h).final;
+  const utg = s0.toAct!;
+  h = { ...h, actions: [{ p: utg, kind: 'call' }] };
+  h = { ...h, actions: [...h.actions, ...skipTo(h, replay(h).final, h.hero)] };
+  assert.equal(sizeText(h, replay(h).final, 25), '4x');
 });

@@ -1543,8 +1543,9 @@ export function handFromSpeech(text: string, base: Hand): VoiceResult {
       note({ code: 'size', street: s.street, pos: positions(n, hand.button)[p] });
       if (s.currentBet === 0) return s.street === 'preflop' ? bb * (hand.game.kind === 'cash' ? 3 : 2.5) : Math.round(pot / 2);
       if (s.street === 'preflop' && s.currentBet <= bb) {
-        const limpers = s.bets.filter((b, i) => b === bb && !s.folded[i]).length - 1;
-        return bb * (hand.game.kind === 'cash' ? 3 : 2.5) + Math.max(0, limpers) * bb;
+        // Players who called the bb (a 5/5 small blind has only posted it).
+        const limpers = s.bets.filter((b, i) => b === bb && !s.folded[i] && s.acted[i]).length;
+        return bb * (hand.game.kind === 'cash' ? 3 : 2.5) + limpers * bb;
       }
       return Math.round(s.currentBet * 3);
     }

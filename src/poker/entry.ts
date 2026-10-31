@@ -33,7 +33,8 @@ export function sizeSpot(hand: Hand, s: TableState): { spot: SizeSpot; base: num
   const bb = hand.game.bb;
   if (s.street === 'preflop') {
     if (s.currentBet <= bb) {
-      const limpers = Math.max(0, s.bets.filter((b, i) => b === bb && !s.folded[i]).length - 1);
+      // Limpers are players who called the bb: a small blind as big as the bb (5/5, 2/2) has posted, not limped.
+      const limpers = s.bets.filter((b, i) => b === bb && !s.folded[i] && s.acted[i]).length;
       return { spot: 'open', base: bb, extra: limpers * bb };
     }
     return { spot: 'reraise', base: s.currentBet, extra: 0 };
