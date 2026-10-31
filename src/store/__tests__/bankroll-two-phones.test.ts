@@ -283,10 +283,29 @@ test('sessions with no bankroll get the one they count in written down, so both 
   const { pinBankrolls } = await import('../bankroll-math');
   const bs: Bankroll[] = [br('€', { id: 'b', createdAt: 2 }), br('€', { id: 'a', createdAt: 1 }), br('$', { id: 'u' })];
   const loose = [ses('x', '€', 0, { bankrollId: undefined }), ses('y', '€', 0, { bankrollId: 'gone' }), ses('z', '$', 0, { bankrollId: 'u' })];
-  const out = pinBankrolls(loose, bs, 50);
+  const out = pinBankrolls(loose, bs);
   assert.deepEqual(out.map((s) => s.bankrollId), ['a', 'a', 'u']);
-  assert.equal(out[0].updatedAt, 50);
+  assert.equal(out[0].updatedAt, (loose[0].updatedAt ?? 0) + 1);
   // One that already says where it counts is left as it is; nothing loose, the same array.
   assert.equal(out[2], loose[2]);
   assert.equal(pinBankrolls(out, bs), out);
+});
+
+test('pinning a bankroll on the first launch after the update never beats an edit or a delete from the other phone', async () => {
+  const { pinBankrolls } = await import('../bankroll-math');
+  const { mergeById } = await import('../backup');
+  const { alive } = await import('../deleted-math');
+  const bs: Bankroll[] = [br('€', { id: 'a', createdAt: 1 })];
+  // This phone still holds the old copy (result 100, saved at 1 000).
+  const old = { ...ses('s', '€', 100, { bankrollId: undefined }), updatedAt: 1_000 };
+  const [pinned] = pinBankrolls([old], bs);
+  assert.equal(pinned.bankrollId, 'a');
+  // The other phone changed the result to 300 at 2 000: its copy wins on both phones.
+  const edited = { ...old, cashOut: 300, updatedAt: 2_000 };
+  assert.equal(mergeById([pinned], [edited]).list[0].cashOut, 300);
+  assert.equal(mergeById([edited], [pinned]).list[0].cashOut, 300);
+  // The other phone deleted it at 2 000: it stays deleted.
+  assert.equal(alive([pinned], 'sessions', { [`sessions:${old.id}`]: 2_000 }).length, 0);
+  // Against the same session with no bankroll, the pinned copy wins, so it travels to the other phone.
+  assert.equal(mergeById([old], [pinned]).list[0].bankrollId, 'a');
 });

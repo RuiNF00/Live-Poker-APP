@@ -186,16 +186,21 @@ export function foldSeparated(bankrolls: Bankroll[]): { bankrolls: Bankroll[]; t
 
 /**
  * A session with no bankroll (or one that is gone) counts in its currency's first bankroll, which each
- * phone picks on its own: written into the session, with an edit time, so both phones agree on it.
+ * phone picks on its own: written into the session so the copy carries it.
+ *
+ * Its edit time moves on by 1 ms, not to now: the pinned copy then only beats the same session without
+ * a bankroll. An edit or a delete made on another phone since (still on the old version, or not synced
+ * yet) stays newer and wins. Stamped with now, the first launch after the update made every old copy on
+ * this phone the newest: another phone's later result was overwritten and its deletes came back.
  * The same array when every session already says where it counts.
  */
-export function pinBankrolls(sessions: Session[], bankrolls: Bankroll[], now = Date.now()): Session[] {
+export function pinBankrolls(sessions: Session[], bankrolls: Bankroll[]): Session[] {
   const ids = new Set(bankrolls.map((b) => b.id));
   const loose = (s: Session) => !s.bankrollId || !ids.has(s.bankrollId);
   if (!sessions.some(loose)) return sessions;
   return sessions.map((s) => {
     const b = loose(s) ? bankrollOf(s, bankrolls) : null;
-    return b ? { ...s, bankrollId: b.id, updatedAt: now } : s;
+    return b ? { ...s, bankrollId: b.id, updatedAt: (s.updatedAt ?? 0) + 1 } : s;
   });
 }
 
