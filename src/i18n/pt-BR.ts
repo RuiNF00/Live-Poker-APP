@@ -1282,6 +1282,7 @@ const ptBR: Record<string, string> = {
   'Buy-ins que levas para {stake}': 'Buy-ins que você leva para {stake}',
   'Chegaste ao limite que definiste: o combinado era voltar a {back}.': 'Você chegou ao limite que definiu: o combinado era voltar para {back}.',
   'Com 3 sessões de cash terminadas calculamos o teu risco de ruína.': 'Com 3 sessões de cash terminadas calculamos o seu risco de ruína.',
+  'Com 3 sessões de cash terminadas com blinds calculamos o teu risco de ruína.': 'Com 3 sessões de cash finalizadas com blinds calculamos o seu risco de ruína.',
   'Com sessões de cash neste bankroll mostramos quantos buy-ins tens para a tua stake e para a de cima.': 'Com sessões de cash neste bankroll mostramos quantos buy-ins você tem para a sua stake e para a de cima.',
   'Define quanto arriscas antes de tentar a stake de cima': 'Defina quanto você arrisca antes de tentar a stake de cima',
   'Guardar plano': 'Salvar plano',

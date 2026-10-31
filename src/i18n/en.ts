@@ -2855,6 +2855,7 @@ const en: Record<string, string> = {
   'Buy-ins que levas para {stake}': 'Buy-ins you take to {stake}',
   'Chegaste ao limite que definiste: o combinado era voltar a {back}.': 'You reached the limit you set: the plan was to go back to {back}.',
   'Com 3 sessões de cash terminadas calculamos o teu risco de ruína.': 'With 3 finished cash sessions we work out your risk of ruin.',
+  'Com 3 sessões de cash terminadas com blinds calculamos o teu risco de ruína.': 'With 3 finished cash sessions with blinds we work out your risk of ruin.',
   'Com sessões de cash neste bankroll mostramos quantos buy-ins tens para a tua stake e para a de cima.': 'With cash sessions in this bankroll we show how many buy-ins you have for your stake and the next one up.',
   'Com um win rate que não é positivo, o risco de perder o bankroll é alto em qualquer stake, e maior nas de cima.': 'With a win rate that is not positive, the risk of losing the bankroll is high at any stake, and higher at bigger ones.',
   'Conta com o mesmo win rate em BB/h na stake de cima, o que é otimista: as mesas maiores costumam ser mais difíceis.': 'It assumes the same BB/h at the bigger stake, which is optimistic: bigger games are usually tougher.',

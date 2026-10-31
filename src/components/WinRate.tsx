@@ -45,7 +45,7 @@ export function WinRateCard({ w, cur, hidden, onPress }: { w: WinRate; cur: stri
       <Interval lo={w.lo} hi={w.hi} mid={w.hourly} />
       <T v="small">
         {[
-          t('{bb} BB/h (entre {lo} e {hi})', { bb: (r1(w.bbHourly) > 0 ? '+' : '') + bb(w.bbHourly), lo: bb(w.bbLo), hi: bb(w.bbHi) }),
+          ...(w.bbKnown ? [t('{bb} BB/h (entre {lo} e {hi})', { bb: (r1(w.bbHourly) > 0 ? '+' : '') + bb(w.bbHourly), lo: bb(w.bbLo), hi: bb(w.bbHi) })] : []),
           t('desvio padrão {sd}/h', { sd: fmt(w.sd) }),
           w.sessions === 1 ? t('{h} h em 1 sessão', { h: Math.round(w.hours).toLocaleString(locale) }) : t('{h} h em {n} sessões', { h: Math.round(w.hours).toLocaleString(locale), n: w.sessions }),
         ].join(' · ')}

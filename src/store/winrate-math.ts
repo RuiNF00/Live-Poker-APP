@@ -38,6 +38,11 @@ export interface WinRate {
   /** Hours and count of the sessions with blinds, the ones behind the BB figures. */
   bbHours: number;
   bbSessions: number;
+  /**
+   * Enough sessions with blinds (the same minimum as the win rate) for the BB figures to mean
+   * something: with one, its spread is 0 and the range would read as certain.
+   */
+  bbKnown: boolean;
   /** Too few hours or sessions to lean on. */
   small: boolean;
 }
@@ -78,6 +83,7 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
     bbHi: bbHourly + mBb * sdBb,
     bbHours,
     bbSessions,
+    bbKnown: bbSessions >= min,
     small: hours < SMALL.hours || cash.length < SMALL.sessions,
   };
 }

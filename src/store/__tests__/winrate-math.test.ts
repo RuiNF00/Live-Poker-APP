@@ -96,3 +96,16 @@ test('BB/h leaves out the hours of imported sessions with no blinds', () => {
   // The money rate still counts every session.
   assert.equal(r2(w.hourly), 15);
 });
+
+test('imported cash without blinds and one live session with them: the BB figures are not known yet', () => {
+  // A Pokerbase import has no blinds: twelve sessions, then one live 2/5 night. The money rate stands on all
+  // thirteen; in BB there is one session, its spread is 0 and the range would read «±0 BB/h, enough hours».
+  const imported = Array.from({ length: 12 }, (_, i) => cash(1 + i, 4, i % 3 ? 180 : -150, { sb: 0, bb: 0 }));
+  const w = winRate([...imported, cash(20, 3, 400)])!;
+  assert.equal(w.bbSessions, 1);
+  assert.equal(w.sdBb, 0);
+  assert.equal(w.bbKnown, false);
+  assert.equal(winRate(four)!.bbKnown, true);
+  // Groups use their own minimum of 2.
+  assert.equal(winRate(four.slice(0, 2), 2)!.bbKnown, true);
+});

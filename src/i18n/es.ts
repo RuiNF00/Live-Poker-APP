@@ -2710,6 +2710,7 @@ const es: Record<string, string> = {
   'Buy-ins que levas para {stake}': 'Buy-ins que llevas a {stake}',
   'Chegaste ao limite que definiste: o combinado era voltar a {back}.': 'Llegaste al límite que definiste: lo acordado era volver a {back}.',
   'Com 3 sessões de cash terminadas calculamos o teu risco de ruína.': 'Con 3 sesiones de cash terminadas calculamos tu riesgo de ruina.',
+  'Com 3 sessões de cash terminadas com blinds calculamos o teu risco de ruína.': 'Con 3 sesiones de cash terminadas con ciegas calculamos tu riesgo de ruina.',
   'Com sessões de cash neste bankroll mostramos quantos buy-ins tens para a tua stake e para a de cima.': 'Con sesiones de cash en este bankroll te mostramos cuántos buy-ins tienes para tu stake y la de arriba.',
   'Com um win rate que não é positivo, o risco de perder o bankroll é alto em qualquer stake, e maior nas de cima.': 'Con un win rate que no es positivo, el riesgo de perder el bankroll es alto en cualquier stake, y mayor en las de arriba.',
   'Conta com o mesmo win rate em BB/h na stake de cima, o que é otimista: as mesas maiores costumam ser mais difíceis.': 'Supone el mismo win rate en BB/h en la stake de arriba, lo que es optimista: las mesas mayores suelen ser más difíciles.',

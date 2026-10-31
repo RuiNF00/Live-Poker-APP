@@ -43,7 +43,7 @@ export default function WinRateScreen() {
         {w ? (
           <>
             <WinRateCard w={w} cur={cur} hidden={hidden} />
-            <Section title={t('Quantas horas até saberes')}>{lock(t('Vê quantas horas faltam para o teu win rate ser fiável'), <HoursCard w={w} />)}</Section>
+            {w.bbKnown ? <Section title={t('Quantas horas até saberes')}>{lock(t('Vê quantas horas faltam para o teu win rate ser fiável'), <HoursCard w={w} />)}</Section> : null}
             <Section title={t('Onde ganhas')} help={<Help k="interval" />} hint={t('Só grupos com 2 ou mais sessões. A barra é o intervalo de 95%; o traço é o win rate.')}>
               <Segmented
                 options={[

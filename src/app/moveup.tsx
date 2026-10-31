@@ -100,7 +100,7 @@ export default function MoveUpScreen() {
 
         <Section title={t('Risco de ruína')} help={<Help k="ruin" />}>
           <ProBlur feature="moveUpPlan" locked={locked} title={t('Vê o teu risco de ruína com os teus números')}>
-            {w ? <Risk w={w} m={m} balance={balance} masked={locked} /> : <Card tone="inset"><T v="small">{t('Com 3 sessões de cash terminadas calculamos o teu risco de ruína.')}</T></Card>}
+            {w?.bbKnown ? <Risk w={w} m={m} balance={balance} masked={locked} /> : <Card tone="inset"><T v="small">{w ? t('Com 3 sessões de cash terminadas com blinds calculamos o teu risco de ruína.') : t('Com 3 sessões de cash terminadas calculamos o teu risco de ruína.')}</T></Card>}
           </ProBlur>
         </Section>
 
