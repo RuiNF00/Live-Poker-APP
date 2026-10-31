@@ -226,3 +226,21 @@ test('QA sentences in the four languages', () => {
     assert.ok(r.ok, `[${c.lang}] ${c.text}\n${r.summary}\n${r.errs.join(' ; ')}`);
   }
 });
+
+test('5/5 cash: the small blind has only posted, so a raise with no size is 3 bb, plus one per limper', () => {
+  const g = (sb: number, bb: number): GameInfo => ({ kind: 'cash', name: '', sb, bb, ante: 0, anteType: 'none', currency: '$' });
+  // The old rule counted the 5 of a 5/5 small blind as a limp: 20 and 25 here.
+  for (const [said, want] of [
+    ['Eu no botão com ás rei, abro.', 'BTN r15'],
+    ['UTG paga, eu no botão com ás rei subo.', 'UTG c, BTN r20'],
+    ['I am on the button with ace king, I raise.', 'BTN r15'],
+    ['UTG limps, I raise on the button with ace king.', 'UTG c, BTN r20'],
+  ] as const) {
+    const r = handFromSpeech(said, base(g(5, 5)));
+    assert.equal(line(r.hand), want, said);
+    assert.ok(r.notes.some((x) => x.code === 'size'), `${said}: the size was guessed and says so`);
+  }
+  // A smaller small blind (2/5) was already right and stays so.
+  assert.equal(line(handFromSpeech('Eu no botão com ás rei, abro.', base(g(2, 5))).hand), 'BTN r15');
+  assert.equal(line(handFromSpeech('UTG paga, eu no botão com ás rei subo.', base(g(2, 5))).hand), 'UTG c, BTN r20');
+});
