@@ -40,7 +40,8 @@ export interface WinRate {
   bbSessions: number;
   /**
    * Enough sessions with blinds (the same minimum as the win rate) for the BB figures to mean
-   * something: with one, its spread is 0 and the range would read as certain.
+   * something: with one, its spread is 0 and the range would read as certain. Also a spread of 0
+   * with more (every session at the same BB/h): the risk of ruin would read 0%.
    */
   bbKnown: boolean;
   /** Too few hours or sessions to lean on. */
@@ -83,7 +84,7 @@ export function winRate(cash: Session[], min = 3): WinRate | null {
     bbHi: bbHourly + mBb * sdBb,
     bbHours,
     bbSessions,
-    bbKnown: bbSessions >= min,
+    bbKnown: bbSessions >= min && sdBb > 1e-9,
     small: hours < SMALL.hours || cash.length < SMALL.sessions,
   };
 }

@@ -109,3 +109,12 @@ test('imported cash without blinds and one live session with them: the BB figure
   // Groups use their own minimum of 2.
   assert.equal(winRate(four.slice(0, 2), 2)!.bbKnown, true);
 });
+
+test('sessions with blinds that all made the same BB/h: no spread, so the BB figures are not known yet', () => {
+  // 10 BB/h in each (2/5, so 50 €/h): the spread is 0 and the risk of ruin would read 0%.
+  const same = [cash(1, 2, 100), cash(2, 4, 200), cash(3, 6, 300)];
+  const w = winRate(same)!;
+  assert.equal(w.bbSessions, 3);
+  assert.equal(r2(w.sdBb), 0);
+  assert.equal(w.bbKnown, false);
+});
