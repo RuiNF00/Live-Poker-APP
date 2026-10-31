@@ -64,6 +64,8 @@ test('a cash game named after its stakes follows them; other names stay as typed
   // No stakes in the name, other numbers, or a tournament: nothing changes.
   assert.equal('name' in levelAfter(cash('Quinta com a malta', 2, 5), 1), false);
   assert.equal('name' in levelAfter(cash('Mesa 12/5', 2, 5), 1), false);
+  assert.equal('name' in levelAfter(cash('1/2/5 mix', 1, 2), 1), false);
+  assert.equal(nameForStakes('mix 1/2/5', { sb: 2, bb: 5 }, { sb: 5, bb: 5 }), undefined);
   assert.equal('name' in levelAfter(mk({ name: 'Main 400/800' }), 1), false);
   assert.equal(nameForStakes('NLH 1/2', { sb: 1, bb: 2 }, { sb: 1, bb: 2 }), undefined);
   assert.equal(nameForStakes('NLH 0.5/1', { sb: 0.5, bb: 1 }, { sb: 1, bb: 2 }), 'NLH 1/2');

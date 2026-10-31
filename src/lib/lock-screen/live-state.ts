@@ -71,7 +71,8 @@ export interface LiveProps {
 export function nameForStakes(name: string | undefined, from: { sb: number; bb: number }, to: { sb: number; bb: number }): string | undefined {
   if (!name || (from.sb === to.sb && from.bb === to.bb)) return undefined;
   const num = (n: number) => String(n).replace('.', '[.,]');
-  const re = new RegExp(`(?<![\\d.,])${num(from.sb)}\\s*/\\s*${num(from.bb)}(?![\\d.,])`);
+  // Not part of longer numbers or of a mix like «1/2/5»: those blinds aren't these stakes.
+  const re = new RegExp(`(?<![\\d.,/])${num(from.sb)}\\s*/\\s*${num(from.bb)}(?![\\d.,]|\\s*/)`);
   const m = name.match(re);
   if (!m) return undefined;
   const comma = m[0].includes(',');
