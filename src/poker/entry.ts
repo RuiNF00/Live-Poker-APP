@@ -396,6 +396,24 @@ export function showdownCall(hand: Hand, s: TableState): HandAction | null {
   return next && next.toAct === null && !next.needsBoard && !next.foldWin ? a : null;
 }
 
+/**
+ * A heads-up showdown answered by «Quem ganhou?» (or «Dividido») with the opponent's cards left
+ * out: one board, the pot decided by the pick. That pick is the hand's last answer, so it can save.
+ */
+export function wonHeadsUp(hand: Hand, r: ReturnType<typeof replay> = replay(hand)): boolean {
+  const s = r.final;
+  if (s.foldWin || s.toAct !== null || s.needsBoard || r.needsBoard2 || r.boards.length > 1 || !r.result?.resolved) return false;
+  const live = hand.players.map((_, i) => i).filter((i) => i !== hand.hero && !s.folded[i]);
+  // Half the opponent's cards in means they are still being typed: wait for the rest.
+  return live.length === 1 && !s.folded[hand.hero] && !hand.players[live[0]].cards?.length && (hand.winners?.length ?? 0) > 0;
+}
+
+/** «Dividido» at a heads-up showdown: hero and the one opponent left share the pot. */
+export function chopHeadsUp(hand: Hand, s: TableState): number[] | null {
+  const live = hand.players.map((_, i) => i).filter((i) => !s.folded[i]);
+  return live.length === 2 && live.includes(hand.hero) ? live : null;
+}
+
 /** An entered action, as the line above the buttons shows it. */
 export interface LineItem {
   i: number;

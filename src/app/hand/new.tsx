@@ -43,7 +43,7 @@ import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
 import { board2Needed, buttonForHeroPosition, callName, heroFolded, isComplete, legal, positionOrder, positions, raiseName, replay, totalPot, usedCards } from '@/poker/engine';
 import { holeCount } from '@/poker/variant';
-import { allInFor, autoActions, callerCandidates, checkAround, closingCall, foldsToCard, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
+import { allInFor, autoActions, callerCandidates, checkAround, chopHeadsUp, wonHeadsUp, closingCall, foldsToCard, showdownCall, entryLine, fixAt, keepCheckDown, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTargets, skipTo, stepBack } from '@/poker/entry';
 import { addSeat, endStacks, gameForPlays, newHand, nextLevel, removeSeat, rescaleStacks, resizeTable, sameTable, swapSeats } from '@/poker/factory';
 import { amount, bbs, blindsLabel } from '@/poker/format';
 import { MAX_NOTES_LENGTH } from '@/poker/privacy';
@@ -492,8 +492,10 @@ export default function NewHand() {
   useEffect(() => {
     // A showdown ends the same way once every cards shown are in and the pot has its winner (one board).
     const shownDown = phase === 'showdown' && r.boards.length < 2 && !!r.result?.resolved && liveVillains.length > 0 && liveVillains.every((i) => hand.players[i].cards?.length === holeCount(hand.game));
+    // Heads-up, «Quem ganhou?» (or «Dividido») is the hand's last answer: the cards picker was open and skipped.
+    const picked = phase === 'showdown' && wonHeadsUp(hand, r);
     // Hero's fold ends the hand for hero (isComplete says so too): nobody types what the others did next.
-    const over = (phase === 'done' && s.foldWin) || shownDown || heroFolded(hand, r);
+    const over = (phase === 'done' && s.foldWin) || shownDown || picked || heroFolded(hand, r);
     const ended = endsNow(wasOver.current, over);
     wasOver.current = over;
     if (!ended) return;
@@ -502,7 +504,7 @@ export default function NewHand() {
     autoSaved.current.add(autoKey);
     void save();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, autoKey, hand.players]);
+  }, [phase, autoKey, hand.players, hand.winners]);
 
   // What we know about each opponent, for the seat sheet only. Worked out the
   // first time a seat opens, not on every render: over years of hands it is
@@ -1036,6 +1038,15 @@ export default function NewHand() {
                                   }}
                                 />
                               ),
+                            )}
+                            {/* Heads-up, a chop is one chip (it was both seats, then «Guardar»). */}
+                            {r.boards.length < 2 && chopHeadsUp(hand, s) && (
+                              <Chip
+                                big
+                                label={t('Dividido')}
+                                active={chopHeadsUp(hand, s)!.every((i) => hand.winners?.includes(i))}
+                                onPress={() => update({ ...hand, winners: chopHeadsUp(hand, s)! })}
+                              />
                             )}
                           </Row>
                         </View>

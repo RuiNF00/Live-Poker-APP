@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buttonForHeroPosition, heroFolded, legal, positions, replay } from '../engine';
-import { allInFor, autoActions, closingCall, foldsToCard, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTo, type SizeMemory } from '../entry';
+import { allInFor, autoActions, closingCall, foldsToCard, showdownCall, cutAt, entryLine, fixAt, keepCheckDown, autoFold, callerCandidates, checkAround, checkDownNext, checkDownNow, limpedPot, limpIn, raisedPot, onlyCaller, rewindTo, sizePresets, sizeText, sizeToRemember, skipTo, chopHeadsUp, wonHeadsUp, type SizeMemory } from '../entry';
 import { holeCount } from '../variant';
 import { defaultGame, newHand, nextLevel, sameTable } from '../factory';
 import type { Hand, HandAction } from '../types';
@@ -151,6 +151,13 @@ class Entry {
     const i = label === 'Hero' ? this.hand.hero : this.seat(label);
     this.hand = { ...this.hand, winners: [i] };
   }
+  /** Heads-up «Dividido»: one chip, both seats win. */
+  chop() {
+    const w = chopHeadsUp(this.hand, this.s);
+    assert.ok(w, '«Dividido» not offered');
+    this.taps++;
+    this.hand = { ...this.hand, winners: w };
+  }
   shows(label: string, cards: string[]) {
     // Heads-up showdown: the picker is already open, two taps.
     this.taps += 2;
@@ -205,7 +212,7 @@ class Entry {
     const r = replay(this.hand);
     const live = this.hand.players.map((_, i) => i).filter((i) => i !== this.hand.hero && !r.final.folded[i]);
     const shownDown = !r.final.foldWin && r.boards.length < 2 && !!r.result?.resolved && live.length > 0 && live.every((i) => this.hand.players[i].cards?.length === holeCount(this.hand.game));
-    assert.ok(r.final.foldWin || shownDown || heroFolded(this.hand, r), 'the hand is not over, so it waits for «Guardar»');
+    assert.ok(r.final.foldWin || shownDown || wonHeadsUp(this.hand, r) || heroFolded(this.hand, r), 'the hand is not over, so it waits for «Guardar»');
     return r;
   }
   /** Multiway showdown: a tap on the seat, then its two cards. */
@@ -575,8 +582,8 @@ test('size memory: spots are kept apart, all-in is never remembered, cash opens 
   assert.equal(ps.filter((x) => x.last).length, 1);
 });
 
-test('the store copy hand: open, call, checked down to the river, winner picked, saved — 15 taps', () => {
-  // Marketing and the store say this number; change them together with it.
+test('the store copy hand: open, call, checked down to the river, winner picked — 14 taps (was 15: the pick saves it)', () => {
+  // Marketing says «registada em 15 toques»: still true, now with one to spare.
   const e = new Entry('CO', ['Ah', 'Kd']);
   e.size('2.5x');
   e.only('BTN');
@@ -587,9 +594,9 @@ test('the store copy hand: open, call, checked down to the river, winner picked,
   e.board('2c');
   e.checkAround();
   assert.equal(e.s.toAct, null, 'showdown');
-  e.taps++; // "Quem ganhou?": one chip (or two taps for the villain's cards)
-  e.save();
-  assert.equal(e.taps, 15);
+  e.winner('Hero'); // "Quem ganhou?": one chip, and the hand saves itself
+  e.autoSave();
+  assert.equal(e.taps, 14);
 });
 
 // Round 3 (Rui: "o menos trabalho possível"): three typical live hands, from position to saved.
@@ -1277,4 +1284,61 @@ test('round 9 · hero folds to an open: the hand saves itself, no «Guardar já�
   e.act('fold');
   e.autoSave();
   assert.equal(e.taps, 6, 'position, 2 cards, the opener, its size, Fold');
+});
+
+// Round 10 (Rui, 10 Nov: «temos que melhorar aqui a parte dos toques por mão»).
+test('round 10 · heads-up showdown with no cards shown: «Quem ganhou?» saves the hand — checked down, 12 taps (was 13)', () => {
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Kc', '8d', '3s');
+  e.checkDown();
+  e.board('7h');
+  e.board('2c');
+  assert.equal(e.s.toAct, null, 'showdown');
+  assert.equal(wonHeadsUp(e.hand), false, 'no winner yet: it waits');
+  e.winner('BTN');
+  const r = e.autoSave();
+  assert.equal(e.taps, 12);
+  assert.deepEqual(r.result!.pots[0].winners, [e.seat('BTN')]);
+});
+
+test('round 10 · a heads-up chop is one chip, «Dividido», and saves itself — 12 taps (was 14: two seats and «Guardar»)', () => {
+  const e = new Entry('CO', ['Ah', 'Kd']);
+  e.size('2.5x');
+  e.only('BTN');
+  e.board('Kc', '8d', '3s');
+  e.checkDown();
+  e.board('7h');
+  e.board('2c');
+  e.chop();
+  const r = e.autoSave();
+  assert.equal(e.taps, 12);
+  assert.equal(r.result!.won[e.hand.hero], r.result!.won[e.seat('BTN')], 'half each');
+  assert.ok(r.result!.won[e.hand.hero] > 0);
+});
+
+test('round 10 · the pick waits for «Guardar» multiway, with two boards, and with no pick', () => {
+  // Three-way to the river: a pick may be one of two pots or a chop, so it waits.
+  const m = new Entry('BTN', ['8h', '7h']);
+  m.entered('UTG');
+  m.size('2.5x');
+  m.coldCall('LJ');
+  m.act('call');
+  m.only(null);
+  m.board('9h', '6c', '2d');
+  m.checkDown();
+  m.board('Ks');
+  m.board('3c');
+  assert.equal(m.s.toAct, null);
+  m.winner('UTG');
+  assert.equal(wonHeadsUp(m.hand), false);
+  assert.equal(chopHeadsUp(m.hand, m.s), null, 'no «Dividido» multiway');
+  // Run twice: two answers, «Guardar» stays.
+  const h: Hand = { ...mk('BTN', ['Ah', 'Ad'], 2), actions: [], board: [] };
+  const two: Hand = { ...h, actions: [{ p: 0, kind: 'raise', to: 20000 }, { p: 1, kind: 'call' }], board: ['Kc', '7d', '2s', '4h', '9c'], board2: ['Qc', '8d', '3s', '5h', 'Tc'], winners: [0] };
+  assert.equal(wonHeadsUp(two), false);
+  // Hero folded: not a showdown pick.
+  const folded: Hand = { ...h, actions: [{ p: 0, kind: 'raise', to: 500 }, { p: 1, kind: 'raise', to: 1500 }, { p: 0, kind: 'fold' }], winners: [1] };
+  assert.equal(wonHeadsUp(folded), false);
 });

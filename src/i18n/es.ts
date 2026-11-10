@@ -191,6 +191,7 @@ const es: Record<string, string> = {
   'escolhe {n} cartas': 'elige {n} cartas',
   'Guardar sem board': 'Guardar sin board',
   'Quem ganhou?': '¿Quién ganó?',
+  'Dividido': 'Dividido',
   'Por rever': 'Por revisar',
   'Por rever ({n})': 'Por revisar ({n})',
   'Revista': 'Revisada',
