@@ -809,6 +809,7 @@ const es: Record<string, string> = {
   '1 mão por completar': '1 mano por completar',
   '{n} mãos por completar': '{n} manos por completar',
   'Ver': 'Ver',
+  'Ver a mão guardada': 'Ver la mano guardada',
   'Começar': 'Empezar',
   'em 1 sessão': 'en 1 sesión',
   'em {n} sessões': 'en {n} sesiones',

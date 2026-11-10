@@ -877,6 +877,7 @@ const en: Record<string, string> = {
   '1 mão por completar': '1 hand to finish',
   '{n} mãos por completar': '{n} hands to finish',
   'Ver': 'View',
+  'Ver a mão guardada': 'View the saved hand',
   'Começar': 'Start',
   'em 1 sessão': 'in 1 session',
   'em {n} sessões': 'in {n} sessions',

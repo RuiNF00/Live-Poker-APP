@@ -34,10 +34,12 @@ import { CardRow } from '@/components/PlayingCard';
 import { ASPECT, Table } from '@/components/Table';
 import { useFadeOnChange } from '@/lib/motion';
 import { useScreenReader } from '@/lib/screen-reader';
+import { SavedToast } from '@/components/SavedToast';
 import { Button, Chip, ChipRow, confirmAction, Field, IconButton, Row, T, tap } from '@/components/ui';
 import { t } from '@/i18n';
 import { entrySeconds } from '@/lib/friction';
 import { endsNow } from '@/lib/ends-now';
+import { nextHandAfterSave } from '@/lib/next-hand';
 import { levelsDue } from '@/lib/lock-screen/live-state';
 import { keepVoiceNote } from '@/lib/voice-note';
 import { comboLabel } from '@/poker/cards';
@@ -74,7 +76,7 @@ export default function NewHand() {
   const insets = useSafeAreaInsets();
   // 568-pt phones (iPhone SE): the hero step has to fit without the voice button under the cards.
   const shortScreen = useWindowDimensions().height < 640;
-  const params = useLocalSearchParams<{ edit?: string; tell?: string }>();
+  const params = useLocalSearchParams<{ edit?: string; tell?: string; saved?: string }>();
   const store = useStore();
   const pro = usePro();
   const { activeSession, settings, hands } = store;
@@ -424,8 +426,11 @@ export default function NewHand() {
     // Finishing a half-saved hand: the detail screen offers the next one.
     // `g`: a new hand, so the detail screen tells VoiceOver and TalkBack it was saved.
     const to = { pathname: '/hand/[id]' as const, params: { id: final.id, ...(justFinished ? { f: '1' } : null), ...(asNew ? { g: '1' } : null) } };
+    // At the table the next hand is what comes next: a new hand of the live session goes straight to it,
+    // with a toast to see this one (Design). Elsewhere the hand's page, as before.
+    if (nextHandAfterSave({ asNew, isEdit, hand: final, liveSessionId: activeSession?.id })) router.replace({ pathname: '/hand/new', params: { saved: final.id } });
     // An edit opened from the hand goes back to it, so Back doesn't show the same hand twice.
-    if (isEdit) router.dismissTo(to);
+    else if (isEdit) router.dismissTo(to);
     else router.replace(to);
   };
 
@@ -642,6 +647,16 @@ export default function NewHand() {
       </Pressable>
     </Row>
   );
+
+  // Came here from the hand just saved at the live table (nextHandAfterSave): its toast.
+  const justSaved = useMemo(() => {
+    const h = params.saved ? hands.find((x) => x.id === params.saved) : undefined;
+    if (!h) return null;
+    const res = replay(h).result;
+    const net = res?.resolved ? res.net[h.hero] : undefined;
+    return { id: h.id, result: net === undefined ? undefined : (net > 0 ? '+' : '') + amount(net, h, inBB) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.saved]);
 
   return (
     <TapCountProvider value={countTouch}>
@@ -1008,7 +1023,7 @@ export default function NewHand() {
               {phase === 'showdown' && (
                 <View style={{ gap: 8 }}>
                   <T v="h2" ref={phaseHead} accessibilityLiveRegion="polite">Showdown</T>
-                  {/* Who won comes first: it is the one answer the hand needs. Cards shown are optional. */}
+                  {/* Cards shown first (optional, the picker is open heads-up), then who won. */}
                   {r.boards.length === 2 &&
                     r.boards.map((b, run) => (
                       <Row key={run} gap={10}>
@@ -1018,7 +1033,37 @@ export default function NewHand() {
                         <CardRow cards={b} />
                       </Row>
                     ))}
-                  {/* Stays open after the first pick while someone's cards are unknown: a chop or a side pot needs a second tap, and a wrong tap can be undone. */}
+                  <T v="label">{t('Cartas mostradas (opcional)')}</T>
+                  <Row style={{ flexWrap: 'wrap' }} gap={6}>
+                    {hand.players.map((p, i) =>
+                      i === hand.hero || s.folded[i] ? null : (
+                        <Chip
+                          key={i}
+                          big
+                          active={sdSeat === i}
+                          label={`${displayName(hand, i, pos)} ${p.cards?.length === holes ? comboLabel(p.cards) : '??'}`}
+                          onPress={() => setShowdownFor(sdSeat === i ? null : i)}
+                        />
+                      ),
+                    )}
+                  </Row>
+                  {sdSeat !== null && (
+                    <CardPicker
+                      used={usedCards(hand, hand.players[sdSeat].cards ?? [])}
+                      selected={hand.players[sdSeat].cards ?? []}
+                      onPick={(c) => {
+                        const p = hand.players[sdSeat];
+                        let cards = [...(p.cards ?? [])];
+                        if (cards.includes(c)) cards = cards.filter((x) => x !== c);
+                        else if (cards.length < holes) cards.push(c);
+                        else cards = [...cards.slice(1), c];
+                        setPlayer(sdSeat, { ...p, cards });
+                        // Multiway: the next seat whose cards are still unknown opens by itself.
+                        if (cards.length === holes) setShowdownFor(liveVillains.find((i) => i !== sdSeat && (hand.players[i].cards?.length ?? 0) < holes) ?? null);
+                      }}
+                    />
+                  )}
+                  {/* Last, under the cards shown (Design): heads-up this pick saves the hand, so the cards come first. Stays open after the first pick while someone's cards are unknown: a chop or a side pot needs a second tap, and a wrong tap can be undone. */}
                   {r.result && (!r.result.resolved || hand.players.some((p, i) => !s.folded[i] && p.cards?.length !== holes)) && (
                     <View style={{ gap: 6 }}>
                       {(r.boards.length === 2 ? (['winners', 'winners2'] as const) : (['winners'] as const)).map((key, run) => (
@@ -1052,36 +1097,6 @@ export default function NewHand() {
                         </View>
                       ))}
                     </View>
-                  )}
-                  <T v="label">{t('Cartas mostradas (opcional)')}</T>
-                  <Row style={{ flexWrap: 'wrap' }} gap={6}>
-                    {hand.players.map((p, i) =>
-                      i === hand.hero || s.folded[i] ? null : (
-                        <Chip
-                          key={i}
-                          big
-                          active={sdSeat === i}
-                          label={`${displayName(hand, i, pos)} ${p.cards?.length === holes ? comboLabel(p.cards) : '??'}`}
-                          onPress={() => setShowdownFor(sdSeat === i ? null : i)}
-                        />
-                      ),
-                    )}
-                  </Row>
-                  {sdSeat !== null && (
-                    <CardPicker
-                      used={usedCards(hand, hand.players[sdSeat].cards ?? [])}
-                      selected={hand.players[sdSeat].cards ?? []}
-                      onPick={(c) => {
-                        const p = hand.players[sdSeat];
-                        let cards = [...(p.cards ?? [])];
-                        if (cards.includes(c)) cards = cards.filter((x) => x !== c);
-                        else if (cards.length < holes) cards.push(c);
-                        else cards = [...cards.slice(1), c];
-                        setPlayer(sdSeat, { ...p, cards });
-                        // Multiway: the next seat whose cards are still unknown opens by itself.
-                        if (cards.length === holes) setShowdownFor(liveVillains.find((i) => i !== sdSeat && (hand.players[i].cards?.length ?? 0) < holes) ?? null);
-                      }}
-                    />
                   )}
                   {twiceChip && <ChipRow>{twiceChip}</ChipRow>}
                 </View>
@@ -1213,6 +1228,8 @@ export default function NewHand() {
           } : undefined}
         />
       )}
+      {/* The hand just saved, while the next one starts: over the felt, not over the cards being tapped. */}
+      {justSaved && <SavedToast key={justSaved.id} top={insets.top + 52} result={justSaved.result} onView={() => router.push({ pathname: '/hand/[id]', params: { id: justSaved.id } })} />}
     </KeyboardAvoidingView>
     </TapCountProvider>
   );

@@ -2191,6 +2191,7 @@ const ptBR: Record<string, string> = {
   '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios deste tamanho (o teu ainda não apanhou uma mesa final).': '{n} torneios: ROI {roi}, buy-in médio {bi}. Desvio padrão: {sd} buy-ins, o mínimo para torneios desse tamanho (o seu ainda não pegou uma mesa final).',
   // Screen readers: a hand or session just saved, and time played (lib/spoken.ts).
   'Mão guardada': 'Mão salva',
+  'Ver a mão guardada': 'Ver a mão salva',
   'Sessão guardada': 'Sessão salva',
   // Novidades da 1.ª atualização
   'Rebuys do valor que meteres, mudar de stakes a meio da sessão e um stop-loss diário que já não volta a zero à meia-noite.': 'Rebuys do valor que você colocar, mudar de stakes no meio da sessão e um stop-loss diário que não volta mais a zero à meia-noite.',
